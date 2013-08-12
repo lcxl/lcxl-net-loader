@@ -47,7 +47,7 @@ Notes:
 extern NDIS_HANDLE         g_FilterDriverHandle; // NDIS handle for filter driver
 extern NDIS_HANDLE         g_FilterDriverObject;
 extern NDIS_HANDLE         g_NdisFilterDeviceHandle;
-extern PDEVICE_OBJECT      DeviceObject;
+extern PDEVICE_OBJECT      g_DeviceObject;
 
 extern FILTER_LOCK         g_FilterListLock;
 extern LIST_ENTRY          g_FilterModuleList;
@@ -270,7 +270,137 @@ ULONG_PTR    filterLogSendRef[0x10000];
         (_QueueHeader)->Tail = (PQUEUE_ENTRY)(_QueueEntry);             \
     }
 
+//添加代码
+//数据链路层
 
+
+#define NDIS_MAC_ADDR_LEN            6
+
+#define NDIS_8021P_TAG_TYPE         0x0081
+#define NDIS_IPV4                   0x0008
+#define NDIS_IPV6					0x86DD
+#include <pshpack1.h>
+
+typedef struct _NDIS_ETH_HEADER
+{
+	UCHAR       DstAddr[NDIS_MAC_ADDR_LEN];
+	UCHAR       SrcAddr[NDIS_MAC_ADDR_LEN];
+	USHORT      EthType;
+
+} NDIS_ETH_HEADER;
+
+typedef struct _NDIS_ETH_HEADER UNALIGNED * PNDIS_ETH_HEADER;
+
+#include <poppack.h>
+
+//TCP/IP协议有关的结构
+
+#ifndef s_addr
+typedef struct in_addr {
+	union {
+		struct { UCHAR s_b1,s_b2,s_b3,s_b4; } S_un_b;
+		struct { USHORT s_w1,s_w2; } S_un_w;
+		ULONG S_addr;
+	} S_un;
+} IN_ADDR, *PIN_ADDR, FAR *LPIN_ADDR;
+#endif
+
+#pragma push(1)
+typedef struct IP_HEADER
+{
+
+#if LITTLE_ENDIAN
+	unsigned char  ip_hl:4;    /* 头长度 */
+	unsigned char  ip_v:4;      /* 版本号 */
+#else
+	unsigned char   ip_v:4;
+	unsigned char   ip_hl:4;     
+#endif
+
+	unsigned char  TOS;           // 服务类型
+
+	unsigned short   TotLen;      // 封包总长度，即整个IP包的长度
+	unsigned short   ID;          // 封包标识，唯一标识发送的每一个数据报
+	unsigned short   FlagOff;     // 标志
+	unsigned char  TTL;           // 生存时间，就是TTL
+	unsigned char  Protocol;      // 协议，可能是TCP、UDP、ICMP等
+	unsigned short Checksum;      // 校验和
+	struct in_addr        iaSrc;  // 源IP地址
+	struct in_addr        iaDst;  // 目的PI地址
+
+}IP_HEADER, *PIP_HEADER;
+
+
+typedef struct tcp_header
+{
+	unsigned short src_port;    //源端口号
+	unsigned short dst_port;    //目的端口号
+	unsigned int   seq_no;      //序列号
+	unsigned int   ack_no;      //确认号
+#if LITTLE_ENDIAN
+	unsigned char reserved_1:4; //保留6位中的4位首部长度
+	unsigned char thl:4;    //tcp头部长度
+	unsigned char flag:6;  //6位标志
+	unsigned char reseverd_2:2; //保留6位中的2位
+#else
+	unsigned char thl:4;    //tcp头部长度
+	unsigned char reserved_1:4; //保留6位中的4位首部长度
+	unsigned char reseverd_2:2; //保留6位中的2位
+	unsigned char flag:6;  //6位标志 
+#endif
+	unsigned short wnd_size;   //16位窗口大小
+	unsigned short chk_sum;    //16位TCP检验和
+	unsigned short urgt_p;     //16为紧急指针
+
+}TCP_HEADER,*PTCP_HEADER;
+
+
+typedef struct udp_header 
+{
+	USHORT srcport;   // 源端口
+	USHORT dstport;   // 目的端口
+	USHORT total_len; // 包括UDP报头及UDP数据的长度(单位:字节)
+	USHORT chksum;    // 校验和
+
+}UDP_HEADER,*PUDP_HEADER;
+#pragma push()
+
+
+#define IP_OFFSET                               0x0E
+
+//IP 协议类型
+#define PROT_ICMP                               0x01 
+#define PROT_TCP                                0x06 
+#define PROT_UDP                                0x11 
+//!添加代码!
+//添加代码
+
+//服务器信息
+typedef struct _SERVER_INFO_LIST_ENTRY
+{
+	//列表项
+	LIST_ENTRY		list_entry;
+	//IP
+	//真实的IP地址
+	struct in_addr	ia_real_ip;
+	//MAC地址长度
+	USHORT			mac_addr_len;
+	//MAC地址
+	UCHAR			cur_mac_addr[NDIS_MAX_PHYS_ADDRESS_LENGTH];
+} SERVER_INFO_LIST_ENTRY, *PSERVER_INFO_LIST_ENTRY;
+
+//路由信息
+typedef struct _LCXL_ROUTE_LIST_ENTRY
+{
+	LIST_ENTRY		list_entry;		//列表项
+	//IP
+	struct in_addr	ia_src;			//源IP地址
+	//TCP
+	unsigned short	src_port;		//源端口号
+	unsigned short	dst_port;		//目的端口号
+	PLIST_ENTRY		*dst_server;	//目标服务器
+} LCXL_ROUTE_LIST_ENTRY, *PLCXL_ROUTE_LIST_ENTRY;
+//!添加代码!
 //
 // Enum of filter's states
 // Filter can only be in one state at one time
@@ -297,7 +427,7 @@ typedef struct _FILTER_REQUEST
 //
 // Define the filter struct
 //
-typedef struct _MS_FILTER
+typedef struct _LCXL_FILTER
 {
     LIST_ENTRY                     FilterModuleLink;
     //Reference to this filter
@@ -338,11 +468,16 @@ typedef struct _MS_FILTER
     PNDIS_OID_REQUEST               PendingOidRequest;
     //添加的代码
     //MAC地址长度
-    USHORT                          MacAddressLength;
+    USHORT                          mac_addr_len;
     //MAC地址
-    UCHAR                           CurrentMacAddress[NDIS_MAX_PHYS_ADDRESS_LENGTH];
-}MS_FILTER, * PMS_FILTER;
-
+    UCHAR                           cur_mac_addr[NDIS_MAX_PHYS_ADDRESS_LENGTH];
+	//虚拟IP
+	struct in_addr					ia_virtual_ip;
+	//服务器列表
+	SERVER_INFO_LIST_ENTRY			server_list;
+	//路由信息
+	LCXL_ROUTE_LIST_ENTRY			route_list;
+}LCXL_FILTER, * PLCXL_FILTER;
 
 typedef struct _FILTER_DEVICE_EXTENSION
 {
@@ -429,7 +564,7 @@ DRIVER_DISPATCH FilterDispatch;
 DRIVER_DISPATCH FilterDeviceIoControl;
 
 _IRQL_requires_max_(DISPATCH_LEVEL)
-PMS_FILTER
+PLCXL_FILTER
 filterFindFilterModule(
     _In_reads_bytes_(BufferLength)
          PUCHAR                   Buffer,
@@ -439,7 +574,7 @@ filterFindFilterModule(
 _IRQL_requires_max_(DISPATCH_LEVEL)
 NDIS_STATUS
 filterDoInternalRequest(
-    _In_ PMS_FILTER                   FilterModuleContext,
+    _In_ PLCXL_FILTER                   FilterModuleContext,
     _In_ NDIS_REQUEST_TYPE            RequestType,
     _In_ NDIS_OID                     Oid,
     _Inout_updates_bytes_to_(InformationBufferLength, *pBytesProcessed)

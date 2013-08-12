@@ -22,108 +22,6 @@ Abstract:
 // during initialization here.
 #pragma NDIS_INIT_FUNCTION(DriverEntry)
 
-//数据链路层
-
-
-#define NDIS_MAC_ADDR_LEN            6
-
-#define NDIS_8021P_TAG_TYPE         0x0081
-#define NDIS_IPV4                   0x0008
-#define NDIS_IPV6					0x86DD
-#include <pshpack1.h>
-
-typedef struct _NDIS_ETH_HEADER
-{
-    UCHAR       DstAddr[NDIS_MAC_ADDR_LEN];
-    UCHAR       SrcAddr[NDIS_MAC_ADDR_LEN];
-    USHORT      EthType;
-
-} NDIS_ETH_HEADER;
-
-typedef struct _NDIS_ETH_HEADER UNALIGNED * PNDIS_ETH_HEADER;
-
-#include <poppack.h>
-
-//TCP/IP协议有关的结构
-
-#ifndef s_addr
-typedef struct in_addr {
-  union {
-    struct { UCHAR s_b1,s_b2,s_b3,s_b4; } S_un_b;
-    struct { USHORT s_w1,s_w2; } S_un_w;
-    ULONG S_addr;
-  } S_un;
-} IN_ADDR, *PIN_ADDR, FAR *LPIN_ADDR;
-#endif
-
-#pragma push(1)
-typedef struct IP_HEADER
-{
-
-#if LITTLE_ENDIAN
-  unsigned char  ip_hl:4;    /* 头长度 */
-  unsigned char  ip_v:4;      /* 版本号 */
-#else
-  unsigned char   ip_v:4;
-  unsigned char   ip_hl:4;     
-#endif
-
-  unsigned char  TOS;           // 服务类型
-
-  unsigned short   TotLen;      // 封包总长度，即整个IP包的长度
-  unsigned short   ID;          // 封包标识，唯一标识发送的每一个数据报
-  unsigned short   FlagOff;     // 标志
-  unsigned char  TTL;           // 生存时间，就是TTL
-  unsigned char  Protocol;      // 协议，可能是TCP、UDP、ICMP等
-  unsigned short Checksum;      // 校验和
-  struct in_addr        iaSrc;  // 源IP地址
-  struct in_addr        iaDst;  // 目的PI地址
-
-}IP_HEADER, *PIP_HEADER;
-
-
-typedef struct tcp_header
-{
-  unsigned short src_port;    //源端口号
-  unsigned short dst_port;    //目的端口号
-  unsigned int   seq_no;      //序列号
-  unsigned int   ack_no;      //确认号
-#if LITTLE_ENDIAN
-  unsigned char reserved_1:4; //保留6位中的4位首部长度
-  unsigned char thl:4;    //tcp头部长度
-  unsigned char flag:6;  //6位标志
-  unsigned char reseverd_2:2; //保留6位中的2位
-#else
-  unsigned char thl:4;    //tcp头部长度
-  unsigned char reserved_1:4; //保留6位中的4位首部长度
-  unsigned char reseverd_2:2; //保留6位中的2位
-  unsigned char flag:6;  //6位标志 
-#endif
-  unsigned short wnd_size;   //16位窗口大小
-  unsigned short chk_sum;    //16位TCP检验和
-  unsigned short urgt_p;     //16为紧急指针
-
-}TCP_HEADER,*PTCP_HEADER;
-
-
-typedef struct udp_header 
-{
-  USHORT srcport;   // 源端口
-  USHORT dstport;   // 目的端口
-  USHORT total_len; // 包括UDP报头及UDP数据的长度(单位:字节)
-  USHORT chksum;    // 校验和
-
-}UDP_HEADER,*PUDP_HEADER;
-#pragma push()
-
-
-#define IP_OFFSET                               0x0E
-
-//IP 协议类型
-#define PROT_ICMP                               0x01 
-#define PROT_TCP                                0x06 
-#define PROT_UDP                                0x11 
-
 
 USHORT UTIL_htons( USHORT hostshort )
 {
@@ -151,7 +49,7 @@ USHORT UTIL_ntohs( USHORT netshort )
 NDIS_HANDLE         g_FilterDriverHandle; // NDIS handle for filter driver
 NDIS_HANDLE         g_FilterDriverObject;
 NDIS_HANDLE         g_NdisFilterDeviceHandle = NULL;
-PDEVICE_OBJECT      DeviceObject = NULL;
+PDEVICE_OBJECT      g_DeviceObject = NULL;
 //过滤列表锁
 FILTER_LOCK         g_FilterListLock;
 //过滤模块列表
@@ -379,7 +277,7 @@ N.B.:  FILTER can use NdisRegisterDeviceEx to create a device, so the upper
 
 --*/
 {
-    PMS_FILTER              pFilter = NULL;
+    PLCXL_FILTER              pFilter = NULL;
     NDIS_STATUS             Status = NDIS_STATUS_SUCCESS;
     NDIS_FILTER_ATTRIBUTES  FilterAttributes;
     ULONG                   Size;
@@ -414,12 +312,12 @@ N.B.:  FILTER can use NdisRegisterDeviceEx to create a device, so the upper
            break;
         }
 
-        Size = sizeof(MS_FILTER) +
+        Size = sizeof(LCXL_FILTER) +
                AttachParameters->FilterModuleGuidName->Length +
                AttachParameters->BaseMiniportInstanceName->Length +
                AttachParameters->BaseMiniportName->Length;
 
-        pFilter = (PMS_FILTER)FILTER_ALLOC_MEM(NdisFilterHandle, Size);
+        pFilter = (PLCXL_FILTER)FILTER_ALLOC_MEM(NdisFilterHandle, Size);
         if (pFilter == NULL)
         {
             DEBUGP(DL_WARN, "Failed to allocate context structure.\n");
@@ -427,10 +325,10 @@ N.B.:  FILTER can use NdisRegisterDeviceEx to create a device, so the upper
             break;
         }
 
-        NdisZeroMemory(pFilter, sizeof(MS_FILTER));
-
+        NdisZeroMemory(pFilter, sizeof(LCXL_FILTER));
+		//模块名称
         pFilter->FilterModuleName.Length = pFilter->FilterModuleName.MaximumLength = AttachParameters->FilterModuleGuidName->Length;
-        pFilter->FilterModuleName.Buffer = (PWSTR)((PUCHAR)pFilter + sizeof(MS_FILTER));
+        pFilter->FilterModuleName.Buffer = (PWSTR)((PUCHAR)pFilter + sizeof(LCXL_FILTER));
         NdisMoveMemory(pFilter->FilterModuleName.Buffer,
                         AttachParameters->FilterModuleGuidName->Buffer,
                         pFilter->FilterModuleName.Length);
@@ -454,9 +352,13 @@ N.B.:  FILTER can use NdisRegisterDeviceEx to create a device, so the upper
         pFilter->MiniportIfIndex = AttachParameters->BaseMiniportIfIndex;
         //添加代码
         //保存MAC地址（一个问题，当用户手动修改了MAC地址，会怎样- -）
-        pFilter->MacAddressLength = AttachParameters->MacAddressLength;
-        NdisMoveMemory(pFilter->CurrentMacAddress, AttachParameters->CurrentMacAddress, pFilter->MacAddressLength);
-
+        pFilter->mac_addr_len = AttachParameters->MacAddressLength;
+        NdisMoveMemory(pFilter->cur_mac_addr, AttachParameters->CurrentMacAddress, pFilter->mac_addr_len);
+		//初始化服务器列表
+		InitializeListHead(&pFilter->server_list.list_entry);
+		//初始化路由列表
+		InitializeListHead(&pFilter->route_list.list_entry);
+		//!添加代码!
         //
         // The filter should initialize TrackReceives and TrackSends properly. For this
         // driver, since its default characteristic has both a send and a receive handler,
@@ -473,7 +375,7 @@ N.B.:  FILTER can use NdisRegisterDeviceEx to create a device, so the upper
         FilterAttributes.Header.Type = NDIS_OBJECT_TYPE_FILTER_ATTRIBUTES;
         FilterAttributes.Flags = 0;
 
-        NDIS_DECLARE_FILTER_MODULE_CONTEXT(MS_FILTER);
+        NDIS_DECLARE_FILTER_MODULE_CONTEXT(LCXL_FILTER);
         Status = NdisFSetAttributes(NdisFilterHandle,
                                     pFilter,
                                     &FilterAttributes);
@@ -538,7 +440,7 @@ N.B.: When the filter is in Pausing state, it can still process OID requests,
 
 --*/
 {
-    PMS_FILTER          pFilter = (PMS_FILTER)(FilterModuleContext);
+    PLCXL_FILTER          pFilter = (PLCXL_FILTER)(FilterModuleContext);
     NDIS_STATUS         Status;
     BOOLEAN               bFalse = FALSE;
 
@@ -600,7 +502,7 @@ Return Value:
 --*/
 {
     NDIS_STATUS     Status;
-    PMS_FILTER      pFilter = (PMS_FILTER)FilterModuleContext;
+    PLCXL_FILTER      pFilter = (PLCXL_FILTER)FilterModuleContext;
     NDIS_HANDLE     ConfigurationHandle = NULL;
 
 
@@ -763,7 +665,7 @@ NOTE: Called at PASSIVE_LEVEL and the filter is in paused state
 
 --*/
 {
-    PMS_FILTER                  pFilter = (PMS_FILTER)FilterModuleContext;
+    PLCXL_FILTER                  pFilter = (PLCXL_FILTER)FilterModuleContext;
     BOOLEAN                      bFalse = FALSE;
 
 
@@ -884,7 +786,7 @@ NOTE: Called at <= DISPATCH_LEVEL  (unlike a miniport's MiniportOidRequest)
 
 --*/
 {
-    PMS_FILTER              pFilter = (PMS_FILTER)FilterModuleContext;
+    PLCXL_FILTER              pFilter = (PLCXL_FILTER)FilterModuleContext;
     NDIS_STATUS             Status;
     PNDIS_OID_REQUEST       ClonedRequest=NULL;
     BOOLEAN                 bSubmitted = FALSE;
@@ -1006,7 +908,7 @@ Arguments:
 
 --*/
 {
-    PMS_FILTER                          pFilter = (PMS_FILTER)FilterModuleContext;
+    PLCXL_FILTER                          pFilter = (PLCXL_FILTER)FilterModuleContext;
     PNDIS_OID_REQUEST                   Request = NULL;
     PFILTER_REQUEST_CONTEXT             Context;
     PNDIS_OID_REQUEST                   OriginalRequest = NULL;
@@ -1067,7 +969,7 @@ Arguments:
 
 --*/
 {
-    PMS_FILTER                          pFilter = (PMS_FILTER)FilterModuleContext;
+    PLCXL_FILTER                          pFilter = (PLCXL_FILTER)FilterModuleContext;
     PNDIS_OID_REQUEST                   OriginalRequest;
     PFILTER_REQUEST_CONTEXT             Context;
     BOOLEAN                             bFalse = FALSE;
@@ -1155,7 +1057,7 @@ NOTE: called at <= DISPATCH_LEVEL
 
 --*/
 {
-    PMS_FILTER              pFilter = (PMS_FILTER)FilterModuleContext;
+    PLCXL_FILTER              pFilter = (PLCXL_FILTER)FilterModuleContext;
 #if DBG
     BOOLEAN                  bFalse = FALSE;
 #endif
@@ -1212,7 +1114,7 @@ NOTE: called at PASSIVE_LEVEL
 
 --*/
 {
-    PMS_FILTER             pFilter = (PMS_FILTER)FilterModuleContext;
+    PLCXL_FILTER             pFilter = (PLCXL_FILTER)FilterModuleContext;
     NDIS_DEVICE_PNP_EVENT  DevicePnPEvent = NetDevicePnPEvent->DevicePnPEvent;
 #if DBG
     BOOLEAN                bFalse = FALSE;
@@ -1279,7 +1181,7 @@ NOTE: called at PASSIVE_LEVEL
 
 --*/
 {
-    PMS_FILTER                pFilter = (PMS_FILTER)FilterModuleContext;
+    PLCXL_FILTER                pFilter = (PLCXL_FILTER)FilterModuleContext;
     NDIS_STATUS               Status = NDIS_STATUS_SUCCESS;
 
     //
@@ -1326,7 +1228,7 @@ Return Value:
 
 --*/
 {
-    PMS_FILTER         pFilter = (PMS_FILTER)FilterModuleContext;
+    PLCXL_FILTER         pFilter = (PLCXL_FILTER)FilterModuleContext;
     ULONG              NumOfSendCompletes = 0;
     BOOLEAN            DispatchLevel;
     PNET_BUFFER_LIST   CurrNbl;
@@ -1402,7 +1304,7 @@ Arguments:
 
 --*/
 {
-    PMS_FILTER          pFilter = (PMS_FILTER)FilterModuleContext;
+    PLCXL_FILTER          pFilter = (PLCXL_FILTER)FilterModuleContext;
     PNET_BUFFER_LIST    CurrNbl;
     BOOLEAN             DispatchLevel;
     BOOLEAN             bFalse = FALSE;
@@ -1501,7 +1403,7 @@ Arguments:
 
 --*/
 {
-    PMS_FILTER          pFilter = (PMS_FILTER)FilterModuleContext;
+    PLCXL_FILTER          pFilter = (PLCXL_FILTER)FilterModuleContext;
     PNET_BUFFER_LIST    CurrNbl = NetBufferLists;
     UINT                NumOfNetBufferLists = 0;
     BOOLEAN             DispatchLevel;
@@ -1595,7 +1497,7 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 --*/
 {
 
-    PMS_FILTER          pFilter = (PMS_FILTER)FilterModuleContext;
+    PLCXL_FILTER          pFilter = (PLCXL_FILTER)FilterModuleContext;
     BOOLEAN             DispatchLevel;
     ULONG               Ref;
     BOOLEAN             bFalse = FALSE;
@@ -1720,19 +1622,24 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
                             if (BufferLength>=sizeof(IP_HEADER)){
                                 PIP_HEADER pIPHeader;
                                 pIPHeader = (PIP_HEADER)((PUCHAR)pEthType+sizeof(USHORT));
-                                switch (pIPHeader->Protocol) {
-                                case PROT_ICMP:
+								//查看数据包的目标IP是否是虚拟IP
+								if (RtlCompareMemory(&pIPHeader->iaDst, &pFilter->ia_virtual_ip, sizeof(struct in_addr))==sizeof(struct in_addr)) {
+									//pIPHeader->iaDst
+									switch (pIPHeader->Protocol) {
+									case PROT_ICMP:
 
-                                    break;
-                                case PROT_TCP:
+										break;
+									case PROT_TCP:
 
-                                    break;
-                                case PROT_UDP:
+										break;
+									case PROT_UDP:
 
-                                    break;
-                                default:
-                                    break;
-                                }
+										break;
+									default:
+										break;
+									}
+								}
+								
                             }
                             break;
 						case NDIS_IPV6://IPv6协议
@@ -1814,7 +1721,7 @@ Return Value:
 
 */
 {
-    PMS_FILTER  pFilter = (PMS_FILTER)FilterModuleContext;
+    PLCXL_FILTER  pFilter = (PLCXL_FILTER)FilterModuleContext;
 
     NdisFCancelSendNetBufferLists(pFilter->FilterHandle, CancelId);
 }
@@ -1843,7 +1750,7 @@ Return Value:
 
 --*/
 {
-   PMS_FILTER                               pFilter = (PMS_FILTER)FilterModuleContext;
+   PLCXL_FILTER                               pFilter = (PLCXL_FILTER)FilterModuleContext;
    NDIS_FILTER_PARTIAL_CHARACTERISTICS      OptionalHandlers;
    NDIS_STATUS                              Status = NDIS_STATUS_SUCCESS;
    BOOLEAN                                  bFalse = FALSE;
@@ -1921,7 +1828,7 @@ Return Value:
 _IRQL_requires_max_(DISPATCH_LEVEL)
 NDIS_STATUS
 filterDoInternalRequest(
-    _In_ PMS_FILTER                   FilterModuleContext,
+    _In_ PLCXL_FILTER                   FilterModuleContext,
     _In_ NDIS_REQUEST_TYPE            RequestType,
     _In_ NDIS_OID                     Oid,
     _Inout_updates_bytes_to_(InformationBufferLength, *pBytesProcessed)
