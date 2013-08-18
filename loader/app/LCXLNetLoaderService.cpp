@@ -5,8 +5,8 @@
 #include "LCXLNetLoaderService.h"
 
 //全局变量  
-SERVICE_STATUS         MyServiceStatus;  
-SERVICE_STATUS_HANDLE  MyServiceStatusHandle;  
+SERVICE_STATUS         g_ser_status;  
+SERVICE_STATUS_HANDLE  g_ser_ctrl_handler;  
 
 int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -33,19 +33,19 @@ void WINAPI ServiceMain(DWORD argc, LPTSTR *argv)
 {  
 	int error;  
 
-	//指定服务特征和其当前状态  
-	MyServiceStatus.dwServiceType = SERVICE_WIN32_OWN_PROCESS;  //服务类型  
-	MyServiceStatus.dwCurrentState = SERVICE_START_PENDING;     //指定服务的当前状态  
-	MyServiceStatus.dwControlsAccepted = SERVICE_ACCEPT_STOP;   //这个成员表示哪些控制通执服务是可接受的  
-	MyServiceStatus.dwWin32ExitCode = 0;                        //这两个域在你终止服务并报告退出细节时很有用。  
-	MyServiceStatus.dwServiceSpecificExitCode = 0;              //初始化服务时并不退出，因此，它们的值为0  
-	MyServiceStatus.dwCheckPoint = 0;                           //这二个成员允许  
-	MyServiceStatus.dwWaitHint = 0;                             //一个服务回报它的进度  
+	//指定服务特征和其当前状态
+	g_ser_status.dwServiceType = SERVICE_WIN32_OWN_PROCESS;  //服务类型  
+	g_ser_status.dwCurrentState = SERVICE_START_PENDING;     //指定服务的当前状态  
+	g_ser_status.dwControlsAccepted = SERVICE_ACCEPT_STOP;   //这个成员表示哪些控制通执服务是可接受的  
+	g_ser_status.dwWin32ExitCode = 0;                        //这两个域在你终止服务并报告退出细节时很有用。  
+	g_ser_status.dwServiceSpecificExitCode = 0;              //初始化服务时并不退出，因此，它们的值为0  
+	g_ser_status.dwCheckPoint = 0;                           //这二个成员允许  
+	g_ser_status.dwWaitHint = 0;                             //一个服务回报它的进度  
 
 	//注册服务控制  
-	MyServiceStatusHandle = RegisterServiceCtrlHandler(szServiceName, ControlHandler);   
+	g_ser_ctrl_handler = RegisterServiceCtrlHandler(szServiceName, ControlHandler);   
 
-	if (NULL == MyServiceStatusHandle)  
+	if (NULL == g_ser_ctrl_handler)  
 	{  
 		//注册失败就返回  
 		OutputDebugString(TEXT("注册服务失败！"));  
@@ -57,7 +57,7 @@ void WINAPI ServiceMain(DWORD argc, LPTSTR *argv)
 	if (error)   
 	{  
 		// 初始化失败，终止服务  
-		MyServiceStatus.dwWin32ExitCode = -1; 
+		g_ser_status.dwWin32ExitCode = -1; 
 		 //向 SCM 报告服务的状态  
 		ReporttoSCM(SERVICE_STOPPED);
 		return; // 退出 ServiceMain  
@@ -65,7 +65,7 @@ void WINAPI ServiceMain(DWORD argc, LPTSTR *argv)
 
 	// 如果初始化成功，向 SCM 报告运行状态     
 	ReporttoSCM(SERVICE_RUNNING);
-	while (MyServiceStatus.dwCurrentState == SERVICE_RUNNING)  
+	while (g_ser_status.dwCurrentState == SERVICE_RUNNING)  
 	{  
 		//这里放你要实现的功能函数  
 
@@ -90,7 +90,7 @@ void WINAPI ControlHandler(DWORD dwMsg)
 	{  
 	case SERVICE_CONTROL_STOP:   
 		//响应停止服务控制  
-		MyServiceStatus.dwWin32ExitCode = 0;
+		g_ser_status.dwWin32ExitCode = 0;
 		ReporttoSCM(SERVICE_STOPPED);
 		return;   
 
@@ -98,12 +98,12 @@ void WINAPI ControlHandler(DWORD dwMsg)
 		break;  
 	}   
 	//向 SCM 报告服务的状态  
-	SetServiceStatus(MyServiceStatusHandle, &MyServiceStatus);  
+	SetServiceStatus(g_ser_ctrl_handler, &g_ser_status);  
 	return;   
 }  
 
 BOOL ReporttoSCM( DWORD dwCurrentState )
 {
-	MyServiceStatus.dwCurrentState = dwCurrentState;   
-	return SetServiceStatus(MyServiceStatusHandle, &MyServiceStatus);  
+	g_ser_status.dwCurrentState = dwCurrentState;   
+	return SetServiceStatus(g_ser_ctrl_handler, &g_ser_status);  
 }
