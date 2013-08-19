@@ -354,6 +354,15 @@ typedef struct tcp_header
 
 }TCP_HEADER,*PTCP_HEADER;
 
+#define TH_FIN  0x01
+#define TH_SYN  0x02
+#define TH_RST  0x04
+#define TH_PUSH 0x08
+#define TH_ACK  0x10
+#define TH_URG  0x20
+#define TH_ECE  0x40
+#define TH_CWR  0x80
+#define TH_FLAGS        (TH_FIN|TH_SYN|TH_RST|TH_ACK|TH_URG|TH_ECE|TH_CWR)
 
 typedef struct udp_header 
 {
@@ -592,6 +601,13 @@ filterInternalRequestComplete(
     _In_ NDIS_STATUS                  Status
     );
 
+
+//添加代码
+///<summary>
+///是否路由此NBL
+///</summary>
+BOOLEAN IfRouteNBL(IN PNDIS_ETH_HEADER pEthHeader, IN UINT BufferLength, OUT PLCXL_ROUTE_LIST_ENTRY *ppRouteListEntry);
+//!添加代码!
 
 #endif  //_FILT_H
 

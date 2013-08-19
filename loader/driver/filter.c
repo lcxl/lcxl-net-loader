@@ -1594,63 +1594,19 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
                     NormalPagePriority);
 			//各种有效性判断
             if (pEthHeader != NULL && BufferLength != 0) {
+                PLCXL_ROUTE_LIST_ENTRY pRouteListEntry = NULL;
+
                 ASSERT(BufferLength > Offset);
                 //获取真正的的包数据
                 BufferLength -= Offset;
-               
-                if (BufferLength >= sizeof(NDIS_ETH_HEADER)) {
-                    USHORT UNALIGNED *pEthType = NULL;
-                    
-                    //获取帧数据头
-                    pEthHeader = (PNDIS_ETH_HEADER)((PUCHAR)pEthHeader + Offset);
-                    //判断帧类型是不是8021P_TAG
-                    if (pEthHeader->EthType == NDIS_8021P_TAG_TYPE) {
-                        if (BufferLength >= sizeof(NDIS_ETH_HEADER)+4) {
-                            pEthType = (USHORT UNALIGNED *)((PUCHAR)&pEthHeader->EthType + 4);
-                            BufferLength -= sizeof(NDIS_ETH_HEADER)+4;
-                        } else {
-                            //缺代码
-                        }
-                    } else {
-                        pEthType = &pEthHeader->EthType;
-                        BufferLength -= sizeof(NDIS_ETH_HEADER);
-                    }
-                    
-                    if (pEthType!=NULL) {
-                        switch(*pEthType) {
-                        case NDIS_IPV4://IPv4协议
-                            if (BufferLength>=sizeof(IP_HEADER)){
-                                PIP_HEADER pIPHeader;
-                                pIPHeader = (PIP_HEADER)((PUCHAR)pEthType+sizeof(USHORT));
-								//查看数据包的目标IP是否是虚拟IP
-								if (RtlCompareMemory(&pIPHeader->iaDst, &pFilter->ia_virtual_ip, sizeof(struct in_addr))==sizeof(struct in_addr)) {
-									//pIPHeader->iaDst
-									switch (pIPHeader->Protocol) {
-									case PROT_ICMP:
-
-										break;
-									case PROT_TCP:
-
-										break;
-									case PROT_UDP:
-
-										break;
-									default:
-										break;
-									}
-								}
-								
-                            }
-                            break;
-						case NDIS_IPV6://IPv6协议
-							break;
-                        default:
-                            break;
-                        }
-                    }
-                } else {
-                    //缺代码
+                //获取帧数据头
+                pEthHeader = (PNDIS_ETH_HEADER)((PUCHAR)pEthHeader + Offset);
+                //如果需要路由的话
+                if (IfRouteNBL(pEthHeader, BufferLength, &pRouteListEntry)) {
+                    //需要路由的话，一定有路由信息
+                    ASSERT(pRouteListEntry!=NULL);
                 }
+                
             } else {
                 //缺代码
             }
@@ -2019,3 +1975,70 @@ Return Value:
     NdisSetEvent(&FilterRequest->ReqEvent);
 }
 
+BOOLEAN IfRouteNBL(IN PNDIS_ETH_HEADER pEthHeader, IN UINT BufferLength, OUT PLCXL_ROUTE_LIST_ENTRY *ppRouteListEntry)
+{
+    USHORT UNALIGNED *pEthType = NULL;
+
+    ASSERT(ppRouteListEntry!=NULL);
+
+    if (BufferLength < sizeof(NDIS_ETH_HEADER)) {
+        return FALSE;
+    }
+    
+                    
+    //判断帧类型是不是8021P_TAG
+    if (pEthHeader->EthType == NDIS_8021P_TAG_TYPE) {
+        if (BufferLength >= sizeof(NDIS_ETH_HEADER)+4) {
+            pEthType = (USHORT UNALIGNED *)((PUCHAR)&pEthHeader->EthType + 4);
+            BufferLength -= sizeof(NDIS_ETH_HEADER)+4;
+         } else {
+            //缺代码
+             return FALSE;
+         }
+    } else {
+         pEthType = &pEthHeader->EthType;
+         BufferLength -= sizeof(NDIS_ETH_HEADER);
+    }
+    if (pEthType == NULL) {
+        return FALSE;
+    }
+
+    switch(*pEthType) {
+    case NDIS_IPV4://IPv4协议
+        if (BufferLength>=sizeof(IP_HEADER)){
+            PIP_HEADER pIPHeader;
+                pIPHeader = (PIP_HEADER)((PUCHAR)pEthType+sizeof(USHORT));
+				//查看数据包的目标IP是否是虚拟IP
+				if (RtlCompareMemory(&pIPHeader->iaDst, &pFilter->ia_virtual_ip, sizeof(struct in_addr))==sizeof(struct in_addr)) {
+				    //pIPHeader->iaDst
+					switch (pIPHeader->Protocol) {
+					case PROT_ICMP:
+
+					    break;
+					case PROT_TCP:
+                        //目前仅支持TCP
+                        {
+                            PTCP_HEADER ptcp_header = (PTCP_HEADER)((PUCHAR)pIPHeader+sizeof(TCP_HEADER));
+                            //建立连接的阶段
+                            //有TH_SYN的阶段是建立连接的阶段，这个时候就得
+                            if (ptcp_header->flag | TH_SYN != 0) {
+
+                            }
+                        }
+						break;
+						case PROT_UDP:
+
+							break;
+						default:
+							break;
+					}
+				}
+								
+           }
+       break;
+	case NDIS_IPV6://IPv6协议
+		break;
+    default:
+         break;
+    }
+}
