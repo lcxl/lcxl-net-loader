@@ -74,6 +74,7 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="lcxl_func_delegate.h" />
     <ClInclude Include="lcxl_iocp_base.h" />
   </ItemGroup>
   <ItemGroup>

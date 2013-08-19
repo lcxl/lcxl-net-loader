@@ -21,6 +21,9 @@
     <ClInclude Include="lcxl_iocp_base.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="lcxl_func_delegate.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="lcxl_iocp_base.cpp">
