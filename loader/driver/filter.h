@@ -384,6 +384,27 @@ typedef struct udp_header
 //!添加代码!
 //添加代码
 
+//服务器处于启用状态
+#define SS_ENABLED 0x01
+//服务器在线
+#define SS_ONLINE 0x02
+
+typedef struct _SERVER_STATUS 
+{
+    //状态值
+    UCHAR               Status;
+    //单个任务的平均处理时间，时间单位为微妙（us）
+    //Windows下使用KeQueryPerformanceCounter
+    unsigned long       ProcessTime;
+    //总内存数
+    unsigned long long  TotalMemory;
+    //当前使用内存
+    unsigned long long  CurrMemory;
+    //CPU使用率，最高为1
+    double              CPUUsage;
+
+} SERVER_STATUS, PSERVER_STATUS;
+
 //服务器信息
 typedef struct _SERVER_INFO_LIST_ENTRY
 {
@@ -396,18 +417,31 @@ typedef struct _SERVER_INFO_LIST_ENTRY
 	USHORT			mac_addr_len;
 	//MAC地址
 	UCHAR			cur_mac_addr[NDIS_MAX_PHYS_ADDRESS_LENGTH];
+    //服务器状态
+    SERVER_STATUS   server_status;
 } SERVER_INFO_LIST_ENTRY, *PSERVER_INFO_LIST_ENTRY;
 
+#define RS_NONE     0x00
+
+//正常
+#define RS_NORMAL   0x01
+
+//正在等待最后一个ACK包
+#define RS_LAST_ACK 0x02
+
+//连接已关闭
+#define RS_CLOSED   0x03
 //路由信息
 typedef struct _LCXL_ROUTE_LIST_ENTRY
 {
-	LIST_ENTRY		list_entry;		//列表项
+	LIST_ENTRY		        list_entry;		//列表项
+    int                     status;         //状态
 	//IP
-	struct in_addr	ia_src;			//源IP地址
+	struct in_addr	        ia_src;			//源IP地址
 	//TCP
-	unsigned short	src_port;		//源端口号
-	unsigned short	dst_port;		//目的端口号
-	PLIST_ENTRY		*dst_server;	//目标服务器
+	unsigned short	        src_port;		//源端口号
+	unsigned short	        dst_port;		//目的端口号
+	PSERVER_INFO_LIST_ENTRY dst_server;	    //目标服务器
 } LCXL_ROUTE_LIST_ENTRY, *PLCXL_ROUTE_LIST_ENTRY;
 //!添加代码!
 //
@@ -604,9 +638,26 @@ filterInternalRequestComplete(
 
 //添加代码
 ///<summary>
-///是否路由此NBL
+///是否路由此NBL，如果需要路由此NBL，返回路由信息，否则返回NULL
 ///</summary>
-BOOLEAN IfRouteNBL(IN PNDIS_ETH_HEADER pEthHeader, IN UINT BufferLength, OUT PLCXL_ROUTE_LIST_ENTRY *ppRouteListEntry);
+PLCXL_ROUTE_LIST_ENTRY IfRouteNBL(IN PLCXL_FILTER pFilter, IN PNDIS_ETH_HEADER pEthHeader, IN UINT BufferLength);
+
+
+///<summary>
+///获取路由信息项
+///</summary>
+PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry(IN PLCXL_FILTER pFilter, IN PIP_HEADER pIPHeader, IN PTCP_HEADER pTcpHeader);
+
+///<summary>
+//选择服务器
+///</summary>
+PSERVER_INFO_LIST_ENTRY SelectServer(IN PLCXL_FILTER pFilter, IN PIP_HEADER pIPHeader, IN PTCP_HEADER pTcpHeader);
+
+
+PLCXL_ROUTE_LIST_ENTRY CreateRouteListEntry(IN PLCXL_FILTER pFilter);
+void InitRouteListEntry(IN OUT PLCXL_ROUTE_LIST_ENTRY route_info, IN PIP_HEADER pIPHeader, IN PTCP_HEADER pTcpHeader, IN PSERVER_INFO_LIST_ENTRY server_info);
+
+
 //!添加代码!
 
 #endif  //_FILT_H
