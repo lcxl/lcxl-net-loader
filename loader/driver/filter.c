@@ -1519,12 +1519,36 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
     BOOLEAN             DispatchLevel;
     ULONG               Ref;
     BOOLEAN             bFalse = FALSE;
-#if DBG
-    ULONG               ReturnFlags;
-#endif
+    //修改代码，去掉DBG判定
+//#if DBG
+    ULONG               ReturnFlags = 0;
+//#endif
+    //!修改代码!
 	PNET_BUFFER_LIST    pNextNBL;
+    //添加代码
+
+    ULONG               SendFlags = 0;
+
+    //可以通过的NBL
+    PNET_BUFFER_LIST    pPassHeadNBL = NULL;
+    //末尾的NBL
+    PNET_BUFFER_LIST    pPassLastNBL = NULL;
+    ULONG               NumberOfPassNBL = 0;
+    //需要丢掉的NBL
+    PNET_BUFFER_LIST    pDropHeadNBL = NULL;
+    PNET_BUFFER_LIST    pDropLastNBL = NULL;
+    //!添加代码!
+
 
     DEBUGP(DL_TRACE, "===>ReceiveNetBufferList: NetBufferLists = %p.\n", NetBufferLists);
+
+    //添加代码
+    if (NDIS_TEST_RECEIVE_AT_DISPATCH_LEVEL(ReceiveFlags)) {
+        NDIS_SET_RETURN_FLAG(ReturnFlags, NDIS_RETURN_FLAGS_DISPATCH_LEVEL);
+        NDIS_SET_SEND_FLAG(SendFlags, NDIS_SEND_FLAGS_DISPATCH_LEVEL);
+    }
+    //!添加代码!
+
     do
     {
 
@@ -1538,12 +1562,15 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 
             if (NDIS_TEST_RECEIVE_CAN_PEND(ReceiveFlags))
             {
+                //移除代码
+                /*
                 ReturnFlags = 0;
                 if (NDIS_TEST_RECEIVE_AT_DISPATCH_LEVEL(ReceiveFlags))
                 {
                     NDIS_SET_RETURN_FLAG(ReturnFlags, NDIS_RETURN_FLAGS_DISPATCH_LEVEL);
                 }
-
+                */
+                //!移除代码!
                 NdisFReturnNetBufferLists(pFilter->FilterHandle, NetBufferLists, ReturnFlags);
             }
             break;
@@ -1623,7 +1650,52 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
                 pRouteListEntry = IfRouteNBL(pFilter, pEthHeader, BufferLength);
                 //如果需要路由的话
                 if (pRouteListEntry!=NULL) {
+                    PNET_BUFFER_LIST tmpNBL;
+                    UCHAR       OrgDstAddr[NDIS_MAC_ADDR_LEN];
+                    //是否可以Pend
+                    if (NDIS_TEST_RECEIVE_CANNOT_PEND(ReceiveFlags)) {
+                        //到最后会一起丢弃数据包
+                        
+                    } else {
+                        //要丢弃的数据包
+                        if (pDropHeadNBL == NULL) {
+                            pDropHeadNBL = pNextNBL;
+                            pDropLastNBL = pNextNBL;
+                        } else {
+                            NET_BUFFER_LIST_NEXT_NBL(pDropLastNBL) = pNextNBL;
+                        }
+                    }
+                    //保存原始目标MAC地址
+                    RtlCopyMemory(OrgDstAddr, pEthHeader->DstAddr, sizeof(pEthHeader->DstAddr));
+                    
+                    //修改目标MAC地址
+                    RtlCopyMemory(pEthHeader->DstAddr, pRouteListEntry->dst_server->cur_mac_addr, sizeof(pEthHeader->DstAddr));
+                    
+                    //转发数据包(单个转发的效率问题，得考虑一下)
+                    tmpNBL = NET_BUFFER_LIST_NEXT_NBL(pNextNBL);
+                    NET_BUFFER_LIST_NEXT_NBL(pNextNBL) = NULL;
+                    NdisFSendNetBufferLists(pFilter->FilterHandle, pNextNBL, PortNumber, SendFlags); 
+                    NET_BUFFER_LIST_NEXT_NBL(pNextNBL) = tmpNBL;
+                    //修改回原始目标MAC地址
+                    RtlCopyMemory(pEthHeader->DstAddr, OrgDstAddr, sizeof(pEthHeader->DstAddr));
+                } else {
+                    if (NDIS_TEST_RECEIVE_CANNOT_PEND(ReceiveFlags)) {
+                        PNET_BUFFER_LIST tmpNBL;
 
+                        tmpNBL = NET_BUFFER_LIST_NEXT_NBL(pNextNBL);
+                        NET_BUFFER_LIST_NEXT_NBL(pNextNBL) = NULL;
+                        //接受不丢弃的数据包
+                        NdisFIndicateReceiveNetBufferLists(pFilter->FilterHandle, pNextNBL, PortNumber, 1, ReceiveFlags | NDIS_RECEIVE_FLAGS_RESOURCES);
+                        NET_BUFFER_LIST_NEXT_NBL(pNextNBL) = tmpNBL;
+                    } else {
+                        if (pPassHeadNBL == NULL) {
+                            pPassHeadNBL = pNextNBL;
+                            pPassLastNBL = pNextNBL;
+                        } else {
+                            NET_BUFFER_LIST_NEXT_NBL(pPassLastNBL) = pNextNBL;
+                        }
+                        NumberOfPassNBL++;
+                    }
                 }
                 
             } else {
@@ -1633,6 +1705,18 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 			//获取下一个NBL
 			pNextNBL = NET_BUFFER_LIST_NEXT_NBL(pNextNBL);
 		}
+        if (NDIS_TEST_RECEIVE_CANNOT_PEND(ReceiveFlags)) {
+            //不接受数据包
+            NdisFReturnNetBufferLists(pFilter->FilterHandle, NetBufferLists, ReturnFlags);
+        } else {
+            //将两个链表的最后一项的Next域清空
+            NET_BUFFER_LIST_NEXT_NBL(pPassLastNBL) = NULL;
+            NET_BUFFER_LIST_NEXT_NBL(pDropLastNBL) = NULL;
+            //接受PassHeadNBL
+            NdisFIndicateReceiveNetBufferLists(pFilter->FilterHandle, pPassHeadNBL, PortNumber, NumberOfPassNBL, ReceiveFlags);
+            //丢弃DropHeadNBL
+            NdisFReturnNetBufferLists(pFilter->FilterHandle, pDropHeadNBL, ReturnFlags);
+        }
 		//
         if (pFilter->TrackReceives)
         {
