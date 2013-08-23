@@ -510,16 +510,19 @@ typedef struct _LCXL_FILTER
 
     PNDIS_OID_REQUEST               PendingOidRequest;
     //添加的代码
-    //MAC地址长度
-    USHORT                          mac_addr_len;
-    //MAC地址
-    UCHAR                           cur_mac_addr[NDIS_MAX_PHYS_ADDRESS_LENGTH];
-	//虚拟IP
+    //虚拟IP
 	struct in_addr					ia_virtual_ip;
 	//服务器列表
 	SERVER_INFO_LIST_ENTRY			server_list;
 	//路由信息
 	LCXL_ROUTE_LIST_ENTRY			route_list;
+    //NBL发送池
+    NDIS_HANDLE                     SendNetBufferListPool;  
+    //MAC地址长度
+    USHORT                          mac_addr_len;
+    //MAC地址
+    UCHAR                           cur_mac_addr[NDIS_MAX_PHYS_ADDRESS_LENGTH];
+    //!添加的代码!
 }LCXL_FILTER, * PLCXL_FILTER;
 
 typedef struct _FILTER_DEVICE_EXTENSION

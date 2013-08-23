@@ -56,13 +56,18 @@ FILTER_LOCK         g_FilterListLock;
 LIST_ENTRY          g_FilterModuleList;
 
 //添加代码
+//定义lookaside列表
 #define TAG_ROUTE       'ROUT'
 #define TAG_SERVER      'SERV'
 NPAGED_LOOKASIDE_LIST  g_route_mem_mgr;
 NPAGED_LOOKASIDE_LIST  g_server_mem_mgr;
 
 #define GET_MEM_ROUTE() (PLCXL_ROUTE_LIST_ENTRY)ExAllocateFromNPagedLookasideList(&g_route_mem_mgr)
+#define FREE_MEM_ROUTE(__buf) ExFreeToNPagedLookasideList(&g_route_mem_mgr, __buf)
 #define GET_MEM_SERVER() (PSERVER_INFO_LIST_ENTRY)ExAllocateFromNPagedLookasideList(&g_server_mem_mgr)
+#define FREE_MEM_SERVER(__buf) ExFreeToNPagedLookasideList(&g_server_mem_mgr, __buf)
+//转发的NBL的内存TAG
+#define TAG_SEND_NBL 'SEND'
 //!添加代码!
 
 NDIS_FILTER_PARTIAL_CHARACTERISTICS DefaultChars = {
@@ -297,7 +302,9 @@ N.B.:  FILTER can use NdisRegisterDeviceEx to create a device, so the upper
     NDIS_FILTER_ATTRIBUTES  FilterAttributes;
     ULONG                   Size;
     BOOLEAN               bFalse = FALSE;
-
+    //添加代码
+    NET_BUFFER_LIST_POOL_PARAMETERS PoolParameters;
+    //!添加代码!
     DEBUGP(DL_TRACE, "===>FilterAttach: NdisFilterHandle %p\n", NdisFilterHandle);
 
     do
@@ -373,6 +380,16 @@ N.B.:  FILTER can use NdisRegisterDeviceEx to create a device, so the upper
 		InitializeListHead(&pFilter->server_list.list_entry);
 		//初始化路由列表
 		InitializeListHead(&pFilter->route_list.list_entry);
+        //初始化NBL发送池
+        PoolParameters.Header.Type = NDIS_OBJECT_TYPE_DEFAULT;
+        PoolParameters.Header.Revision = NET_BUFFER_LIST_POOL_PARAMETERS_REVISION_1;
+        PoolParameters.Header.Size = sizeof(PoolParameters);
+        PoolParameters.ProtocolId = NDIS_PROTOCOL_ID_DEFAULT;
+        //PoolParameters.ContextSize = sizeof(NPROT_SEND_NETBUFLIST_RSVD);
+        PoolParameters.fAllocateNetBuffer = TRUE;
+        PoolParameters.PoolTag = TAG_SEND_NBL;
+        pFilter->SendNetBufferListPool = NdisAllocateNetBufferListPool( NdisFilterHandle, &PoolParameters); 
+
 		//!添加代码!
         //
         // The filter should initialize TrackReceives and TrackSends properly. For this
@@ -705,6 +722,11 @@ NOTE: Called at PASSIVE_LEVEL and the filter is in paused state
         FILTER_FREE_MEM(pFilter->FilterName.Buffer);
     }
 
+    //添加代码
+    if (pFilter->SendNetBufferListPool!=NULL) {
+        NdisFreeNetBufferListPool(pFilter->SendNetBufferListPool);
+    }
+    //!添加代码!
 
     FILTER_ACQUIRE_LOCK(&g_FilterListLock, bFalse);
     RemoveEntryList(&pFilter->FilterModuleLink);
@@ -1250,7 +1272,10 @@ Return Value:
     ULONG              NumOfSendCompletes = 0;
     BOOLEAN            DispatchLevel;
     PNET_BUFFER_LIST   CurrNbl;
-
+    //添加代码
+    //前一个NBL
+    PNET_BUFFER_LIST   PrepNbl;
+    //!添加代码!
     DEBUGP(DL_TRACE, "===>SendNBLComplete, NetBufferList: %p.\n", NetBufferLists);
 
 
@@ -1283,6 +1308,37 @@ Return Value:
         FILTER_LOG_SEND_REF(2, pFilter, PrevNbl, pFilter->OutstandingSends);
         FILTER_RELEASE_LOCK(&pFilter->Lock, DispatchLevel);
     }
+    //添加代码
+    //Note  A filter driver should keep track of send requests that 
+    //it originates and make sure that it does NOT call the NdisFSendNetBufferListsComplete function 
+    //when such requests are complete.
+    CurrNbl = NetBufferLists;
+    PrepNbl = NULL;
+    while (CurrNbl != NULL) {
+        //如果是本驱动发出来的NBL，将此NBL脱离当前的NBL链
+        if (CurrNbl->SourceHandle == pFilter->FilterHandle) {
+            PNET_BUFFER_LIST pOwnerNBL;
+
+            pOwnerNBL = CurrNbl;
+            //判断是否是链表头
+            if (CurrNbl != NetBufferLists) {
+                //不是链表头
+                CurrNbl = NET_BUFFER_LIST_NEXT_NBL(CurrNbl);
+                NET_BUFFER_LIST_NEXT_NBL(PrepNbl) = CurrNbl;
+            } else {
+                //是链表头
+                NetBufferLists = NET_BUFFER_LIST_NEXT_NBL(CurrNbl);
+            }
+            //断开和原始链的关联
+            NET_BUFFER_LIST_NEXT_NBL(pOwnerNBL) = NULL;
+            //释放NBL
+            NdisFreeNetBufferList(pOwnerNBL);
+        } else {
+            PrepNbl = CurrNbl;
+            CurrNbl = NET_BUFFER_LIST_NEXT_NBL(CurrNbl);
+        }
+    }
+    //!添加代码!
 
     // Send complete the NBLs.  If you removed any NBLs from the chain, make
     // sure the chain isn't empty (i.e., NetBufferLists!=NULL).
@@ -1537,6 +1593,8 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
     //需要丢掉的NBL
     PNET_BUFFER_LIST    pDropHeadNBL = NULL;
     PNET_BUFFER_LIST    pDropLastNBL = NULL;
+    //要转发的NBL列表
+    PNET_BUFFER_LIST    pSendNBLs = NULL;
     //!添加代码!
 
 
@@ -1650,8 +1708,11 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
                 pRouteListEntry = IfRouteNBL(pFilter, pEthHeader, BufferLength);
                 //如果需要路由的话
                 if (pRouteListEntry!=NULL) {
-                    PNET_BUFFER_LIST tmpNBL;
-                    UCHAR       OrgDstAddr[NDIS_MAC_ADDR_LEN];
+                    PNDIS_ETH_HEADER    pSendBuffer;
+                    PMDL                pMdl = NULL;
+                    PNET_BUFFER_LIST    tmpNBL;
+                    ULONG               BytesCopied;
+                    UCHAR               OrgDstAddr[NDIS_MAC_ADDR_LEN];
                     //是否可以Pend
                     if (NDIS_TEST_RECEIVE_CANNOT_PEND(ReceiveFlags)) {
                         //到最后会一起丢弃数据包
@@ -1665,19 +1726,39 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
                             NET_BUFFER_LIST_NEXT_NBL(pDropLastNBL) = pNextNBL;
                         }
                     }
-                    //保存原始目标MAC地址
-                    RtlCopyMemory(OrgDstAddr, pEthHeader->DstAddr, sizeof(pEthHeader->DstAddr));
-                    
+
+                    pSendBuffer = (PNDIS_ETH_HEADER)FILTER_ALLOC_MEM(pFilter->FilterHandle, BufferLength);
+                    pMdl = NdisAllocateMdl(pFilter->FilterHandle, pSendBuffer, BufferLength);
+                    tmpNBL = NdisAllocateNetBufferAndNetBufferList(
+                        pFilter->SendNetBufferListPool,
+                        0,                              // ContextSize
+                        0,                              // ContextBackfill
+                        pMdl,                           // MdlChain
+                        0,                              // DataOffset
+                        BufferLength);                   // DataLength
+                    NdisCopyFromNetBufferToNetBuffer(
+                        NET_BUFFER_LIST_FIRST_NB(tmpNBL),
+                        0,
+                        BufferLength,
+                        NET_BUFFER_LIST_FIRST_NB(pNextNBL),
+                        0, 
+                        &BytesCopied);
+                    //设置SourceHandle
+                    //A filter driver must set the SourceHandle member of each NET_BUFFER_LIST structure that it originates to the same value that it passes to the NdisFilterHandle parameter
+
+                    tmpNBL->SourceHandle = pFilter->FilterHandle;
                     //修改目标MAC地址
-                    RtlCopyMemory(pEthHeader->DstAddr, pRouteListEntry->dst_server->cur_mac_addr, sizeof(pEthHeader->DstAddr));
-                    
-                    //转发数据包(单个转发的效率问题，得考虑一下)
-                    tmpNBL = NET_BUFFER_LIST_NEXT_NBL(pNextNBL);
-                    NET_BUFFER_LIST_NEXT_NBL(pNextNBL) = NULL;
-                    NdisFSendNetBufferLists(pFilter->FilterHandle, pNextNBL, PortNumber, SendFlags); 
-                    NET_BUFFER_LIST_NEXT_NBL(pNextNBL) = tmpNBL;
-                    //修改回原始目标MAC地址
-                    RtlCopyMemory(pEthHeader->DstAddr, OrgDstAddr, sizeof(pEthHeader->DstAddr));
+                    RtlCopyMemory(pSendBuffer->DstAddr, pRouteListEntry->dst_server->cur_mac_addr, sizeof(pEthHeader->DstAddr));
+                    //
+                    // The other members of NET_BUFFER_DATA structure are already initialized properly during allocation.
+                    //
+                    NET_BUFFER_DATA_LENGTH(NET_BUFFER_LIST_FIRST_NB(tmpNBL)) = BytesCopied;
+                    //插入到转发队列中
+                    if (pSendNBLs==NULL) {
+                        pSendNBLs = tmpNBL;
+                    } else {
+                        NET_BUFFER_LIST_NEXT_NBL(pSendNBLs) = tmpNBL;
+                    }
                 } else {
                     if (NDIS_TEST_RECEIVE_CANNOT_PEND(ReceiveFlags)) {
                         PNET_BUFFER_LIST tmpNBL;
@@ -1717,6 +1798,10 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
             //丢弃DropHeadNBL
             NdisFReturnNetBufferLists(pFilter->FilterHandle, pDropHeadNBL, ReturnFlags);
         }
+        //转发数据包给真实的服务器
+        if (NULL!=pSendNBLs) {
+            NdisFSendNetBufferLists(pFilter->FilterHandle, pSendNBLs, PortNumber, SendFlags);
+        }
 		//
         if (pFilter->TrackReceives)
         {
@@ -1727,7 +1812,8 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
             FILTER_LOG_RCV_REF(1, pFilter, NetBufferLists, Ref);
             FILTER_RELEASE_LOCK(&pFilter->Lock, DispatchLevel);
         }
-
+        //移除代码
+        /*
         NdisFIndicateReceiveNetBufferLists(
                    pFilter->FilterHandle,
                    NetBufferLists,
@@ -1735,7 +1821,8 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
                    NumberOfNetBufferLists,
                    ReceiveFlags);
 
-
+        */
+        //!移除代码!
         if (NDIS_TEST_RECEIVE_CANNOT_PEND(ReceiveFlags) &&
             pFilter->TrackReceives)
         {
