@@ -56,9 +56,9 @@ extern LIST_ENTRY          g_FilterModuleList;
 
 
 #if NDISLWF
-#define FILTER_FRIENDLY_NAME        L"NDIS Sample LightWeight Filter"
+#define FILTER_FRIENDLY_NAME        L"LCXL Net Loader(NDIS Filter)"
 // TODO: Customize this to match the GUID in the INF
-#define FILTER_UNIQUE_NAME          L"{5cbf81bd-5055-47cd-9055-a76b2b4e3697}" //unique name, quid name
+#define FILTER_UNIQUE_NAME          L"{A8CFB5DA-09DB-4CB1-93B5-92D347289EB7}" //unique name, quid name
 // TODO: Customize this to match the service name in the INF
 #define FILTER_SERVICE_NAME         L"NDISLWF"
 //
@@ -71,7 +71,7 @@ extern LIST_ENTRY          g_FilterModuleList;
 
 #if NDISLWF1
 #define FILTER_FRIENDLY_NAME        L"NDIS Sample LightWeight Filter 1"
-#define FILTER_UNIQUE_NAME          L"{5cbf81be-5055-47cd-9055-a76b2b4e3697}" //unique name, quid name
+#define FILTER_UNIQUE_NAME          L"{A8CFB5DA-09DB-4CB1-93B5-92D347289EB7}" //unique name, quid name
 #define FILTER_SERVICE_NAME         L"NDISLWF1"
 //
 // The filter needs to handle IOCTRLs
@@ -82,7 +82,7 @@ extern LIST_ENTRY          g_FilterModuleList;
 
 #if NDISMON
 #define FILTER_FRIENDLY_NAME        L"NDIS Sample Monitor LightWeight Filter"
-#define FILTER_UNIQUE_NAME          L"{5cbf81bf-5055-47cd-9055-a76b2b4e3697}" //unique name, quid name
+#define FILTER_UNIQUE_NAME          L"{A8CFB5DA-09DB-4CB1-93B5-92D347289EB7}" //unique name, quid name
 #define FILTER_SERVICE_NAME         L"NDISMON"
 //
 // The filter needs to handle IOCTRLs
@@ -93,7 +93,7 @@ extern LIST_ENTRY          g_FilterModuleList;
 
 #if NDISMON1
 #define FILTER_FRIENDLY_NAME        L"NDIS Sample Monitor 1 LightWeight Filter"
-#define FILTER_UNIQUE_NAME          L"{5cbf81c0-5055-47cd-9055-a76b2b4e3697}" //unique name, quid name
+#define FILTER_UNIQUE_NAME          L"{A8CFB5DA-09DB-4CB1-93B5-92D347289EB7}" //unique name, quid name
 #define FILTER_SERVICE_NAME         L"NDISMON1"
 //
 // The filter needs to handle IOCTRLs

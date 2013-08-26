@@ -1342,9 +1342,9 @@ Return Value:
 
     // Send complete the NBLs.  If you removed any NBLs from the chain, make
     // sure the chain isn't empty (i.e., NetBufferLists!=NULL).
-
-    NdisFSendNetBufferListsComplete(pFilter->FilterHandle, NetBufferLists, SendCompleteFlags);
-
+	if (NetBufferLists!=NULL) {
+		NdisFSendNetBufferListsComplete(pFilter->FilterHandle, NetBufferLists, SendCompleteFlags);
+	}
     DEBUGP(DL_TRACE, "<===SendNBLComplete.\n");
 }
 
@@ -1712,7 +1712,7 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
                     PMDL                pMdl = NULL;
                     PNET_BUFFER_LIST    tmpNBL;
                     ULONG               BytesCopied;
-                    UCHAR               OrgDstAddr[NDIS_MAC_ADDR_LEN];
+                    //UCHAR               OrgDstAddr[NDIS_MAC_ADDR_LEN];
                     //是否可以Pend
                     if (NDIS_TEST_RECEIVE_CANNOT_PEND(ReceiveFlags)) {
                         //到最后会一起丢弃数据包

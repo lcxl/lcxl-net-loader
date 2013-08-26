@@ -67,6 +67,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{7D21AF72-2FA4-4C13-BE8A-8186604BE0D4}</ProjectGuid>
     <RootNamespace>$(MSBuildProjectName)</RootNamespace>
+    <ProjectName>netloader</ProjectName>
   </PropertyGroup>
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Win8 Debug|Win32'">
     <TargetVersion>Win8</TargetVersion>
@@ -160,6 +161,9 @@
   <PropertyGroup>
     <TargetName>ndislwf</TargetName>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Vista Debug|Win32'">
+    <RunCodeAnalysis>true</RunCodeAnalysis>
+  </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
       <TreatWarningAsError>true</TreatWarningAsError>
@@ -196,6 +200,7 @@
     <ClCompile>
       <ExceptionHandling>
       </ExceptionHandling>
+      <EnablePREfast Condition="'$(Configuration)|$(Platform)'=='Vista Debug|Win32'">true</EnablePREfast>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
