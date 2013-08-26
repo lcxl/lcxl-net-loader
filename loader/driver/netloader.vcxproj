@@ -159,7 +159,7 @@
   </ImportGroup>
   <ItemGroup Label="WrappedTaskItems" />
   <PropertyGroup>
-    <TargetName>ndislwf</TargetName>
+    <TargetName>netloader</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Vista Debug|Win32'">
     <RunCodeAnalysis>true</RunCodeAnalysis>

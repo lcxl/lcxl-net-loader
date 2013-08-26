@@ -60,7 +60,7 @@ extern LIST_ENTRY          g_FilterModuleList;
 // TODO: Customize this to match the GUID in the INF
 #define FILTER_UNIQUE_NAME          L"{A8CFB5DA-09DB-4CB1-93B5-92D347289EB7}" //unique name, quid name
 // TODO: Customize this to match the service name in the INF
-#define FILTER_SERVICE_NAME         L"NDISLWF"
+#define FILTER_SERVICE_NAME         L"NetLoader"
 //
 // The filter needs to handle IOCTLs
 //

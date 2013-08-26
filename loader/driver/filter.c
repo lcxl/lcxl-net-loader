@@ -1324,6 +1324,7 @@ Return Value:
             if (CurrNbl != NetBufferLists) {
                 //不是链表头
                 CurrNbl = NET_BUFFER_LIST_NEXT_NBL(CurrNbl);
+                ASSERT(PrepNbl!=NULL);
                 NET_BUFFER_LIST_NEXT_NBL(PrepNbl) = CurrNbl;
             } else {
                 //是链表头
@@ -1790,6 +1791,8 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
             //不接受数据包
             NdisFReturnNetBufferLists(pFilter->FilterHandle, NetBufferLists, ReturnFlags);
         } else {
+            ASSERT(pPassLastNBL!=NULL);
+            ASSERT(pDropLastNBL!=NULL);
             //将两个链表的最后一项的Next域清空
             NET_BUFFER_LIST_NEXT_NBL(pPassLastNBL) = NULL;
             NET_BUFFER_LIST_NEXT_NBL(pDropLastNBL) = NULL;

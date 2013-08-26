@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ndislwf", "loader\driver\ndislwf.vcxproj", "{7D21AF72-2FA4-4C13-BE8A-8186604BE0D4}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "netloader", "loader\driver\netloader.vcxproj", "{7D21AF72-2FA4-4C13-BE8A-8186604BE0D4}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "package", "loader\driver\Package\package.VcxProj", "{338C012D-7444-4AB3-82DC-BD5D248E1FEA}"
 EndProject
