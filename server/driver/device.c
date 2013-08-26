@@ -51,19 +51,19 @@ FilterRegisterDevice(
     DeviceAttribute.ExtensionSize = sizeof(FILTER_DEVICE_EXTENSION);
 
     Status = NdisRegisterDeviceEx(
-                FilterDriverHandle,
+                g_FilterDriverHandle,
                 &DeviceAttribute,
-                &DeviceObject,
-                &NdisFilterDeviceHandle
+                &g_DeviceObject,
+                &g_NdisFilterDeviceHandle
                 );
 
 
     if (Status == NDIS_STATUS_SUCCESS)
     {
-        FilterDeviceExtension = NdisGetDeviceReservedExtension(DeviceObject);
+        FilterDeviceExtension = NdisGetDeviceReservedExtension(g_DeviceObject);
 
         FilterDeviceExtension->Signature = 'FTDR';
-        FilterDeviceExtension->Handle = FilterDriverHandle;
+        FilterDeviceExtension->Handle = g_FilterDriverHandle;
     }
 
 
@@ -80,12 +80,12 @@ FilterDeregisterDevice(
     )
 
 {
-    if (NdisFilterDeviceHandle != NULL)
+    if (g_NdisFilterDeviceHandle != NULL)
     {
-        NdisDeregisterDeviceEx(NdisFilterDeviceHandle);
+        NdisDeregisterDeviceEx(g_NdisFilterDeviceHandle);
     }
 
-    NdisFilterDeviceHandle = NULL;
+    g_NdisFilterDeviceHandle = NULL;
 
 }
 
@@ -140,7 +140,7 @@ FilterDeviceIoControl(
     PLIST_ENTRY                 Link;
     PUCHAR                      pInfo;
     ULONG                       InfoLength = 0;
-    PMS_FILTER                  pFilter = NULL;
+    PLCXL_FILTER                  pFilter = NULL;
     BOOLEAN                     bFalse = FALSE;
 
 
@@ -192,13 +192,13 @@ FilterDeviceIoControl(
 
             pInfo = OutputBuffer;
 
-            FILTER_ACQUIRE_LOCK(&FilterListLock, bFalse);
+            FILTER_ACQUIRE_LOCK(&g_FilterListLock, bFalse);
 
-            Link = FilterModuleList.Flink;
-
-            while (Link != &FilterModuleList)
+            Link = g_FilterModuleList.Flink;
+			//遍历列表
+            while (Link != &g_FilterModuleList)
             {
-                pFilter = CONTAINING_RECORD(Link, MS_FILTER, FilterModuleLink);
+                pFilter = CONTAINING_RECORD(Link, LCXL_FILTER, FilterModuleLink);
 
 
                 InfoLength += (pFilter->FilterModuleName.Length + sizeof(USHORT));
@@ -216,7 +216,7 @@ FilterDeviceIoControl(
                 Link = Link->Flink;
             }
 
-            FILTER_RELEASE_LOCK(&FilterListLock, bFalse);
+            FILTER_RELEASE_LOCK(&g_FilterListLock, bFalse);
             if (InfoLength <= OutputBufferLength)
             {
 
@@ -230,8 +230,20 @@ FilterDeviceIoControl(
                 Status = STATUS_BUFFER_TOO_SMALL;
             }
             break;
-
-
+		//添加代码
+		case IOCTL_LOADER_ALL_NET_IFINDEX:
+			break;
+		case IOCTL_LOADER_GET_VIRTUAL_IP:
+			break;
+		case IOCTL_LOADER_SET_VIRTUAL_IP:
+			break;
+		case IOCTL_LOADER_GET_SERVER_LIST:
+			break;
+		case IOCTL_LOADER_ADD_SERVER:
+			break;
+		case IOCTL_LOADER_DEL_SERVER:
+			break;
+		//!添加代码!
         default:
             break;
     }
@@ -248,7 +260,7 @@ FilterDeviceIoControl(
 
 
 _IRQL_requires_max_(DISPATCH_LEVEL)
-PMS_FILTER
+PLCXL_FILTER
 filterFindFilterModule(
     _In_reads_bytes_(BufferLength)
          PUCHAR                   Buffer,
@@ -256,23 +268,23 @@ filterFindFilterModule(
     )
 {
 
-   PMS_FILTER              pFilter;
+   PLCXL_FILTER              pFilter;
    PLIST_ENTRY             Link;
    BOOLEAN                  bFalse = FALSE;
 
-   FILTER_ACQUIRE_LOCK(&FilterListLock, bFalse);
+   FILTER_ACQUIRE_LOCK(&g_FilterListLock, bFalse);
 
-   Link = FilterModuleList.Flink;
+   Link = g_FilterModuleList.Flink;
 
-   while (Link != &FilterModuleList)
+   while (Link != &g_FilterModuleList)
    {
-       pFilter = CONTAINING_RECORD(Link, MS_FILTER, FilterModuleLink);
+       pFilter = CONTAINING_RECORD(Link, LCXL_FILTER, FilterModuleLink);
 
        if (BufferLength >= pFilter->FilterModuleName.Length)
        {
            if (NdisEqualMemory(Buffer, pFilter->FilterModuleName.Buffer, pFilter->FilterModuleName.Length))
            {
-               FILTER_RELEASE_LOCK(&FilterListLock, bFalse);
+               FILTER_RELEASE_LOCK(&g_FilterListLock, bFalse);
                return pFilter;
            }
        }
@@ -280,7 +292,7 @@ filterFindFilterModule(
        Link = Link->Flink;
    }
 
-   FILTER_RELEASE_LOCK(&FilterListLock, bFalse);
+   FILTER_RELEASE_LOCK(&g_FilterListLock, bFalse);
    return NULL;
 }
 

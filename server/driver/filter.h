@@ -44,23 +44,23 @@ Notes:
 //
 // Global variables
 //
-extern NDIS_HANDLE         FilterDriverHandle; // NDIS handle for filter driver
-extern NDIS_HANDLE         FilterDriverObject;
-extern NDIS_HANDLE         NdisFilterDeviceHandle;
-extern PDEVICE_OBJECT      DeviceObject;
+extern NDIS_HANDLE         g_FilterDriverHandle; // NDIS handle for filter driver
+extern NDIS_HANDLE         g_FilterDriverObject;
+extern NDIS_HANDLE         g_NdisFilterDeviceHandle;
+extern PDEVICE_OBJECT      g_DeviceObject;
 
-extern FILTER_LOCK         FilterListLock;
-extern LIST_ENTRY          FilterModuleList;
+extern FILTER_LOCK         g_FilterListLock;
+extern LIST_ENTRY          g_FilterModuleList;
 
 
 
 
 #if NDISLWF
-#define FILTER_FRIENDLY_NAME        L"NDIS Sample LightWeight Filter"
+#define FILTER_FRIENDLY_NAME        L"LCXL Net Server(NDIS Filter)"
 // TODO: Customize this to match the GUID in the INF
-#define FILTER_UNIQUE_NAME          L"{5cbf81bd-5055-47cd-9055-a76b2b4e3697}" //unique name, quid name
+#define FILTER_UNIQUE_NAME          L"{B5603271-3B51-FEC0-5EAD-0B75FCC10093}" //unique name, quid name
 // TODO: Customize this to match the service name in the INF
-#define FILTER_SERVICE_NAME         L"NDISLWF"
+#define FILTER_SERVICE_NAME         L"NetServer"
 //
 // The filter needs to handle IOCTLs
 //
@@ -71,7 +71,7 @@ extern LIST_ENTRY          FilterModuleList;
 
 #if NDISLWF1
 #define FILTER_FRIENDLY_NAME        L"NDIS Sample LightWeight Filter 1"
-#define FILTER_UNIQUE_NAME          L"{5cbf81be-5055-47cd-9055-a76b2b4e3697}" //unique name, quid name
+#define FILTER_UNIQUE_NAME          L"{B5603271-3B51-FEC0-5EAD-0B75FCC10093}" //unique name, quid name
 #define FILTER_SERVICE_NAME         L"NDISLWF1"
 //
 // The filter needs to handle IOCTRLs
@@ -82,7 +82,7 @@ extern LIST_ENTRY          FilterModuleList;
 
 #if NDISMON
 #define FILTER_FRIENDLY_NAME        L"NDIS Sample Monitor LightWeight Filter"
-#define FILTER_UNIQUE_NAME          L"{5cbf81bf-5055-47cd-9055-a76b2b4e3697}" //unique name, quid name
+#define FILTER_UNIQUE_NAME          L"{B5603271-3B51-FEC0-5EAD-0B75FCC10093}" //unique name, quid name
 #define FILTER_SERVICE_NAME         L"NDISMON"
 //
 // The filter needs to handle IOCTRLs
@@ -93,7 +93,7 @@ extern LIST_ENTRY          FilterModuleList;
 
 #if NDISMON1
 #define FILTER_FRIENDLY_NAME        L"NDIS Sample Monitor 1 LightWeight Filter"
-#define FILTER_UNIQUE_NAME          L"{5cbf81c0-5055-47cd-9055-a76b2b4e3697}" //unique name, quid name
+#define FILTER_UNIQUE_NAME          L"{B5603271-3B51-FEC0-5EAD-0B75FCC10093}" //unique name, quid name
 #define FILTER_SERVICE_NAME         L"NDISMON1"
 //
 // The filter needs to handle IOCTRLs
@@ -270,7 +270,180 @@ ULONG_PTR    filterLogSendRef[0x10000];
         (_QueueHeader)->Tail = (PQUEUE_ENTRY)(_QueueEntry);             \
     }
 
+//添加代码
+//数据链路层
 
+
+#define NDIS_MAC_ADDR_LEN            6
+
+#define NDIS_8021P_TAG_TYPE         0x0081
+#define NDIS_IPV4                   0x0008
+#define NDIS_IPV6					0x86DD
+#include <pshpack1.h>
+
+typedef struct _NDIS_ETH_HEADER
+{
+	UCHAR       DstAddr[NDIS_MAC_ADDR_LEN];
+	UCHAR       SrcAddr[NDIS_MAC_ADDR_LEN];
+	USHORT      EthType;
+
+} NDIS_ETH_HEADER;
+
+typedef struct _NDIS_ETH_HEADER UNALIGNED * PNDIS_ETH_HEADER;
+
+#include <poppack.h>
+
+//TCP/IP协议有关的结构
+
+#ifndef s_addr
+typedef struct in_addr {
+	union {
+		struct { UCHAR s_b1,s_b2,s_b3,s_b4; } S_un_b;
+		struct { USHORT s_w1,s_w2; } S_un_w;
+		ULONG S_addr;
+	} S_un;
+} IN_ADDR, *PIN_ADDR, FAR *LPIN_ADDR;
+#endif
+
+#pragma push(1)
+typedef struct IP_HEADER
+{
+
+#if LITTLE_ENDIAN
+	unsigned char  ip_hl:4;    /* 头长度 */
+	unsigned char  ip_v:4;      /* 版本号 */
+#else
+	unsigned char   ip_v:4;
+	unsigned char   ip_hl:4;     
+#endif
+
+	unsigned char  TOS;           // 服务类型
+
+	unsigned short   TotLen;      // 封包总长度，即整个IP包的长度
+	unsigned short   ID;          // 封包标识，唯一标识发送的每一个数据报
+	unsigned short   FlagOff;     // 标志
+	unsigned char  TTL;           // 生存时间，就是TTL
+	unsigned char  Protocol;      // 协议，可能是TCP、UDP、ICMP等
+	unsigned short Checksum;      // 校验和
+	struct in_addr        iaSrc;  // 源IP地址
+	struct in_addr        iaDst;  // 目的PI地址
+
+}IP_HEADER, *PIP_HEADER;
+
+
+typedef struct tcp_header
+{
+	unsigned short src_port;    //源端口号
+	unsigned short dst_port;    //目的端口号
+	unsigned int   seq_no;      //序列号
+	unsigned int   ack_no;      //确认号
+#if LITTLE_ENDIAN
+	unsigned char reserved_1:4; //保留6位中的4位首部长度
+	unsigned char thl:4;    //tcp头部长度
+	unsigned char flag:6;  //6位标志
+	unsigned char reseverd_2:2; //保留6位中的2位
+#else
+	unsigned char thl:4;    //tcp头部长度
+	unsigned char reserved_1:4; //保留6位中的4位首部长度
+	unsigned char reseverd_2:2; //保留6位中的2位
+	unsigned char flag:6;  //6位标志 
+#endif
+	unsigned short wnd_size;   //16位窗口大小
+	unsigned short chk_sum;    //16位TCP检验和
+	unsigned short urgt_p;     //16为紧急指针
+
+}TCP_HEADER,*PTCP_HEADER;
+
+#define TH_FIN  0x01
+#define TH_SYN  0x02
+#define TH_RST  0x04
+#define TH_PUSH 0x08
+#define TH_ACK  0x10
+#define TH_URG  0x20
+#define TH_ECE  0x40
+#define TH_CWR  0x80
+#define TH_FLAGS        (TH_FIN|TH_SYN|TH_RST|TH_ACK|TH_URG|TH_ECE|TH_CWR)
+
+typedef struct udp_header 
+{
+	USHORT srcport;   // 源端口
+	USHORT dstport;   // 目的端口
+	USHORT total_len; // 包括UDP报头及UDP数据的长度(单位:字节)
+	USHORT chksum;    // 校验和
+
+}UDP_HEADER,*PUDP_HEADER;
+#pragma push()
+
+
+#define IP_OFFSET                               0x0E
+
+//IP 协议类型
+#define PROT_ICMP                               0x01 
+#define PROT_TCP                                0x06 
+#define PROT_UDP                                0x11 
+//!添加代码!
+//添加代码
+
+//服务器处于启用状态
+#define SS_ENABLED 0x01
+//服务器在线
+#define SS_ONLINE 0x02
+
+typedef struct _SERVER_STATUS 
+{
+    //状态值
+    UCHAR               Status;
+    //单个任务的平均处理时间，时间单位为微妙（us）
+    //Windows下使用KeQueryPerformanceCounter
+    unsigned long       ProcessTime;
+    //总内存数
+    unsigned long long  TotalMemory;
+    //当前使用内存
+    unsigned long long  CurrMemory;
+    //CPU使用率，最高为1
+    double              CPUUsage;
+
+} SERVER_STATUS, PSERVER_STATUS;
+
+//服务器信息
+typedef struct _SERVER_INFO_LIST_ENTRY
+{
+	//列表项
+	LIST_ENTRY		list_entry;
+	//IP
+	//真实的IP地址
+	struct in_addr	ia_real_ip;
+	//MAC地址长度
+	USHORT			mac_addr_len;
+	//MAC地址
+	UCHAR			cur_mac_addr[NDIS_MAX_PHYS_ADDRESS_LENGTH];
+    //服务器状态
+    SERVER_STATUS   server_status;
+} SERVER_INFO_LIST_ENTRY, *PSERVER_INFO_LIST_ENTRY;
+
+#define RS_NONE     0x00
+
+//正常
+#define RS_NORMAL   0x01
+
+//正在等待最后一个ACK包
+#define RS_LAST_ACK 0x02
+
+//连接已关闭
+#define RS_CLOSED   0x03
+//路由信息
+typedef struct _LCXL_ROUTE_LIST_ENTRY
+{
+	LIST_ENTRY		        list_entry;		//列表项
+    int                     status;         //状态
+	//IP
+	struct in_addr	        ia_src;			//源IP地址
+	//TCP
+	unsigned short	        src_port;		//源端口号
+	unsigned short	        dst_port;		//目的端口号
+	PSERVER_INFO_LIST_ENTRY dst_server;	    //目标服务器
+} LCXL_ROUTE_LIST_ENTRY, *PLCXL_ROUTE_LIST_ENTRY;
+//!添加代码!
 //
 // Enum of filter's states
 // Filter can only be in one state at one time
@@ -297,7 +470,7 @@ typedef struct _FILTER_REQUEST
 //
 // Define the filter struct
 //
-typedef struct _MS_FILTER
+typedef struct _LCXL_FILTER
 {
     LIST_ENTRY                     FilterModuleLink;
     //Reference to this filter
@@ -305,8 +478,11 @@ typedef struct _MS_FILTER
 
     NDIS_HANDLE                     FilterHandle;
     NDIS_STRING                     FilterModuleName;
+    //小端口驱动友好名称
     NDIS_STRING                     MiniportFriendlyName;
+    //小端口驱动名称
     NDIS_STRING                     MiniportName;
+    //小端口驱动网络接口序号
     NET_IFINDEX                     MiniportIfIndex;
 
     NDIS_STATUS                     Status;
@@ -333,9 +509,21 @@ typedef struct _MS_FILTER
 #endif
 
     PNDIS_OID_REQUEST               PendingOidRequest;
-
-}MS_FILTER, * PMS_FILTER;
-
+    //添加的代码
+    //虚拟IP
+	struct in_addr					ia_virtual_ip;
+	//服务器列表
+	SERVER_INFO_LIST_ENTRY			server_list;
+	//路由信息
+	LCXL_ROUTE_LIST_ENTRY			route_list;
+    //NBL发送池
+    NDIS_HANDLE                     SendNetBufferListPool;  
+    //MAC地址长度
+    USHORT                          mac_addr_len;
+    //MAC地址
+    UCHAR                           cur_mac_addr[NDIS_MAX_PHYS_ADDRESS_LENGTH];
+    //!添加的代码!
+}LCXL_FILTER, * PLCXL_FILTER;
 
 typedef struct _FILTER_DEVICE_EXTENSION
 {
@@ -422,7 +610,7 @@ DRIVER_DISPATCH FilterDispatch;
 DRIVER_DISPATCH FilterDeviceIoControl;
 
 _IRQL_requires_max_(DISPATCH_LEVEL)
-PMS_FILTER
+PLCXL_FILTER
 filterFindFilterModule(
     _In_reads_bytes_(BufferLength)
          PUCHAR                   Buffer,
@@ -432,7 +620,7 @@ filterFindFilterModule(
 _IRQL_requires_max_(DISPATCH_LEVEL)
 NDIS_STATUS
 filterDoInternalRequest(
-    _In_ PMS_FILTER                   FilterModuleContext,
+    _In_ PLCXL_FILTER                   FilterModuleContext,
     _In_ NDIS_REQUEST_TYPE            RequestType,
     _In_ NDIS_OID                     Oid,
     _Inout_updates_bytes_to_(InformationBufferLength, *pBytesProcessed)
@@ -450,6 +638,30 @@ filterInternalRequestComplete(
     _In_ NDIS_STATUS                  Status
     );
 
+
+//添加代码
+///<summary>
+///是否路由此NBL，如果需要路由此NBL，返回路由信息，否则返回NULL
+///</summary>
+PLCXL_ROUTE_LIST_ENTRY IfRouteNBL(IN PLCXL_FILTER pFilter, IN PNDIS_ETH_HEADER pEthHeader, IN UINT BufferLength);
+
+
+///<summary>
+///获取路由信息项
+///</summary>
+PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry(IN PLCXL_FILTER pFilter, IN PIP_HEADER pIPHeader, IN PTCP_HEADER pTcpHeader);
+
+///<summary>
+//选择服务器
+///</summary>
+PSERVER_INFO_LIST_ENTRY SelectServer(IN PLCXL_FILTER pFilter, IN PIP_HEADER pIPHeader, IN PTCP_HEADER pTcpHeader);
+
+
+PLCXL_ROUTE_LIST_ENTRY CreateRouteListEntry(IN PLCXL_FILTER pFilter);
+void InitRouteListEntry(IN OUT PLCXL_ROUTE_LIST_ENTRY route_info, IN PIP_HEADER pIPHeader, IN PTCP_HEADER pTcpHeader, IN PSERVER_INFO_LIST_ENTRY server_info);
+
+
+//!添加代码!
 
 #endif  //_FILT_H
 

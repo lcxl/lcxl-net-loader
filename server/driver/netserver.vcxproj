@@ -65,8 +65,9 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{7D21AF72-2FA4-4C13-BE8A-8186604BE0D4}</ProjectGuid>
+    <ProjectGuid>{59140F08-0A67-4BF3-8929-91EDA87E3CD8}</ProjectGuid>
     <RootNamespace>$(MSBuildProjectName)</RootNamespace>
+    <ProjectName>netserver</ProjectName>
   </PropertyGroup>
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Win8 Debug|Win32'">
     <TargetVersion>Win8</TargetVersion>
@@ -158,7 +159,10 @@
   </ImportGroup>
   <ItemGroup Label="WrappedTaskItems" />
   <PropertyGroup>
-    <TargetName>ndislwf</TargetName>
+    <TargetName>netserver</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Vista Debug|Win32'">
+    <RunCodeAnalysis>true</RunCodeAnalysis>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
@@ -166,8 +170,8 @@
       <WarningLevel>Level4</WarningLevel>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);..;.</AdditionalIncludeDirectories>
       <PreprocessorDefinitions Condition="$(_NT_TARGET_VERSION)&lt;$(_NT_TARGET_VERSION_WIN7)">%(PreprocessorDefinitions);NDIS60=1</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="($(_NT_TARGET_VERSION)&lt;$(_NT_TARGET_VERSION_WIN8)) And (!($(_NT_TARGET_VERSION)&lt;$(_NT_TARGET_VERSION_WIN7)))">%(PreprocessorDefinitions);NDIS620=1</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="!(($(_NT_TARGET_VERSION)&lt;$(_NT_TARGET_VERSION_WIN8)) And (!($(_NT_TARGET_VERSION)&lt;$(_NT_TARGET_VERSION_WIN7))))">%(PreprocessorDefinitions);NDIS630=1</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="($(_NT_TARGET_VERSION)&lt;$(_NT_TARGET_VERSION_WIN8)) And (!($(_NT_TARGET_VERSION)&lt;$(_NT_TARGET_VERSION_WIN7)))">%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="!(($(_NT_TARGET_VERSION)&lt;$(_NT_TARGET_VERSION_WIN8)) And (!($(_NT_TARGET_VERSION)&lt;$(_NT_TARGET_VERSION_WIN7))))">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);NDIS_WDM=1</PreprocessorDefinitions>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);NDISLWF=1</PreprocessorDefinitions>
       <DisableSpecificWarnings>%(DisableSpecificWarnings);4201;4214</DisableSpecificWarnings>
@@ -175,16 +179,16 @@
     <ResourceCompile>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);..;.</AdditionalIncludeDirectories>
       <PreprocessorDefinitions Condition="$(_NT_TARGET_VERSION)&lt;$(_NT_TARGET_VERSION_WIN7)">%(PreprocessorDefinitions);NDIS60=1</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="($(_NT_TARGET_VERSION)&lt;$(_NT_TARGET_VERSION_WIN8)) And (!($(_NT_TARGET_VERSION)&lt;$(_NT_TARGET_VERSION_WIN7)))">%(PreprocessorDefinitions);NDIS620=1</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="!(($(_NT_TARGET_VERSION)&lt;$(_NT_TARGET_VERSION_WIN8)) And (!($(_NT_TARGET_VERSION)&lt;$(_NT_TARGET_VERSION_WIN7))))">%(PreprocessorDefinitions);NDIS630=1</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="($(_NT_TARGET_VERSION)&lt;$(_NT_TARGET_VERSION_WIN8)) And (!($(_NT_TARGET_VERSION)&lt;$(_NT_TARGET_VERSION_WIN7)))">%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="!(($(_NT_TARGET_VERSION)&lt;$(_NT_TARGET_VERSION_WIN8)) And (!($(_NT_TARGET_VERSION)&lt;$(_NT_TARGET_VERSION_WIN7))))">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);NDIS_WDM=1</PreprocessorDefinitions>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);NDISLWF=1</PreprocessorDefinitions>
     </ResourceCompile>
     <Midl>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);..;.</AdditionalIncludeDirectories>
       <PreprocessorDefinitions Condition="$(_NT_TARGET_VERSION)&lt;$(_NT_TARGET_VERSION_WIN7)">%(PreprocessorDefinitions);NDIS60=1</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="($(_NT_TARGET_VERSION)&lt;$(_NT_TARGET_VERSION_WIN8)) And (!($(_NT_TARGET_VERSION)&lt;$(_NT_TARGET_VERSION_WIN7)))">%(PreprocessorDefinitions);NDIS620=1</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="!(($(_NT_TARGET_VERSION)&lt;$(_NT_TARGET_VERSION_WIN8)) And (!($(_NT_TARGET_VERSION)&lt;$(_NT_TARGET_VERSION_WIN7))))">%(PreprocessorDefinitions);NDIS630=1</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="($(_NT_TARGET_VERSION)&lt;$(_NT_TARGET_VERSION_WIN8)) And (!($(_NT_TARGET_VERSION)&lt;$(_NT_TARGET_VERSION_WIN7)))">%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="!(($(_NT_TARGET_VERSION)&lt;$(_NT_TARGET_VERSION_WIN8)) And (!($(_NT_TARGET_VERSION)&lt;$(_NT_TARGET_VERSION_WIN7))))">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);NDIS_WDM=1</PreprocessorDefinitions>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);NDISLWF=1</PreprocessorDefinitions>
     </Midl>
@@ -196,6 +200,7 @@
     <ClCompile>
       <ExceptionHandling>
       </ExceptionHandling>
+      <EnablePREfast Condition="'$(Configuration)|$(Platform)'=='Vista Debug|Win32'">true</EnablePREfast>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
