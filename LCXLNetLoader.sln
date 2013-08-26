@@ -7,7 +7,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "package", "loader\driver\Pa
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ndisprot60", "wdk_sample\NDIS Connection-less Protocol Driver Sample\C++\sys\60\ndisprot60.vcxproj", "{92E567C1-EF36-496E-B86D-EB8D0E5D9EA1}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCXLNetLoaderService", "loader\app\LCXLNetLoaderService.vcxproj", "{BCD8F0B6-712D-4474-959A-634E08E5B7E7}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LCXLNetLoaderService", "loader\service\LCXLNetLoaderService.vcxproj", "{BCD8F0B6-712D-4474-959A-634E08E5B7E7}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lcxl_iocp", "component\lcxl_iocp\lcxl_iocp.vcxproj", "{1C484C62-698D-4B07-A646-E14F4381C8A7}"
 EndProject
