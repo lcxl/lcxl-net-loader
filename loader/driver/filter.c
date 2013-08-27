@@ -2194,7 +2194,7 @@ PLCXL_ROUTE_LIST_ENTRY IfRouteNBL(IN PLCXL_FILTER pFilter, IN PNDIS_ETH_HEADER p
     }
 
     switch(*pEthType) {
-    case NDIS_IPV4://IPv4协议
+    case ETHERNET_IPV4://IPv4协议
         if (BufferLength>=sizeof(IP_HEADER)){
             PIP_HEADER pIPHeader;
 
@@ -2257,7 +2257,7 @@ PLCXL_ROUTE_LIST_ENTRY IfRouteNBL(IN PLCXL_FILTER pFilter, IN PNDIS_ETH_HEADER p
 			}			
         }
         break;
-    case NDIS_IPV6://IPv6协议
+    case ETHERNET_IPV6://IPv6协议
 		break;
     default:
         break;

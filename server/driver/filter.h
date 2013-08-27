@@ -277,8 +277,11 @@ ULONG_PTR    filterLogSendRef[0x10000];
 #define NDIS_MAC_ADDR_LEN            6
 
 #define NDIS_8021P_TAG_TYPE         0x0081
-#define NDIS_IPV4                   0x0008
-#define NDIS_IPV6					0x86DD
+#define ETHERNET_IPV4               0x0008
+#define ETHERNET_IPV6				0x86DD
+#define	ETHERNET_ARP	            0x0608		// 本机序列
+
+
 #include <pshpack1.h>
 
 typedef struct _NDIS_ETH_HEADER
@@ -374,6 +377,34 @@ typedef struct udp_header
 }UDP_HEADER,*PUDP_HEADER;
 #pragma push()
 
+//ARP
+#define	ARP_QUERY		0x0100		// 本机序列
+#define	ARP_REPLY		0x0200		// 本机序列
+
+#define	RARP_QUERY		0x0300		// 本机序列
+#define	RARP_REPLY		0x0400		// 本机序列
+
+#pragma push(1)
+//ARP数据包
+typedef struct _ARP_PACKET
+{
+	//ARP Packet
+	USHORT		HardwareType;			// 0x1				// 2
+	USHORT		ProtocolType;			// ntohs(0x800)		// 4
+
+	UCHAR		HardwareSize;			// 6 Mac 地址长度	// 5
+	UCHAR		ProtocolSize;			// 4 IPV4长度		// 6
+
+	USHORT		OperateCode;			// 1 Query  , 2 Reply	//	8
+
+	UCHAR		SourceMacAddress[6];	// 发出包的物理地址		//	14
+	UCHAR		SourceIPAddress[4];		// 发出包的源地址		//	18
+
+	UCHAR		DestMacAddress[6];		// 目的地址(Query 操作时全为0,Repley时为请求的物理地址	// 24
+	UCHAR		DestIPAddress[4];		// 目的IP地址			//  28
+
+} ARP_PACKET, *PARP_PACKET;
+#pragma push()
 
 #define IP_OFFSET                               0x0E
 
@@ -406,10 +437,8 @@ typedef struct _SERVER_STATUS
 } SERVER_STATUS, PSERVER_STATUS;
 
 //服务器信息
-typedef struct _SERVER_INFO_LIST_ENTRY
+typedef struct _SERVER_INFO
 {
-	//列表项
-	LIST_ENTRY		list_entry;
 	//IP
 	//真实的IP地址
 	struct in_addr	ia_real_ip;
@@ -419,7 +448,7 @@ typedef struct _SERVER_INFO_LIST_ENTRY
 	UCHAR			cur_mac_addr[NDIS_MAX_PHYS_ADDRESS_LENGTH];
     //服务器状态
     SERVER_STATUS   server_status;
-} SERVER_INFO_LIST_ENTRY, *PSERVER_INFO_LIST_ENTRY;
+} SERVER_INFO, *PSERVER_INFO;
 
 #define RS_NONE     0x00
 
@@ -432,17 +461,16 @@ typedef struct _SERVER_INFO_LIST_ENTRY
 //连接已关闭
 #define RS_CLOSED   0x03
 //路由信息
-typedef struct _LCXL_ROUTE_LIST_ENTRY
+typedef struct _LOADER_INFO
 {
-	LIST_ENTRY		        list_entry;		//列表项
-    int                     status;         //状态
 	//IP
-	struct in_addr	        ia_src;			//源IP地址
-	//TCP
-	unsigned short	        src_port;		//源端口号
-	unsigned short	        dst_port;		//目的端口号
-	PSERVER_INFO_LIST_ENTRY dst_server;	    //目标服务器
-} LCXL_ROUTE_LIST_ENTRY, *PLCXL_ROUTE_LIST_ENTRY;
+	//真实的IP地址
+	struct in_addr	ia_real_ip;
+	//MAC地址
+	UCHAR			cur_mac_addr[NDIS_MAX_PHYS_ADDRESS_LENGTH];
+    //服务器状态
+    SERVER_STATUS   server_status;
+} LOADER_INFO, *PLOADER_INFO;
 //!添加代码!
 //
 // Enum of filter's states
@@ -512,16 +540,12 @@ typedef struct _LCXL_FILTER
     //添加的代码
     //虚拟IP
 	struct in_addr					ia_virtual_ip;
-	//服务器列表
-	SERVER_INFO_LIST_ENTRY			server_list;
-	//路由信息
-	LCXL_ROUTE_LIST_ENTRY			route_list;
+	//服务器信息
+	SERVER_INFO			            server_info;
+	//分发器信息
+	LOADER_INFO                     route_info;
     //NBL发送池
-    NDIS_HANDLE                     SendNetBufferListPool;  
-    //MAC地址长度
-    USHORT                          mac_addr_len;
-    //MAC地址
-    UCHAR                           cur_mac_addr[NDIS_MAX_PHYS_ADDRESS_LENGTH];
+    NDIS_HANDLE                     SendNetBufferListPool;
     //!添加的代码!
 }LCXL_FILTER, * PLCXL_FILTER;
 
@@ -643,22 +667,7 @@ filterInternalRequestComplete(
 ///<summary>
 ///是否路由此NBL，如果需要路由此NBL，返回路由信息，否则返回NULL
 ///</summary>
-PLCXL_ROUTE_LIST_ENTRY IfRouteNBL(IN PLCXL_FILTER pFilter, IN PNDIS_ETH_HEADER pEthHeader, IN UINT BufferLength);
-
-
-///<summary>
-///获取路由信息项
-///</summary>
-PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry(IN PLCXL_FILTER pFilter, IN PIP_HEADER pIPHeader, IN PTCP_HEADER pTcpHeader);
-
-///<summary>
-//选择服务器
-///</summary>
-PSERVER_INFO_LIST_ENTRY SelectServer(IN PLCXL_FILTER pFilter, IN PIP_HEADER pIPHeader, IN PTCP_HEADER pTcpHeader);
-
-
-PLCXL_ROUTE_LIST_ENTRY CreateRouteListEntry(IN PLCXL_FILTER pFilter);
-void InitRouteListEntry(IN OUT PLCXL_ROUTE_LIST_ENTRY route_info, IN PIP_HEADER pIPHeader, IN PTCP_HEADER pTcpHeader, IN PSERVER_INFO_LIST_ENTRY server_info);
+BOOLEAN IfReturnNBL(IN PLCXL_FILTER pFilter, IN PNDIS_ETH_HEADER pEthHeader, IN UINT BufferLength);
 
 
 //!添加代码!

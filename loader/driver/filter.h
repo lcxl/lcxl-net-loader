@@ -277,8 +277,8 @@ ULONG_PTR    filterLogSendRef[0x10000];
 #define NDIS_MAC_ADDR_LEN            6
 
 #define NDIS_8021P_TAG_TYPE         0x0081
-#define NDIS_IPV4                   0x0008
-#define NDIS_IPV6					0x86DD
+#define ETHERNET_IPV4                   0x0008
+#define ETHERNET_IPV6					0x86DD
 #include <pshpack1.h>
 
 typedef struct _NDIS_ETH_HEADER
