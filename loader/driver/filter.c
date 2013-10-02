@@ -1684,7 +1684,7 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 			UINT                BufferLength;
             ULONG               TotalLength;
             ULONG               Offset;
-            PNDIS_ETH_HEADER    pEthHeader = NULL;
+            PETHERNET_HEADER    pEthHeader = NULL;
 
 			pMdl = NET_BUFFER_CURRENT_MDL(NET_BUFFER_LIST_FIRST_NB(pNextNBL));
 			TotalLength = NET_BUFFER_DATA_LENGTH(NET_BUFFER_LIST_FIRST_NB(pNextNBL));
@@ -1704,12 +1704,12 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
                 //获取真正的的包数据
                 BufferLength -= Offset;
                 //获取帧数据头
-                pEthHeader = (PNDIS_ETH_HEADER)((PUCHAR)pEthHeader + Offset);
+                pEthHeader = (PETHERNET_HEADER)((PUCHAR)pEthHeader + Offset);
                 
                 pRouteListEntry = IfRouteNBL(pFilter, pEthHeader, BufferLength);
                 //如果需要路由的话
                 if (pRouteListEntry!=NULL) {
-                    PNDIS_ETH_HEADER    pSendBuffer;
+                    PETHERNET_HEADER    pSendBuffer;
                     PMDL                pMdl = NULL;
                     PNET_BUFFER_LIST    tmpNBL;
                     ULONG               BytesCopied;
@@ -1728,7 +1728,7 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
                         }
                     }
 
-                    pSendBuffer = (PNDIS_ETH_HEADER)FILTER_ALLOC_MEM(pFilter->FilterHandle, BufferLength);
+                    pSendBuffer = (PETHERNET_HEADER)FILTER_ALLOC_MEM(pFilter->FilterHandle, BufferLength);
                     pMdl = NdisAllocateMdl(pFilter->FilterHandle, pSendBuffer, BufferLength);
                     tmpNBL = NdisAllocateNetBufferAndNetBufferList(
                         pFilter->SendNetBufferListPool,
@@ -1749,7 +1749,7 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 
                     tmpNBL->SourceHandle = pFilter->FilterHandle;
                     //修改目标MAC地址
-                    RtlCopyMemory(pSendBuffer->DstAddr, pRouteListEntry->dst_server->cur_mac_addr, sizeof(pEthHeader->DstAddr));
+                    RtlCopyMemory(&pSendBuffer->Destination, pRouteListEntry->dst_server->cur_mac_addr, sizeof(pEthHeader->Destination));
                     //
                     // The other members of NET_BUFFER_DATA structure are already initialized properly during allocation.
                     //
@@ -2168,55 +2168,57 @@ Return Value:
     NdisSetEvent(&FilterRequest->ReqEvent);
 }
 
-PLCXL_ROUTE_LIST_ENTRY IfRouteNBL(IN PLCXL_FILTER pFilter, IN PNDIS_ETH_HEADER pEthHeader, IN UINT BufferLength)
+PLCXL_ROUTE_LIST_ENTRY IfRouteNBL(IN PLCXL_FILTER pFilter, IN PETHERNET_HEADER pEthHeader, IN UINT BufferLength)
 {
     USHORT UNALIGNED *pEthType = NULL;
-
-    if (BufferLength < sizeof(NDIS_ETH_HEADER)) {
+	USHORT EthType;
+    if (BufferLength < sizeof(ETHERNET_HEADER)) {
         return NULL;
     }
-          
+    EthType = ntohs(pEthHeader->Type);
     //判断帧类型是不是8021P_TAG
-    if (pEthHeader->EthType == NDIS_8021P_TAG_TYPE) {
-        if (BufferLength >= sizeof(NDIS_ETH_HEADER)+4) {
-            pEthType = (USHORT UNALIGNED *)((PUCHAR)&pEthHeader->EthType + 4);
-            BufferLength -= sizeof(NDIS_ETH_HEADER)+4;
+    if (EthType == ETHERNET_TYPE_802_1Q) {
+        if (BufferLength >= sizeof(ETHERNET_HEADER)+4) {
+            pEthType = (USHORT UNALIGNED *)((PUCHAR)&pEthHeader->Type + 4);
+            BufferLength -= sizeof(ETHERNET_HEADER)+4;
          } else {
             //缺代码
              return NULL;
          }
     } else {
-         pEthType = &pEthHeader->EthType;
-         BufferLength -= sizeof(NDIS_ETH_HEADER);
+         pEthType = &pEthHeader->Type;
+		 EthType = ntohs(pEthHeader->Type);
+         BufferLength -= sizeof(ETHERNET_HEADER);
     }
     if (pEthType == NULL) {
         return NULL;
     }
 
-    switch(*pEthType) {
-    case ETHERNET_IPV4://IPv4协议
-        if (BufferLength>=sizeof(IP_HEADER)){
-            PIP_HEADER pIPHeader;
+    switch(EthType) {
+    case ETHERNET_TYPE_IPV4://IPv4协议
+        if (BufferLength>=sizeof(IPV4_HEADER)){
+            PIPV4_HEADER pIPHeader;
 
-            pIPHeader = (PIP_HEADER)((PUCHAR)pEthType+sizeof(USHORT));
+            pIPHeader = (PIPV4_HEADER)((PUCHAR)pEthType+sizeof(USHORT));
 			//查看数据包的目标IP是否是虚拟IP
-			if (RtlCompareMemory(&pIPHeader->iaDst, &pFilter->ia_virtual_ip, sizeof(struct in_addr))==sizeof(struct in_addr)) {
+			if (RtlCompareMemory(&pIPHeader->DestinationAddress, &pFilter->ia_virtual_ip, sizeof(IN_ADDR))==sizeof(IN_ADDR)) {
 				//pIPHeader->iaDst
+				
 				switch (pIPHeader->Protocol) {
-				case PROT_ICMP:
+				case 0x01://ICMP 
 
 					break;
-				case PROT_TCP:
+				case 0x06://TCP
                     //目前仅支持TCP
                     {
-                        PTCP_HEADER ptcp_header;
+                        PTCP_HDR ptcp_header;
                         PLCXL_ROUTE_LIST_ENTRY route_info;
 
-                        ptcp_header = (PTCP_HEADER)((PUCHAR)pIPHeader+sizeof(TCP_HEADER));
+                        ptcp_header = (PTCP_HDR)((PUCHAR)pIPHeader+sizeof(PTCP_HDR));
                         route_info = GetRouteListEntry(pFilter, pIPHeader, ptcp_header);
                         //建立连接的阶段
                         //有TH_SYN的阶段是建立连接的阶段，这个时候就得选择路由信息
-                        if ((ptcp_header->flag & TH_SYN) != 0) {
+                        if ((ptcp_header->th_flags & TH_SYN) != 0) {
                                 
                             PSERVER_INFO_LIST_ENTRY server;
 
@@ -2233,13 +2235,13 @@ PLCXL_ROUTE_LIST_ENTRY IfRouteNBL(IN PLCXL_FILTER pFilter, IN PNDIS_ETH_HEADER p
                         } else {
                             if (route_info!=NULL) {
                                 //如果客户端发出ACK包并且连接处于LAST_ACK状态，则更改状态为CLOSE
-                                if ((ptcp_header->flag & TH_ACK) !=0 && (route_info->status == RS_LAST_ACK)) {
+                                if ((ptcp_header->th_flags & TH_ACK) !=0 && (route_info->status == RS_LAST_ACK)) {
                                     route_info->status = RS_CLOSED;
-                                } else if ((ptcp_header->flag & TH_FIN) !=0) {
+                                } else if ((ptcp_header->th_flags & TH_FIN) !=0) {
                                     //如果客户端通知连接要关闭
                                      //更改路由状态为LAST_ACK
                                     route_info->status = RS_LAST_ACK;
-                                } else if ((ptcp_header->flag & TH_RST) !=0) {
+                                } else if ((ptcp_header->th_flags & TH_RST) !=0) {
                                     //如果连接重置，直接关闭连接
                                     route_info->status = RS_CLOSED;
                                 }
@@ -2249,15 +2251,18 @@ PLCXL_ROUTE_LIST_ENTRY IfRouteNBL(IN PLCXL_FILTER pFilter, IN PNDIS_ETH_HEADER p
                         return route_info;
                     }
 					break;
-					case PROT_UDP:
-						break;
-					default:
-						break;
+				case 0x11://PROT_UDP
+					break;
+				default:
+					break;
 				}
 			}			
         }
         break;
-    case ETHERNET_IPV6://IPv6协议
+	case ETHERNET_TYPE_ARP:
+		//ARP_OPCODE  ARP_REQUEST  ARP_RESPONSE
+		break;
+    case ETHERNET_TYPE_IPV6://IPv6协议
 		break;
     default:
         break;
@@ -2265,7 +2270,7 @@ PLCXL_ROUTE_LIST_ENTRY IfRouteNBL(IN PLCXL_FILTER pFilter, IN PNDIS_ETH_HEADER p
     return NULL;
 }
 
-PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry(IN PLCXL_FILTER pFilter, IN PIP_HEADER pIPHeader, IN PTCP_HEADER pTcpHeader)
+PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry(IN PLCXL_FILTER pFilter, IN PIPV4_HEADER pIPHeader, IN PTCP_HDR pTcpHeader)
 {
     //pFilter->route_list.
     PLIST_ENTRY Link = pFilter->route_list.list_entry.Flink;
@@ -2275,7 +2280,7 @@ PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry(IN PLCXL_FILTER pFilter, IN PIP_HEADER 
     {
         route_info = CONTAINING_RECORD(Link, LCXL_ROUTE_LIST_ENTRY, list_entry);
         //查看是否匹配
-        if (RtlCompareMemory(&route_info->ia_src, &pIPHeader->iaSrc, sizeof(pIPHeader->iaSrc)) == sizeof(pIPHeader->iaSrc) && route_info->src_port == pTcpHeader->src_port && route_info->dst_port == pTcpHeader->dst_port ) {
+        if (RtlCompareMemory(&route_info->ia_src, &pIPHeader->SourceAddress, sizeof(pIPHeader->SourceAddress)) == sizeof(pIPHeader->SourceAddress) && route_info->src_port == pTcpHeader->th_sport && route_info->dst_port == pTcpHeader->th_dport ) {
             return route_info;
         }
         Link = Link->Flink;
@@ -2294,7 +2299,7 @@ PLCXL_ROUTE_LIST_ENTRY CreateRouteListEntry(IN PLCXL_FILTER pFilter)
     return route_info;
 }
 
-void InitRouteListEntry(IN OUT PLCXL_ROUTE_LIST_ENTRY route_info, IN PIP_HEADER pIPHeader, IN PTCP_HEADER pTcpHeader, IN PSERVER_INFO_LIST_ENTRY server_info)
+void InitRouteListEntry(IN OUT PLCXL_ROUTE_LIST_ENTRY route_info, IN PIPV4_HEADER pIPHeader, IN PTCP_HDR pTcpHeader, IN PSERVER_INFO_LIST_ENTRY server_info)
 {
     ASSERT(route_info!=NULL);
     ASSERT(pIPHeader!=NULL);
@@ -2303,12 +2308,12 @@ void InitRouteListEntry(IN OUT PLCXL_ROUTE_LIST_ENTRY route_info, IN PIP_HEADER 
 
     route_info->status = RS_NORMAL;
     route_info->dst_server = server_info;
-    route_info->dst_port = pTcpHeader->dst_port;
-    route_info->src_port = pTcpHeader->src_port;
-    route_info->ia_src = pIPHeader->iaSrc;
+    route_info->dst_port = pTcpHeader->th_dport;
+    route_info->src_port = pTcpHeader->th_sport;
+    route_info->ia_src = pIPHeader->SourceAddress;
 }
 
-PSERVER_INFO_LIST_ENTRY SelectServer(IN PLCXL_FILTER pFilter, IN PIP_HEADER pIPHeader, IN PTCP_HEADER pTcpHeader)
+PSERVER_INFO_LIST_ENTRY SelectServer(IN PLCXL_FILTER pFilter, IN PIPV4_HEADER pIPHeader, IN PTCP_HDR pTcpHeader)
 {
     //pFilter->route_list.
     PLIST_ENTRY Link = pFilter->server_list.list_entry.Flink;

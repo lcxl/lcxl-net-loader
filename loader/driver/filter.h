@@ -15,6 +15,7 @@ Notes:
 --*/
 #ifndef _FILT_H
 #define _FILT_H
+#include "../common/driver/lcxl_net.h"
 
 #pragma warning(disable:28930) // Unused assignment of pointer, by design in samples
 #pragma warning(disable:28931) // Unused assignment of variable, by design in samples
@@ -271,118 +272,6 @@ ULONG_PTR    filterLogSendRef[0x10000];
     }
 
 //添加代码
-//数据链路层
-
-
-#define NDIS_MAC_ADDR_LEN            6
-
-#define NDIS_8021P_TAG_TYPE         0x0081
-#define ETHERNET_IPV4                   0x0008
-#define ETHERNET_IPV6					0x86DD
-#include <pshpack1.h>
-
-typedef struct _NDIS_ETH_HEADER
-{
-	UCHAR       DstAddr[NDIS_MAC_ADDR_LEN];
-	UCHAR       SrcAddr[NDIS_MAC_ADDR_LEN];
-	USHORT      EthType;
-
-} NDIS_ETH_HEADER;
-
-typedef struct _NDIS_ETH_HEADER UNALIGNED * PNDIS_ETH_HEADER;
-
-#include <poppack.h>
-
-//TCP/IP协议有关的结构
-
-#ifndef s_addr
-typedef struct in_addr {
-	union {
-		struct { UCHAR s_b1,s_b2,s_b3,s_b4; } S_un_b;
-		struct { USHORT s_w1,s_w2; } S_un_w;
-		ULONG S_addr;
-	} S_un;
-} IN_ADDR, *PIN_ADDR, FAR *LPIN_ADDR;
-#endif
-
-#pragma push(1)
-typedef struct IP_HEADER
-{
-
-#if LITTLE_ENDIAN
-	unsigned char  ip_hl:4;    /* 头长度 */
-	unsigned char  ip_v:4;      /* 版本号 */
-#else
-	unsigned char   ip_v:4;
-	unsigned char   ip_hl:4;     
-#endif
-
-	unsigned char  TOS;           // 服务类型
-
-	unsigned short   TotLen;      // 封包总长度，即整个IP包的长度
-	unsigned short   ID;          // 封包标识，唯一标识发送的每一个数据报
-	unsigned short   FlagOff;     // 标志
-	unsigned char  TTL;           // 生存时间，就是TTL
-	unsigned char  Protocol;      // 协议，可能是TCP、UDP、ICMP等
-	unsigned short Checksum;      // 校验和
-	struct in_addr        iaSrc;  // 源IP地址
-	struct in_addr        iaDst;  // 目的PI地址
-
-}IP_HEADER, *PIP_HEADER;
-
-
-typedef struct tcp_header
-{
-	unsigned short src_port;    //源端口号
-	unsigned short dst_port;    //目的端口号
-	unsigned int   seq_no;      //序列号
-	unsigned int   ack_no;      //确认号
-#if LITTLE_ENDIAN
-	unsigned char reserved_1:4; //保留6位中的4位首部长度
-	unsigned char thl:4;    //tcp头部长度
-	unsigned char flag:6;  //6位标志
-	unsigned char reseverd_2:2; //保留6位中的2位
-#else
-	unsigned char thl:4;    //tcp头部长度
-	unsigned char reserved_1:4; //保留6位中的4位首部长度
-	unsigned char reseverd_2:2; //保留6位中的2位
-	unsigned char flag:6;  //6位标志 
-#endif
-	unsigned short wnd_size;   //16位窗口大小
-	unsigned short chk_sum;    //16位TCP检验和
-	unsigned short urgt_p;     //16为紧急指针
-
-}TCP_HEADER,*PTCP_HEADER;
-
-#define TH_FIN  0x01
-#define TH_SYN  0x02
-#define TH_RST  0x04
-#define TH_PUSH 0x08
-#define TH_ACK  0x10
-#define TH_URG  0x20
-#define TH_ECE  0x40
-#define TH_CWR  0x80
-#define TH_FLAGS        (TH_FIN|TH_SYN|TH_RST|TH_ACK|TH_URG|TH_ECE|TH_CWR)
-
-typedef struct udp_header 
-{
-	USHORT srcport;   // 源端口
-	USHORT dstport;   // 目的端口
-	USHORT total_len; // 包括UDP报头及UDP数据的长度(单位:字节)
-	USHORT chksum;    // 校验和
-
-}UDP_HEADER,*PUDP_HEADER;
-#pragma push()
-
-
-#define IP_OFFSET                               0x0E
-
-//IP 协议类型
-#define PROT_ICMP                               0x01 
-#define PROT_TCP                                0x06 
-#define PROT_UDP                                0x11 
-//!添加代码!
-//添加代码
 
 //服务器处于启用状态
 #define SS_ENABLED 0x01
@@ -437,7 +326,7 @@ typedef struct _LCXL_ROUTE_LIST_ENTRY
 	LIST_ENTRY		        list_entry;		//列表项
     int                     status;         //状态
 	//IP
-	struct in_addr	        ia_src;			//源IP地址
+	IN_ADDR			        ia_src;			//源IP地址
 	//TCP
 	unsigned short	        src_port;		//源端口号
 	unsigned short	        dst_port;		//目的端口号
@@ -511,7 +400,7 @@ typedef struct _LCXL_FILTER
     PNDIS_OID_REQUEST               PendingOidRequest;
     //添加的代码
     //虚拟IP
-	struct in_addr					ia_virtual_ip;
+	IN_ADDR							ia_virtual_ip;
 	//服务器列表
 	SERVER_INFO_LIST_ENTRY			server_list;
 	//路由信息
@@ -643,22 +532,22 @@ filterInternalRequestComplete(
 ///<summary>
 ///是否路由此NBL，如果需要路由此NBL，返回路由信息，否则返回NULL
 ///</summary>
-PLCXL_ROUTE_LIST_ENTRY IfRouteNBL(IN PLCXL_FILTER pFilter, IN PNDIS_ETH_HEADER pEthHeader, IN UINT BufferLength);
+PLCXL_ROUTE_LIST_ENTRY IfRouteNBL(IN PLCXL_FILTER pFilter, IN PETHERNET_HEADER pEthHeader, IN UINT BufferLength);
 
 
 ///<summary>
 ///获取路由信息项
 ///</summary>
-PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry(IN PLCXL_FILTER pFilter, IN PIP_HEADER pIPHeader, IN PTCP_HEADER pTcpHeader);
+PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry(IN PLCXL_FILTER pFilter, IN PIPV4_HEADER pIPHeader, IN PTCP_HDR pTcpHeader);
 
 ///<summary>
 //选择服务器
 ///</summary>
-PSERVER_INFO_LIST_ENTRY SelectServer(IN PLCXL_FILTER pFilter, IN PIP_HEADER pIPHeader, IN PTCP_HEADER pTcpHeader);
+PSERVER_INFO_LIST_ENTRY SelectServer(IN PLCXL_FILTER pFilter, IN PIPV4_HEADER pIPHeader, IN PTCP_HDR pTcpHeader);
 
 
 PLCXL_ROUTE_LIST_ENTRY CreateRouteListEntry(IN PLCXL_FILTER pFilter);
-void InitRouteListEntry(IN OUT PLCXL_ROUTE_LIST_ENTRY route_info, IN PIP_HEADER pIPHeader, IN PTCP_HEADER pTcpHeader, IN PSERVER_INFO_LIST_ENTRY server_info);
+void InitRouteListEntry(IN OUT PLCXL_ROUTE_LIST_ENTRY route_info, IN PIPV4_HEADER pIPHeader, IN PTCP_HDR pTcpHeader, IN PSERVER_INFO_LIST_ENTRY server_info);
 
 
 //!添加代码!

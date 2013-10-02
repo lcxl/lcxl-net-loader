@@ -36,6 +36,21 @@
     <ClInclude Include="filter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="filter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="filteruser.h" />
+    <ClInclude Include="flt_dbg.h" />
+    <ClInclude Include="precomp.h" />
+    <ClInclude Include="filter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="filteruser.h" />
+    <ClInclude Include="flt_dbg.h" />
+    <ClInclude Include="precomp.h" />
+    <ClInclude Include="filter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="filteruser.h" />
     <ClInclude Include="flt_dbg.h" />
     <ClInclude Include="precomp.h" />
@@ -57,6 +72,18 @@
     <ClInclude Include="filteruser.h" />
     <ClInclude Include="flt_dbg.h" />
     <ClInclude Include="precomp.h" />
+    <ClInclude Include="filteruser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="flt_dbg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="precomp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\common\driver\lcxl_net.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="filter.rc">

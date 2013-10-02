@@ -1688,7 +1688,7 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 			UINT                BufferLength;
             ULONG               TotalLength;
             ULONG               Offset;
-            PNDIS_ETH_HEADER    pEthHeader = NULL;
+            PETHERNET_HEADER    pEthHeader = NULL;
 
 			pMdl = NET_BUFFER_CURRENT_MDL(NET_BUFFER_LIST_FIRST_NB(pNextNBL));
 			TotalLength = NET_BUFFER_DATA_LENGTH(NET_BUFFER_LIST_FIRST_NB(pNextNBL));
@@ -1708,12 +1708,12 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
                 //获取真正的的包数据
                 BufferLength -= Offset;
                 //获取帧数据头
-                pEthHeader = (PNDIS_ETH_HEADER)((PUCHAR)pEthHeader + Offset);
+                pEthHeader = (PETHERNET_HEADER)((PUCHAR)pEthHeader + Offset);
                 
                 pRouteListEntry = IfReturnNBL(pFilter, pEthHeader, BufferLength);
                 //如果需要路由的话
                 if (pRouteListEntry!=NULL) {
-                    PNDIS_ETH_HEADER    pSendBuffer;
+                    PETHERNET_HEADER    pSendBuffer;
                     PMDL                pMdl = NULL;
                     PNET_BUFFER_LIST    tmpNBL;
                     ULONG               BytesCopied;
@@ -1732,7 +1732,7 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
                         }
                     }
 
-                    pSendBuffer = (PNDIS_ETH_HEADER)FILTER_ALLOC_MEM(pFilter->FilterHandle, BufferLength);
+                    pSendBuffer = (PETHERNET_HEADER)FILTER_ALLOC_MEM(pFilter->FilterHandle, BufferLength);
                     pMdl = NdisAllocateMdl(pFilter->FilterHandle, pSendBuffer, BufferLength);
                     tmpNBL = NdisAllocateNetBufferAndNetBufferList(
                         pFilter->SendNetBufferListPool,
@@ -1753,7 +1753,7 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 
                     tmpNBL->SourceHandle = pFilter->FilterHandle;
                     //修改目标MAC地址
-                    RtlCopyMemory(pSendBuffer->DstAddr, pRouteListEntry->dst_server->cur_mac_addr, sizeof(pEthHeader->DstAddr));
+                    RtlCopyMemory(&pSendBuffer->Destination, pRouteListEntry->dst_server->cur_mac_addr, sizeof(pEthHeader->Destination));
                     //
                     // The other members of NET_BUFFER_DATA structure are already initialized properly during allocation.
                     //

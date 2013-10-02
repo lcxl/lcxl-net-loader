@@ -240,7 +240,11 @@
     <None Exclude="@(None)" Include="*.def;*.bat;*.hpj;*.asmx" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Exclude="@(ClInclude)" Include="*.h;*.hpp;*.hxx;*.hm;*.inl;*.xsd" />
+    <ClInclude Include="..\..\common\driver\lcxl_net.h" />
+    <ClInclude Include="filter.h" />
+    <ClInclude Include="filteruser.h" />
+    <ClInclude Include="flt_dbg.h" />
+    <ClInclude Include="precomp.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>

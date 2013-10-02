@@ -231,17 +231,17 @@ FilterDeviceIoControl(
             }
             break;
 		//添加代码
-		case IOCTL_LOADER_ALL_NET_IFINDEX:
+		case IOCTL_SERVER_ALL_NET_IFINDEX:
 			break;
-		case IOCTL_LOADER_GET_VIRTUAL_IP:
+		case IOCTL_SERVER_GET_VIRTUAL_IP:
 			break;
-		case IOCTL_LOADER_SET_VIRTUAL_IP:
+		case IOCTL_SERVER_SET_VIRTUAL_IP:
 			break;
-		case IOCTL_LOADER_GET_SERVER_LIST:
+		case IOCTL_SERVER_GET_SERVER_LIST:
 			break;
-		case IOCTL_LOADER_ADD_SERVER:
+		case IOCTL_SERVER_ADD_SERVER:
 			break;
-		case IOCTL_LOADER_DEL_SERVER:
+		case IOCTL_SERVER_DEL_SERVER:
 			break;
 		//!添加代码!
         default:
