@@ -2168,6 +2168,59 @@ Return Value:
     NdisSetEvent(&FilterRequest->ReqEvent);
 }
 
+PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER pFilter, IN INT ipMode, IN LPVOID pIPHeader) 
+{
+	PTCP_HDR ptcp_header = NULL;
+	PLCXL_ROUTE_LIST_ENTRY route_info;
+
+	switch (ipMode) {
+	case IM_IPV4:
+		ptcp_header = (PTCP_HDR)((PUCHAR)pIPHeader + sizeof(IPV4_HEADER));
+	case IM_IPV6:
+		ptcp_header = (PTCP_HDR)((PUCHAR)pIPHeader + sizeof(IPV6_HEADER));
+	default:
+		ASSERT(FALSE);
+		break;
+	}
+	route_info = GetRouteListEntry(pFilter, ipMode, pIPHeader, ptcp_header);
+	//建立连接的阶段
+	//有TH_SYN的阶段是建立连接的阶段，这个时候就得选择路由信息
+	if ((ptcp_header->th_flags & TH_SYN) != 0) {
+
+		PSERVER_INFO_LIST_ENTRY server;
+
+		//选择一个服务器
+		server = SelectServer(pFilter, ipMode, pIPHeader, ptcp_header);
+		if (server == NULL) {
+			return NULL;
+		}
+		if (route_info == NULL) {
+			route_info = CreateRouteListEntry(pFilter);
+		}
+		//初始化路由信息
+		InitRouteListEntry(route_info, ipMode, pIPHeader, ptcp_header, server);
+	}
+	else {
+		if (route_info != NULL) {
+			//如果客户端发出ACK包并且连接处于LAST_ACK状态，则更改状态为CLOSE
+			if ((ptcp_header->th_flags & TH_ACK) != 0 && (route_info->status == RS_LAST_ACK)) {
+				route_info->status = RS_CLOSED;
+			}
+			else if ((ptcp_header->th_flags & TH_FIN) != 0) {
+				//如果客户端通知连接要关闭
+				//更改路由状态为LAST_ACK
+				route_info->status = RS_LAST_ACK;
+			}
+			else if ((ptcp_header->th_flags & TH_RST) != 0) {
+				//如果连接重置，直接关闭连接
+				route_info->status = RS_CLOSED;
+			}
+		}
+	}
+
+	return route_info;
+}
+
 PLCXL_ROUTE_LIST_ENTRY IfRouteNBL(IN PLCXL_FILTER pFilter, IN PETHERNET_HEADER pEthHeader, IN UINT BufferLength)
 {
     USHORT UNALIGNED *pEthType = NULL;
@@ -2201,7 +2254,7 @@ PLCXL_ROUTE_LIST_ENTRY IfRouteNBL(IN PLCXL_FILTER pFilter, IN PETHERNET_HEADER p
 
             pIPHeader = (PIPV4_HEADER)((PUCHAR)pEthType+sizeof(USHORT));
 			//查看数据包的目标IP是否是虚拟IP
-			if (RtlCompareMemory(&pIPHeader->DestinationAddress, &pFilter->ia_virtual_ip, sizeof(IN_ADDR))==sizeof(IN_ADDR)) {
+			if (RtlCompareMemory(&pIPHeader->DestinationAddress, &pFilter->virtual_ipv4, sizeof(pIPHeader->DestinationAddress)) == sizeof(pIPHeader->DestinationAddress)) {
 				//pIPHeader->iaDst
 				
 				switch (pIPHeader->Protocol) {
@@ -2210,46 +2263,7 @@ PLCXL_ROUTE_LIST_ENTRY IfRouteNBL(IN PLCXL_FILTER pFilter, IN PETHERNET_HEADER p
 					break;
 				case 0x06://TCP
                     //目前仅支持TCP
-                    {
-                        PTCP_HDR ptcp_header;
-                        PLCXL_ROUTE_LIST_ENTRY route_info;
-
-                        ptcp_header = (PTCP_HDR)((PUCHAR)pIPHeader+sizeof(PTCP_HDR));
-                        route_info = GetRouteListEntry(pFilter, pIPHeader, ptcp_header);
-                        //建立连接的阶段
-                        //有TH_SYN的阶段是建立连接的阶段，这个时候就得选择路由信息
-                        if ((ptcp_header->th_flags & TH_SYN) != 0) {
-                                
-                            PSERVER_INFO_LIST_ENTRY server;
-
-                            //选择一个服务器
-                            server = SelectServer(pFilter, pIPHeader, ptcp_header);
-                            if (server==NULL) {
-                                return NULL;
-                            }
-                            if (route_info==NULL) {
-                                route_info = CreateRouteListEntry(pFilter);
-                            }
-                            //初始化路由信息
-                            InitRouteListEntry(route_info, pIPHeader, ptcp_header, server);
-                        } else {
-                            if (route_info!=NULL) {
-                                //如果客户端发出ACK包并且连接处于LAST_ACK状态，则更改状态为CLOSE
-                                if ((ptcp_header->th_flags & TH_ACK) !=0 && (route_info->status == RS_LAST_ACK)) {
-                                    route_info->status = RS_CLOSED;
-                                } else if ((ptcp_header->th_flags & TH_FIN) !=0) {
-                                    //如果客户端通知连接要关闭
-                                     //更改路由状态为LAST_ACK
-                                    route_info->status = RS_LAST_ACK;
-                                } else if ((ptcp_header->th_flags & TH_RST) !=0) {
-                                    //如果连接重置，直接关闭连接
-                                    route_info->status = RS_CLOSED;
-                                }
-                            }
-                        }
-                        
-                        return route_info;
-                    }
+					return RouteTCPNBL(pFilter, IM_IPV4, pIPHeader);
 					break;
 				case 0x11://PROT_UDP
 					break;
@@ -2263,6 +2277,24 @@ PLCXL_ROUTE_LIST_ENTRY IfRouteNBL(IN PLCXL_FILTER pFilter, IN PETHERNET_HEADER p
 		//ARP_OPCODE  ARP_REQUEST  ARP_RESPONSE
 		break;
     case ETHERNET_TYPE_IPV6://IPv6协议
+		if (BufferLength >= sizeof(IPV6_HEADER)){
+			PIPV6_HEADER pIPHeader;
+
+			pIPHeader = (PIPV6_HEADER)((PUCHAR)pEthType + sizeof(USHORT));
+			//查看数据包的目标IP是否是虚拟IP
+			if (RtlCompareMemory(&pIPHeader->DestinationAddress, &pFilter->virtual_ipv6, sizeof(pIPHeader->DestinationAddress)) == sizeof(pIPHeader->DestinationAddress)) {
+				switch (pIPHeader->NextHeader) {
+					case 0x3A://ICMPv6
+						break;
+					case 0x06://TCP
+						//目前仅支持TCP
+						return RouteTCPNBL(pFilter, IM_IPV6, pIPHeader);
+						break;
+					case 0x11://PROT_UDP
+						break;
+				}
+			}
+		}
 		break;
     default:
         break;
@@ -2270,22 +2302,54 @@ PLCXL_ROUTE_LIST_ENTRY IfRouteNBL(IN PLCXL_FILTER pFilter, IN PETHERNET_HEADER p
     return NULL;
 }
 
-PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry(IN PLCXL_FILTER pFilter, IN PIPV4_HEADER pIPHeader, IN PTCP_HDR pTcpHeader)
+PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry(IN PLCXL_FILTER pFilter, IN INT ipMode, IN LPVOID pIPHeader, IN PTCP_HDR pTcpHeader)
 {
-    //pFilter->route_list.
-    PLIST_ENTRY Link = pFilter->route_list.list_entry.Flink;
-    PLCXL_ROUTE_LIST_ENTRY route_info;
+	union {
+		PIPV4_HEADER ipv4_header;
+		PIPV6_HEADER ipv6_header;
+	} ip_header = {0};
+	//pFilter->route_list.
+	PLIST_ENTRY Link = pFilter->route_list.list_entry.Flink;
+	PLCXL_ROUTE_LIST_ENTRY route_info;
+
+	switch (ipMode) {
+	case IM_IPV4:
+		ip_header.ipv4_header = (PIPV4_HEADER)pIPHeader;
+		
+		break;
+	case IM_IPV6:
+		ip_header.ipv6_header = (PIPV6_HEADER)pIPHeader;
+		break;
+	default:
+		ASSERT(FALSE);
+	}
+
+	
 	//遍历列表
-    while (Link != &pFilter->route_list.list_entry)
-    {
-        route_info = CONTAINING_RECORD(Link, LCXL_ROUTE_LIST_ENTRY, list_entry);
-        //查看是否匹配
-        if (RtlCompareMemory(&route_info->ia_src, &pIPHeader->SourceAddress, sizeof(pIPHeader->SourceAddress)) == sizeof(pIPHeader->SourceAddress) && route_info->src_port == pTcpHeader->th_sport && route_info->dst_port == pTcpHeader->th_dport ) {
-            return route_info;
-        }
-        Link = Link->Flink;
-    }
-    return NULL;
+	while (Link != &pFilter->route_list.list_entry)
+	{
+		route_info = CONTAINING_RECORD(Link, LCXL_ROUTE_LIST_ENTRY, list_entry);
+		if (ipMode == route_info->ip_mode && route_info->src_port == pTcpHeader->th_sport && route_info->dst_port == pTcpHeader->th_dport) {
+			switch (ipMode)
+			{
+			case IM_IPV4:
+				//查看是否匹配
+				if (RtlCompareMemory(&route_info->src_ip.ip_4, &ip_header.ipv4_header->SourceAddress, sizeof(ip_header.ipv4_header->SourceAddress)) == sizeof(ip_header.ipv4_header->SourceAddress)) {
+					return route_info;
+				}
+				break;
+			case IM_IPV6:
+				if (RtlCompareMemory(&route_info->src_ip.ip_6, &ip_header.ipv6_header->SourceAddress, sizeof(ip_header.ipv6_header->SourceAddress)) == sizeof(ip_header.ipv6_header->SourceAddress)) {
+					return route_info;
+				}
+					break;
+			default:
+				break;
+			}
+		}
+		Link = Link->Flink;
+	}
+	return NULL;
 }
 
 PLCXL_ROUTE_LIST_ENTRY CreateRouteListEntry(IN PLCXL_FILTER pFilter)
@@ -2299,7 +2363,7 @@ PLCXL_ROUTE_LIST_ENTRY CreateRouteListEntry(IN PLCXL_FILTER pFilter)
     return route_info;
 }
 
-void InitRouteListEntry(IN OUT PLCXL_ROUTE_LIST_ENTRY route_info, IN PIPV4_HEADER pIPHeader, IN PTCP_HDR pTcpHeader, IN PSERVER_INFO_LIST_ENTRY server_info)
+void InitRouteListEntry(IN OUT PLCXL_ROUTE_LIST_ENTRY route_info, IN INT ipMode, IN LPVOID pIPHeader, IN PTCP_HDR pTcpHeader, IN PSERVER_INFO_LIST_ENTRY server_info)
 {
     ASSERT(route_info!=NULL);
     ASSERT(pIPHeader!=NULL);
@@ -2310,10 +2374,22 @@ void InitRouteListEntry(IN OUT PLCXL_ROUTE_LIST_ENTRY route_info, IN PIPV4_HEADE
     route_info->dst_server = server_info;
     route_info->dst_port = pTcpHeader->th_dport;
     route_info->src_port = pTcpHeader->th_sport;
-    route_info->ia_src = pIPHeader->SourceAddress;
+	switch (ipMode)
+	{
+	case IM_IPV4:
+		route_info->src_ip.ip_4 = ((PIPV4_HEADER)pIPHeader)->SourceAddress;
+		break;
+	case IM_IPV6:
+		route_info->src_ip.ip_6 = ((PIPV6_HEADER)pIPHeader)->SourceAddress;
+		break;
+	default:
+		ASSERT(FALSE);
+		break;
+	}
+    
 }
 
-PSERVER_INFO_LIST_ENTRY SelectServer(IN PLCXL_FILTER pFilter, IN PIPV4_HEADER pIPHeader, IN PTCP_HDR pTcpHeader)
+PSERVER_INFO_LIST_ENTRY SelectServer(IN PLCXL_FILTER pFilter, IN INT ipMode, IN LPVOID pIPHeader, IN PTCP_HDR pTcpHeader)
 {
     //pFilter->route_list.
     PLIST_ENTRY Link = pFilter->server_list.list_entry.Flink;
@@ -2322,6 +2398,7 @@ PSERVER_INFO_LIST_ENTRY SelectServer(IN PLCXL_FILTER pFilter, IN PIPV4_HEADER pI
 
     UNREFERENCED_PARAMETER(pIPHeader);
     UNREFERENCED_PARAMETER(pTcpHeader);
+	UNREFERENCED_PARAMETER(ipMode);
     //遍历列表
     while (Link != &pFilter->route_list.list_entry)
     {
@@ -2336,3 +2413,7 @@ PSERVER_INFO_LIST_ENTRY SelectServer(IN PLCXL_FILTER pFilter, IN PIPV4_HEADER pI
     }
     return best_server;
 }
+
+
+
+

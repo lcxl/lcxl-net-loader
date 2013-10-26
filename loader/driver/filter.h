@@ -299,34 +299,38 @@ typedef struct _SERVER_INFO_LIST_ENTRY
 {
 	//列表项
 	LIST_ENTRY		list_entry;
+	//服务器状态
+	SERVER_STATUS   server_status;
 	//IP
+	
 	//真实的IP地址
-	struct in_addr	ia_real_ip;
+	struct in_addr	real_ip_4;
+	struct in6_addr real_ip_6;
 	//MAC地址长度
 	USHORT			mac_addr_len;
 	//MAC地址
 	UCHAR			cur_mac_addr[NDIS_MAX_PHYS_ADDRESS_LENGTH];
-    //服务器状态
-    SERVER_STATUS   server_status;
 } SERVER_INFO_LIST_ENTRY, *PSERVER_INFO_LIST_ENTRY;
 
-#define RS_NONE     0x00
 
-//正常
-#define RS_NORMAL   0x01
-
-//正在等待最后一个ACK包
-#define RS_LAST_ACK 0x02
-
-//连接已关闭
-#define RS_CLOSED   0x03
 //路由信息
 typedef struct _LCXL_ROUTE_LIST_ENTRY
 {
 	LIST_ENTRY		        list_entry;		//列表项
-    int                     status;         //状态
-	//IP
-	IN_ADDR			        ia_src;			//源IP地址
+#define RS_NONE     0x00
+#define RS_NORMAL   0x01					//正常
+#define RS_LAST_ACK 0x02					//正在等待最后一个ACK包
+#define RS_CLOSED   0x03					//连接已关闭
+    int                     status;         //连接状态
+#define IM_UNKNOWN 0
+#define IM_IPV4	1
+#define IM_IPV6 2
+	int						ip_mode;		//IP模式，IPv4还是IPv6， IM_IPV4, IM_IPV6
+	union {
+		//IP
+		IN_ADDR			    ip_4;			//源IPv4地址
+		IN6_ADDR			ip_6;			//源IPv6地址
+	} src_ip;
 	//TCP
 	unsigned short	        src_port;		//源端口号
 	unsigned short	        dst_port;		//目的端口号
@@ -400,7 +404,9 @@ typedef struct _LCXL_FILTER
     PNDIS_OID_REQUEST               PendingOidRequest;
     //添加的代码
     //虚拟IP
-	IN_ADDR							ia_virtual_ip;
+	IN_ADDR							virtual_ipv4;
+	//虚拟IP
+	IN6_ADDR						virtual_ipv6;
 	//服务器列表
 	SERVER_INFO_LIST_ENTRY			server_list;
 	//路由信息
@@ -534,20 +540,39 @@ filterInternalRequestComplete(
 ///</summary>
 PLCXL_ROUTE_LIST_ENTRY IfRouteNBL(IN PLCXL_FILTER pFilter, IN PETHERNET_HEADER pEthHeader, IN UINT BufferLength);
 
-
 ///<summary>
 ///获取路由信息项
 ///</summary>
-PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry(IN PLCXL_FILTER pFilter, IN PIPV4_HEADER pIPHeader, IN PTCP_HDR pTcpHeader);
+PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry(IN PLCXL_FILTER pFilter, IN INT ipMode, IN LPVOID pIPHeader, IN PTCP_HDR pTcpHeader);
+
+///<summary>
+///获取路由信息项IPv4
+///</summary>
+__inline  PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry4(IN PLCXL_FILTER pFilter, IN PIPV4_HEADER pIPHeader, IN PTCP_HDR pTcpHeader)
+{
+	return GetRouteListEntry(pFilter, IM_IPV4, pIPHeader, pTcpHeader);
+}
+///<summary>
+///获取路由信息项IPv6
+///</summary>
+__inline PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry6(IN PLCXL_FILTER pFilter, IN PIPV6_HEADER pIPHeader, IN PTCP_HDR pTcpHeader)
+{
+	return GetRouteListEntry(pFilter, IM_IPV6, pIPHeader, pTcpHeader);
+}
 
 ///<summary>
 //选择服务器
 ///</summary>
-PSERVER_INFO_LIST_ENTRY SelectServer(IN PLCXL_FILTER pFilter, IN PIPV4_HEADER pIPHeader, IN PTCP_HDR pTcpHeader);
+PSERVER_INFO_LIST_ENTRY SelectServer(IN PLCXL_FILTER pFilter, IN INT ipMode, IN LPVOID pIPHeader, IN PTCP_HDR pTcpHeader);
 
-
+///<summary>
+///创建路由信息表项
+///</summary>
 PLCXL_ROUTE_LIST_ENTRY CreateRouteListEntry(IN PLCXL_FILTER pFilter);
-void InitRouteListEntry(IN OUT PLCXL_ROUTE_LIST_ENTRY route_info, IN PIPV4_HEADER pIPHeader, IN PTCP_HDR pTcpHeader, IN PSERVER_INFO_LIST_ENTRY server_info);
+///<summary>
+///始化路由信息表项
+///</summary>
+void InitRouteListEntry(IN OUT PLCXL_ROUTE_LIST_ENTRY route_info, IN INT ipMode, IN LPVOID pIPHeader, IN PTCP_HDR pTcpHeader, IN PSERVER_INFO_LIST_ENTRY server_info);
 
 
 //!添加代码!
