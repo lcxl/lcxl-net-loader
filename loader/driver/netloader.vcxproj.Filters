@@ -42,9 +42,6 @@
     <ClInclude Include="filter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="filteruser.h" />
-    <ClInclude Include="flt_dbg.h" />
-    <ClInclude Include="precomp.h" />
     <ClInclude Include="filter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -88,6 +85,18 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="precomp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="flt_dbg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="precomp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\app_interface.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\common\lcxl_type.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

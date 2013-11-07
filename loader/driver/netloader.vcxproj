@@ -247,8 +247,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\common\driver\lcxl_net.h" />
+    <ClInclude Include="..\..\common\lcxl_type.h" />
+    <ClInclude Include="..\common\app_interface.h" />
     <ClInclude Include="filter.h" />
-    <ClInclude Include="filteruser.h" />
     <ClInclude Include="flt_dbg.h" />
     <ClInclude Include="precomp.h" />
   </ItemGroup>

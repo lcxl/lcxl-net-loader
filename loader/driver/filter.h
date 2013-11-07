@@ -16,7 +16,7 @@ Notes:
 #ifndef _FILT_H
 #define _FILT_H
 #include "../common/driver/lcxl_net.h"
-
+#include "../../common/lcxl_type.h"
 #pragma warning(disable:28930) // Unused assignment of pointer, by design in samples
 #pragma warning(disable:28931) // Unused assignment of variable, by design in samples
 
@@ -54,9 +54,6 @@ extern FILTER_LOCK         g_FilterListLock;
 extern LIST_ENTRY          g_FilterModuleList;
 
 
-
-
-#if NDISLWF
 #define FILTER_FRIENDLY_NAME        L"LCXL Net Loader(NDIS Filter)"
 // TODO: Customize this to match the GUID in the INF
 #define FILTER_UNIQUE_NAME          L"{A8CFB5DA-09DB-4CB1-93B5-92D347289EB7}" //unique name, quid name
@@ -67,41 +64,6 @@ extern LIST_ENTRY          g_FilterModuleList;
 //
 #define LINKNAME_STRING             L"\\DosDevices\\NDISLWF"
 #define NTDEVICE_STRING             L"\\Device\\NDISLWF"
-#endif
-
-
-#if NDISLWF1
-#define FILTER_FRIENDLY_NAME        L"NDIS Sample LightWeight Filter 1"
-#define FILTER_UNIQUE_NAME          L"{A8CFB5DA-09DB-4CB1-93B5-92D347289EB7}" //unique name, quid name
-#define FILTER_SERVICE_NAME         L"NDISLWF1"
-//
-// The filter needs to handle IOCTRLs
-//
-#define LINKNAME_STRING             L"\\DosDevices\\NDISLWF1"
-#define NTDEVICE_STRING             L"\\Device\\NDISLWF1"
-#endif
-
-#if NDISMON
-#define FILTER_FRIENDLY_NAME        L"NDIS Sample Monitor LightWeight Filter"
-#define FILTER_UNIQUE_NAME          L"{A8CFB5DA-09DB-4CB1-93B5-92D347289EB7}" //unique name, quid name
-#define FILTER_SERVICE_NAME         L"NDISMON"
-//
-// The filter needs to handle IOCTRLs
-//
-#define LINKNAME_STRING             L"\\DosDevices\\NDISMON"
-#define NTDEVICE_STRING             L"\\Device\\NDISMON"
-#endif
-
-#if NDISMON1
-#define FILTER_FRIENDLY_NAME        L"NDIS Sample Monitor 1 LightWeight Filter"
-#define FILTER_UNIQUE_NAME          L"{A8CFB5DA-09DB-4CB1-93B5-92D347289EB7}" //unique name, quid name
-#define FILTER_SERVICE_NAME         L"NDISMON1"
-//
-// The filter needs to handle IOCTRLs
-//
-#define LINKNAME_STRING             L"\\DosDevices\\NDISMON1"
-#define NTDEVICE_STRING             L"\\Device\\NDISMON1"
-#endif
 
 
 //
@@ -273,24 +235,23 @@ ULONG_PTR    filterLogSendRef[0x10000];
 
 //添加代码
 
-//服务器处于启用状态
-#define SS_ENABLED 0x01
-//服务器在线
-#define SS_ONLINE 0x02
+
 
 typedef struct _SERVER_STATUS 
 {
+#define SS_ENABLED	0x01//服务器处于启用状态
+#define SS_ONLINE	0x02//服务器在线
     //状态值
-    UCHAR               Status;
+    UCHAR               status;
     //单个任务的平均处理时间，时间单位为微妙（us）
     //Windows下使用KeQueryPerformanceCounter
-    unsigned long       ProcessTime;
+    unsigned long       process_time;
     //总内存数
-    unsigned long long  TotalMemory;
+    unsigned long long  total_memory;
     //当前使用内存
-    unsigned long long  CurrMemory;
+    unsigned long long  cur_memory;
     //CPU使用率，最高为1
-    double              CPUUsage;
+    double              cpu_usage;
 
 } SERVER_STATUS, PSERVER_STATUS;
 
@@ -298,18 +259,11 @@ typedef struct _SERVER_STATUS
 typedef struct _SERVER_INFO_LIST_ENTRY
 {
 	//列表项
-	LIST_ENTRY		list_entry;
+	LIST_ENTRY			list_entry;
 	//服务器状态
-	SERVER_STATUS   server_status;
-	//IP
-	
-	//真实的IP地址
-	struct in_addr	real_ip_4;
-	struct in6_addr real_ip_6;
-	//MAC地址长度
-	USHORT			mac_addr_len;
-	//MAC地址
-	UCHAR			cur_mac_addr[NDIS_MAX_PHYS_ADDRESS_LENGTH];
+	SERVER_STATUS		server_status;
+	//服务器地址
+	LCXL_SERVER_ADDR	server_addr;
 } SERVER_INFO_LIST_ENTRY, *PSERVER_INFO_LIST_ENTRY;
 
 
@@ -322,15 +276,7 @@ typedef struct _LCXL_ROUTE_LIST_ENTRY
 #define RS_LAST_ACK 0x02					//正在等待最后一个ACK包
 #define RS_CLOSED   0x03					//连接已关闭
     int                     status;         //连接状态
-#define IM_UNKNOWN 0
-#define IM_IPV4	1
-#define IM_IPV6 2
-	int						ip_mode;		//IP模式，IPv4还是IPv6， IM_IPV4, IM_IPV6
-	union {
-		//IP
-		IN_ADDR			    ip_4;			//源IPv4地址
-		IN6_ADDR			ip_6;			//源IPv6地址
-	} src_ip;
+	LCXL_IP					src_ip;
 	//TCP
 	unsigned short	        src_port;		//源端口号
 	unsigned short	        dst_port;		//目的端口号
@@ -412,11 +358,9 @@ typedef struct _LCXL_FILTER
 	//路由信息
 	LCXL_ROUTE_LIST_ENTRY			route_list;
     //NBL发送池
-    NDIS_HANDLE                     SendNetBufferListPool;  
-    //MAC地址长度
-    USHORT                          mac_addr_len;
-    //MAC地址
-    UCHAR                           cur_mac_addr[NDIS_MAX_PHYS_ADDRESS_LENGTH];
+    NDIS_HANDLE                     send_net_buffer_list_pool;
+	//本地地址
+	LCXL_SERVER_ADDR				address;
     //!添加的代码!
 }LCXL_FILTER, * PLCXL_FILTER;
 

@@ -374,8 +374,8 @@ N.B.:  FILTER can use NdisRegisterDeviceEx to create a device, so the upper
         pFilter->MiniportIfIndex = AttachParameters->BaseMiniportIfIndex;
         //添加代码
         //保存MAC地址（一个问题，当用户手动修改了MAC地址，会怎样- -）
-        pFilter->mac_addr_len = AttachParameters->MacAddressLength;
-        NdisMoveMemory(pFilter->cur_mac_addr, AttachParameters->CurrentMacAddress, pFilter->mac_addr_len);
+        pFilter->address.mac_addr_len = AttachParameters->MacAddressLength;
+		NdisMoveMemory(pFilter->address.mac_addr, AttachParameters->CurrentMacAddress, pFilter->address.mac_addr_len);
 		//初始化服务器列表
 		InitializeListHead(&pFilter->server_list.list_entry);
 		//初始化路由列表
@@ -388,7 +388,7 @@ N.B.:  FILTER can use NdisRegisterDeviceEx to create a device, so the upper
         //PoolParameters.ContextSize = sizeof(NPROT_SEND_NETBUFLIST_RSVD);
         PoolParameters.fAllocateNetBuffer = TRUE;
         PoolParameters.PoolTag = TAG_SEND_NBL;
-        pFilter->SendNetBufferListPool = NdisAllocateNetBufferListPool( NdisFilterHandle, &PoolParameters); 
+        pFilter->send_net_buffer_list_pool = NdisAllocateNetBufferListPool( NdisFilterHandle, &PoolParameters); 
 
 		//!添加代码!
         //
@@ -723,8 +723,8 @@ NOTE: Called at PASSIVE_LEVEL and the filter is in paused state
     }
 
     //添加代码
-    if (pFilter->SendNetBufferListPool!=NULL) {
-        NdisFreeNetBufferListPool(pFilter->SendNetBufferListPool);
+    if (pFilter->send_net_buffer_list_pool!=NULL) {
+        NdisFreeNetBufferListPool(pFilter->send_net_buffer_list_pool);
     }
     //!添加代码!
 
@@ -1731,7 +1731,7 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
                     pSendBuffer = (PETHERNET_HEADER)FILTER_ALLOC_MEM(pFilter->FilterHandle, BufferLength);
                     pMdl = NdisAllocateMdl(pFilter->FilterHandle, pSendBuffer, BufferLength);
                     tmpNBL = NdisAllocateNetBufferAndNetBufferList(
-                        pFilter->SendNetBufferListPool,
+                        pFilter->send_net_buffer_list_pool,
                         0,                              // ContextSize
                         0,                              // ContextBackfill
                         pMdl,                           // MdlChain
@@ -1749,7 +1749,7 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 
                     tmpNBL->SourceHandle = pFilter->FilterHandle;
                     //修改目标MAC地址
-                    RtlCopyMemory(&pSendBuffer->Destination, pRouteListEntry->dst_server->cur_mac_addr, sizeof(pEthHeader->Destination));
+                    RtlCopyMemory(&pSendBuffer->Destination, pRouteListEntry->dst_server->server_addr.mac_addr, sizeof(pEthHeader->Destination));
                     //
                     // The other members of NET_BUFFER_DATA structure are already initialized properly during allocation.
                     //
@@ -2175,7 +2175,8 @@ PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER pFilter, IN INT ipMode, IN LP
 
 	switch (ipMode) {
 	case IM_IPV4:
-		ptcp_header = (PTCP_HDR)((PUCHAR)pIPHeader + sizeof(IPV4_HEADER));
+		//ptcp_header = (PTCP_HDR)((PUCHAR)pIPHeader + sizeof(IPV4_HEADER));
+		ptcp_header = (PTCP_HDR)((PUCHAR)pIPHeader + Ip4HeaderLengthInBytes((PIPV4_HEADER)pIPHeader));
 	case IM_IPV6:
 		ptcp_header = (PTCP_HDR)((PUCHAR)pIPHeader + sizeof(IPV6_HEADER));
 	default:
@@ -2186,7 +2187,6 @@ PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER pFilter, IN INT ipMode, IN LP
 	//建立连接的阶段
 	//有TH_SYN的阶段是建立连接的阶段，这个时候就得选择路由信息
 	if ((ptcp_header->th_flags & TH_SYN) != 0) {
-
 		PSERVER_INFO_LIST_ENTRY server;
 
 		//选择一个服务器
@@ -2329,17 +2329,17 @@ PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry(IN PLCXL_FILTER pFilter, IN INT ipMode,
 	while (Link != &pFilter->route_list.list_entry)
 	{
 		route_info = CONTAINING_RECORD(Link, LCXL_ROUTE_LIST_ENTRY, list_entry);
-		if (ipMode == route_info->ip_mode && route_info->src_port == pTcpHeader->th_sport && route_info->dst_port == pTcpHeader->th_dport) {
+		if (ipMode == route_info->src_ip.ip_mode && route_info->src_port == pTcpHeader->th_sport && route_info->dst_port == pTcpHeader->th_dport) {
 			switch (ipMode)
 			{
 			case IM_IPV4:
 				//查看是否匹配
-				if (RtlCompareMemory(&route_info->src_ip.ip_4, &ip_header.ipv4_header->SourceAddress, sizeof(ip_header.ipv4_header->SourceAddress)) == sizeof(ip_header.ipv4_header->SourceAddress)) {
+				if (RtlCompareMemory(&route_info->src_ip.addr.ip_4, &ip_header.ipv4_header->SourceAddress, sizeof(ip_header.ipv4_header->SourceAddress)) == sizeof(ip_header.ipv4_header->SourceAddress)) {
 					return route_info;
 				}
 				break;
 			case IM_IPV6:
-				if (RtlCompareMemory(&route_info->src_ip.ip_6, &ip_header.ipv6_header->SourceAddress, sizeof(ip_header.ipv6_header->SourceAddress)) == sizeof(ip_header.ipv6_header->SourceAddress)) {
+				if (RtlCompareMemory(&route_info->src_ip.addr.ip_6, &ip_header.ipv6_header->SourceAddress, sizeof(ip_header.ipv6_header->SourceAddress)) == sizeof(ip_header.ipv6_header->SourceAddress)) {
 					return route_info;
 				}
 					break;
@@ -2377,10 +2377,10 @@ void InitRouteListEntry(IN OUT PLCXL_ROUTE_LIST_ENTRY route_info, IN INT ipMode,
 	switch (ipMode)
 	{
 	case IM_IPV4:
-		route_info->src_ip.ip_4 = ((PIPV4_HEADER)pIPHeader)->SourceAddress;
+		route_info->src_ip.addr.ip_4 = ((PIPV4_HEADER)pIPHeader)->SourceAddress;
 		break;
 	case IM_IPV6:
-		route_info->src_ip.ip_6 = ((PIPV6_HEADER)pIPHeader)->SourceAddress;
+		route_info->src_ip.addr.ip_6 = ((PIPV6_HEADER)pIPHeader)->SourceAddress;
 		break;
 	default:
 		ASSERT(FALSE);
@@ -2404,8 +2404,8 @@ PSERVER_INFO_LIST_ENTRY SelectServer(IN PLCXL_FILTER pFilter, IN INT ipMode, IN 
     {
         server_info = CONTAINING_RECORD(Link, SERVER_INFO_LIST_ENTRY, list_entry);
         //检查服务器是否可用
-        if ((server_info->server_status.Status&SS_ENABLED) !=0 && (server_info->server_status.Status&SS_ONLINE) !=0) {
-            if (best_server==NULL||best_server->server_status.ProcessTime > server_info->server_status.ProcessTime) {
+        if ((server_info->server_status.status&SS_ENABLED) !=0 && (server_info->server_status.status&SS_ONLINE) !=0) {
+            if (best_server==NULL||best_server->server_status.process_time > server_info->server_status.process_time) {
                 best_server = server_info;
             }
         }
