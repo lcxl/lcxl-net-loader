@@ -1,9 +1,18 @@
 #ifndef _LCXL_IOCP_BASE_H_
+#define _LCXL_IOCP_BASE_H_
 
-void inline OutputDebugStr(const TCHAR *DebugInfo) 
-{
-	OutputDebugString(DebugInfo);
-}
+#include <WinSock2.h>
+#include <windows.h>
+#include <vector>
+#include <queue>
+#include <tchar.h>
+#include <assert.h>
+
+#include "lcxl_func_delegate.h"
+
+using namespace std;
+//定义IP地址字符串最大长度
+#define ADDR_STRING_MAX_LEN 1024
 
 #ifdef _DEBUG
 #define RELEASE_INLINE
@@ -11,6 +20,20 @@ void inline OutputDebugStr(const TCHAR *DebugInfo)
 #define RELEASE_INLINE inline
 #endif // DEBUG
 
+#ifdef _DEBUG
+void OutputDebugStr(const TCHAR fmt[], ...);
+#else
+#define OutputDebugStr(__fmt, ...)
+#endif // _DEBUG
+
+#ifdef _UNICODE
+#define tstring wstring
+#else
+#define tstring string
+#endif
+
+tstring inttostr(int value);
+tstring int64tostr(INT64 value);
 
 typedef enum _IocpEventEnum {ieAddSocket,
 
@@ -42,6 +65,7 @@ typedef enum _IocpEventEnum {ieAddSocket,
 
 	ieSendFailed} IocpEventEnum, *PIocpEventEnum;
 typedef enum _ListenEventEnum {leAddSockLst, leDelSockLst, leCloseSockLst, leListenFailed} ListenEventEnum, *PListenEventEnum;
+//前置申明
 //Socket类
 class SocketBase;
 // 监听socket类，要实现不同的功能，需要继承并实现其子类
@@ -49,7 +73,11 @@ class SocketLst;
 //typedef IOCPOverlapped *PIOCPOverlapped;
 class SocketObj;
 class IOCPBaseList;
+class IOCPBase2List;
 class IOCPManager;
+
+typedef SocketObj *PSocketObj;
+
 typedef enum _OverlappedTypeEnum {otRecv, otSend, otListen} OverlappedTypeEnum;
 /// <summary>
 /// socket类的状态
@@ -75,18 +103,32 @@ typedef struct _IOCPOverlapped {
 	WSABUF DataBuf;
 	BOOL IsUsed;
 	OverlappedTypeEnum OverlappedType;
-	SocketBase AssignedSockObj;
-	LPVOID GetRecvData();
-	DWORD GetRecvDataLen();
-	DWORD GetCurSendDataLen();
-	LPVOID GetSendData();
-	DWORD GetTotalSendDataLen();
+	SocketBase *AssignedSockObj;
+	LPVOID GetRecvData() {
+		assert(OverlappedType == otRecv);
+		return RecvData;
+	}
+	DWORD GetRecvDataLen() {
+		assert(OverlappedType == otRecv);
+		return RecvDataLen;
+	}
+	DWORD GetCurSendDataLen() {
+		assert(OverlappedType == otSend);
+		return (DWORD)((DWORD_PTR)CurSendData - (DWORD_PTR)SendData);
+	}
+	LPVOID GetSendData() {
+		assert(OverlappedType == otSend);
+		return SendData;
+	}
+	DWORD GetTotalSendDataLen() {
+		assert(OverlappedType == otSend);
+		return SendDataLen;
+	}
 	union
 	{
 		struct {
 			LPVOID RecvData;
 			DWORD RecvDataLen;
-
 		};
 		struct 
 		{
@@ -107,7 +149,7 @@ protected:
 	int mUserRefCount;
 	SocketInitStatus mIniteStatus;
 	SOCKET mSock;
-	IOCPBaseList mOwner;
+	IOCPBaseList *mOwner;
 	HANDLE mIOComp;
 	PIOCPOverlapped mAssignedOverlapped;
 	UINT_PTR mTag;
@@ -117,35 +159,62 @@ protected:
 public:
 	SocketBase();
 	~SocketBase();
+	virtual void Close();
 	//Property
-	IOCPBaseList GetOwner();
-	SOCKET GetSocket();
-	SocketInitStatus GetIniteStatus();
-	UINT_PTR GetTag();
-	void SetTag(UINT_PTR Value);
+	IOCPBaseList *GetOwner() {
+		return mOwner;
+	}
+	SOCKET GetSocket() {
+		return mSock;
+	}
+	SocketInitStatus GetIniteStatus() {
+		return mIniteStatus;
+	}
+	UINT_PTR GetTag() {
+		return mTag;
+	}
+	void SetTag(UINT_PTR Value) {
+		mTag = Value;
+	}
+	PIOCPOverlapped GetAssignedOverlapped() {
+		return mAssignedOverlapped;
+	}
 	int IncRefCount(int Count=1);
 	int DecRefCount(int Count=1);
+	/// <summary>
+	/// 引用计数
+	/// </summary>
+	int GetRefCount(){
+		return mRefCount;
+	}
+	friend class IOCPBaseList;
+	friend unsigned __stdcall IocpWorkThread(void *CompletionPortID);
 };
 
-class SockLst: public SocketBase {
+class SocketLst: public SocketBase {
 private:
 	int mPort;
-	LPVOID mLstBuf;
+	PVOID mLstBuf;
 	DWORD mLstBufLen;
 	int mSocketPoolSize;
-	void SetSocketPoolSize(const int Value);
 protected:
 	BOOL Accept();
 	virtual BOOL Init();
-	virtual void CreateSockObj(SocketObj &SockObj);
+	virtual void CreateSockObj(PSocketObj &SockObj);
 public:
-	SockLst();
-	~SockLst();
+	SocketLst();
+	~SocketLst();
 	//Property
-	int GetPort();
-	int GetSocketPoolSize();
+	int GetPort() {
+		return mPort;
+	}
+	int GetSocketPoolSize() {
+		return mSocketPoolSize;
+	}
 	void SetSocketPoolSize(int Value);
-	BOOL StartListen(IOCPBaseList IOCPList, int Port, u_long InAddr = INADDR_ANY);
+	BOOL StartListen(IOCPBaseList &IOCPList, int Port, u_long InAddr = INADDR_ANY);
+	friend class IOCPBaseList;
+	friend unsigned __stdcall IocpWorkThread(void *CompletionPortID);
 };
 
 /// <summary>
@@ -157,9 +226,12 @@ private:
 	LPVOID mRecvBuf;
 	BOOL mIsSerSocket;
 	BOOL mIsSending;
-	vector<PIOCPOverlapped> mSendDataQueue;
-	BOOL WSARecv();
-	BOOL WSASend(PIOCPOverlapped Overlapped);
+	queue<PIOCPOverlapped> mSendDataQueue;
+	RELEASE_INLINE BOOL WSARecv();
+	RELEASE_INLINE BOOL WSASend(PIOCPOverlapped Overlapped);
+	void SetIsSending(BOOL value) {
+		mIsSending = value;
+	}
 protected:
 	virtual BOOL Init();
 public:
@@ -181,17 +253,55 @@ public:
 	/// <returns>
 	/// 返回是否连接成功
 	/// </returns>
-	BOOL ConnectSer(IOCPBaseList IOCPList, const TCHAR *SerAddr, int Port, int IncRefNumber);
+	BOOL ConnectSer(IOCPBaseList &IOCPList, LPCTSTR SerAddr, int Port, int IncRefNumber);
 	//Windows平台下使用WSAAddressToString 
-	BOOL GetRemoteAddr(_Inout_ LPTSTR AddressString, DWORD &AddressStringLength, WORD &Port);
-	BOOL GetLocalAddr(_Inout_ LPTSTR AddressString, DWORD &AddressStringLength, WORD &Port);
-	LPVOID GetRecvBuf();
-	void SetRecvBufLenBeforeInit(DWORD NewRecvBufLen);
+	string GetRemoteIP() {
+		string Address;
+		WORD Port;
+		GetRemoteAddr(Address, Port);
+		return Address;
+	}
+	WORD GetRemotePort() {
+		string Address;
+		WORD Port;
+		GetRemoteAddr(Address, Port);
+		return Port;
+	}
+	BOOL GetRemoteAddr(string &Address, WORD &Port);
+	string GetLocalIP() {
+		string Address;
+		WORD Port;
+		GetLocalAddr(Address, Port);
+		return Address;
+	}
+	WORD GetLocalPort() {
+		string Address;
+		WORD Port;
+		GetLocalAddr(Address, Port);
+		return Port;
+	}
+	BOOL GetLocalAddr(string &Address, WORD &Port);
+	LPVOID GetRecvBuf() {
+		return mRecvBuf;
+	}
+	RELEASE_INLINE void SetRecvBufLenBeforeInit(DWORD NewRecvBufLen);
 	BOOL SendData(LPVOID Data, DWORD DataLen, BOOL UseGetSendDataFunc = FALSE);
-	LPVOID GetSendData(DWORD DataLen);
-	void FreeSendData(LPVOID Data);
-	void SetKeepAlive(BOOL IsOn, int KeepAliveTime = 50000, int KeepAliveInterval = 30000);
-	BOOL IsSerSocket();
+	RELEASE_INLINE LPVOID GetSendData(DWORD DataLen);
+	RELEASE_INLINE void FreeSendData(LPVOID Data);
+	BOOL SetKeepAlive(BOOL IsOn, int KeepAliveTime = 50000, int KeepAliveInterval = 30000);
+
+	BOOL GetIsSerSocket() {
+		return mIsSerSocket;
+	}
+
+	BOOL GetIsSending() {
+		return mIsSending;
+	}
+	queue<PIOCPOverlapped> &GetSendDataQueue() {
+		return mSendDataQueue;
+	}
+	friend class IOCPBaseList;
+	friend unsigned __stdcall IocpWorkThread(void *CompletionPortID);
 };
 
 /// <summary>
@@ -205,10 +315,10 @@ private:
 	int mLockRefNum;
 	RTL_CRITICAL_SECTION mSockBaseCS;
 	vector<SocketBase*> mSockBaseList;
-	vector<SocketBase*> mSockBaseAddList;
-	vector<SocketBase*> mSockBaseDelLis;
+	queue<SocketBase*> mSockBaseAddList;
+	queue<SocketBase*> mSockBaseDelList;
 	vector<SocketObj*> mSockObjList;
-	vector<SockLst*> mSockLstList;
+	vector<SocketLst*> mSockLstList;
 	
 protected:
 	/// <summary>
@@ -247,10 +357,10 @@ protected:
 	/// <summary>
 	/// IOCP事件
 	/// </summary>
-	virtual void OnIOCPEvent(IocpEventEnum EventType, SocketObj SockObj, PIOCPOverlapped Overlapped);
-	virtual void OnListenEvent(ListenEventEnum EventType, SocketLst SockLst);
+	virtual void OnIOCPEvent(IocpEventEnum EventType, SocketObj *SockObj, PIOCPOverlapped Overlapped);
+	virtual void OnListenEvent(ListenEventEnum EventType, SocketLst *SockLst);
 public:
-	IOCPBaseList();
+	IOCPBaseList(IOCPManager *AIOCPMgr);
 	~IOCPBaseList();
 	/// <summary>
 	/// 锁定列表，注意的锁定后不能对列表进行增加，删除操作，一切都由SocketMgr类维护
@@ -267,24 +377,40 @@ public:
 	/// </summary>
 	void CloseAllSockObj();
 	/// <summary>
-	/// 关闭所有的Socket，包括监听socket和非监听socket
+	/// 关闭所有的Socklst
 	/// </summary>
 	void CloseAllSockLst();
-
+	/// <summary>
+	/// 关闭所有的Socket，包括监听socket和非监听socket
+	/// </summary>
+	void CloseAllSockBase();
 	/// <summary>
 	/// 此类的拥有者
 	/// </summary>
-	IOCPManager *GetOwner();
-	vector<SocketBase*> *GetSockBaseList();
-	vector<SockLst*> *GetSockLstList();
-	vector<SocketObj*> *GetSockObjList();
+	IOCPManager *GetOwner() {
+		return mOwner;
+	}
+	vector<SocketBase*> &GetSockBaseList() {
+		return mSockBaseList;
+	}
+	vector<SocketLst*> &GetSockLstList() {
+		return mSockLstList;
+	}
+	vector<SocketObj*> &GetSockObjList() {
+		return mSockObjList;
+	}
 	/// <summary>
 	/// 获取本机IP地址列表
 	/// </summary>
 	/// <param name="Addrs">
 	/// 获取后的ip地址存入此列表中
 	/// </param>
-	static void GetLocalAddrs(vector<std::string> &Addrs);
+	static void GetLocalAddrs(vector<tstring> &Addrs);
+	//友类的声明
+	friend class SocketBase;       
+	friend class SocketLst;
+	friend class SocketObj;
+	friend unsigned __stdcall IocpWorkThread(void *CompletionPortID);
 };
 
 class IOCPManager {
@@ -295,24 +421,71 @@ private:
 	vector<PIOCPOverlapped> mOverLappedList;
 	RTL_CRITICAL_SECTION mOverLappedListCS;
 	HANDLE mCompletionPort;
-	vector<HANDLE> mIocpWorkThreads;
+	INT mIocpWorkThreadCount;
+	HANDLE *mIocpWorkThreads;
 protected:
-	void AddSockList(IOCPBaseList SockList);
-	void RemoveSockList(IOCPBaseList SockList);
+	void AddSockList(IOCPBaseList *SockList);
+	void RemoveSockList(IOCPBaseList *SockList);
 	void FreeOverLappedList();
 	void DelOverlapped(PIOCPOverlapped UsedOverlapped);
-	PIOCPOverlapped NewOverlapped(SocketBase *SockObj,OverlappedTypeEnum OverlappedType);
+	PIOCPOverlapped NewOverlapped(SocketBase *SockObj, OverlappedTypeEnum OverlappedType);
 	BOOL PostExitStatus();
 public:
-	IOCPManager();
+	IOCPManager(int IOCPThreadCount = 0);
 	~IOCPManager();
 	RELEASE_INLINE void LockSockList();
 
-	vector<IOCPBaseList*> *GetSockList();
+	vector<IOCPBaseList*> &GetSockList() {
+		return mSockList;
+	}
 	RELEASE_INLINE void UnlockSockList();
 	RELEASE_INLINE void LockOverLappedList();
-	vector<PIOCPOverlapped> *GetOverLappedList;
+	vector<PIOCPOverlapped> &GetOverLappedList() {
+		return mOverLappedList;
+	}
 	RELEASE_INLINE void UnlockOverLappedList();
+	//友类
+	friend class SocketBase;
+	//友类
+	friend class SocketObj;
+
+	friend class IOCPBaseList;
+	friend unsigned __stdcall IocpWorkThread(void *CompletionPortID);
+};
+
+// IOCP事件
+typedef void (IOCPBase2List::*EOnIOCPEvent)(IocpEventEnum EventType, SocketObj *SockObj, PIOCPOverlapped Overlapped);
+// 监听事件
+typedef void (IOCPBase2List::*EOnListenEvent)(ListenEventEnum EventType, SocketLst *SockLst);
+
+
+class IOCPBase2List :public IOCPBaseList {
+public:
+	typedef _LCXLFunctionDelegate<IOCPBase2List, EOnIOCPEvent> DOnIOCPEvent;
+	typedef _LCXLFunctionDelegate<IOCPBase2List, EOnListenEvent> DOnListenEvent;
+private:
+	DOnIOCPEvent mIOCPEvent;
+	DOnListenEvent mOnListenEvent;
+protected:
+	/// <summary>
+	/// IOCP事件
+	/// </summary>
+	virtual void OnIOCPEvent(IocpEventEnum EventType, SocketObj *SockObj, PIOCPOverlapped Overlapped);
+	virtual void OnListenEvent(ListenEventEnum EventType, SocketLst *SockLst);
+public:
+	// 外部接口
+	const DOnIOCPEvent &GetIOCPEvent() {
+		return mIOCPEvent;
+	}
+	void SetIOCPEvent(const DOnIOCPEvent &Value) {
+		mIOCPEvent = Value;
+	}
+	const DOnListenEvent &GetListenEvent() {
+		return mOnListenEvent;
+	}
+	void SetListenEvent(const DOnListenEvent &Value) {
+		mOnListenEvent = Value;
+	}
 };
 
 #endif

@@ -54,7 +54,8 @@ PDEVICE_OBJECT      g_DeviceObject = NULL;
 FILTER_LOCK         g_FilterListLock;
 //过滤模块列表
 LIST_ENTRY          g_FilterModuleList;
-
+//配置信息
+LCXL_SETTING		g_Setting;
 //添加代码
 //定义lookaside列表
 #define TAG_ROUTE       'ROUT'
@@ -119,7 +120,7 @@ Return Value:
     UNREFERENCED_PARAMETER(RegistryPath);
 
     DEBUGP(DL_TRACE, "===>DriverEntry...\n");
-
+	KdPrint(("SYS:DriverEntry\n"));
     g_FilterDriverObject = DriverObject;
 
     do
@@ -183,7 +184,8 @@ Return Value:
         FILTER_INIT_LOCK(&g_FilterListLock);
 
         InitializeListHead(&g_FilterModuleList);
-
+		InitializeListHead(&g_Setting.module_list.list_entry);
+		g_Setting.module_count = 0;
         Status = NdisFRegisterFilterDriver(DriverObject,
                                            (NDIS_HANDLE)g_FilterDriverObject,
                                            &FChars,
@@ -207,7 +209,8 @@ Return Value:
 
     }
     while(bFalse);
-
+	//注册系统初始化完成事件
+	IoRegisterDriverReinitialization(DriverObject, DriverReinitialize, NULL);
 
     DEBUGP(DL_TRACE, "<===DriverEntry, Status = %8x\n", Status);
     return Status;
@@ -306,7 +309,7 @@ N.B.:  FILTER can use NdisRegisterDeviceEx to create a device, so the upper
     NET_BUFFER_LIST_POOL_PARAMETERS PoolParameters;
     //!添加代码!
     DEBUGP(DL_TRACE, "===>FilterAttach: NdisFilterHandle %p\n", NdisFilterHandle);
-
+	KdPrint(("SYS:FilterAttach:miniport:%I64u %wZ %wZ %wZ\n", AttachParameters->BaseMiniportNetLuid, AttachParameters->FilterModuleGuidName, AttachParameters->BaseMiniportInstanceName, AttachParameters->BaseMiniportName));
     do
     {
         ASSERT(FilterDriverContext == (NDIS_HANDLE)g_FilterDriverObject);
@@ -373,11 +376,13 @@ N.B.:  FILTER can use NdisRegisterDeviceEx to create a device, so the upper
         
         pFilter->MiniportIfIndex = AttachParameters->BaseMiniportIfIndex;
         //添加代码
+		pFilter->miniport_net_luid = AttachParameters->BaseMiniportNetLuid;
         //保存MAC地址（一个问题，当用户手动修改了MAC地址，会怎样- -）
-        pFilter->address.mac_addr_len = AttachParameters->MacAddressLength;
-		NdisMoveMemory(pFilter->address.mac_addr, AttachParameters->CurrentMacAddress, pFilter->address.mac_addr_len);
+		pFilter->mac_addr.Length = sizeof(pFilter->mac_addr.Address)<AttachParameters->MacAddressLength ? sizeof(pFilter->mac_addr.Address) : AttachParameters->MacAddressLength;
+
+		NdisMoveMemory(pFilter->mac_addr.Address, AttachParameters->CurrentMacAddress, pFilter->mac_addr.Length);
 		//初始化服务器列表
-		InitializeListHead(&pFilter->server_list.list_entry);
+		//InitializeListHead(&pFilter->server_list.list_entry);
 		//初始化路由列表
 		InitializeListHead(&pFilter->route_list.list_entry);
         //初始化NBL发送池
@@ -419,7 +424,7 @@ N.B.:  FILTER can use NdisRegisterDeviceEx to create a device, so the upper
 
 
         pFilter->State = FilterPaused;
-
+		LoadModuleSetting(pFilter);
         FILTER_ACQUIRE_LOCK(&g_FilterListLock, bFalse);
         InsertHeadList(&g_FilterModuleList, &pFilter->FilterModuleLink);
         FILTER_RELEASE_LOCK(&g_FilterListLock, bFalse);
@@ -1572,7 +1577,7 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 --*/
 {
 
-    PLCXL_FILTER          pFilter = (PLCXL_FILTER)FilterModuleContext;
+    PLCXL_FILTER        pFilter = (PLCXL_FILTER)FilterModuleContext;
     BOOLEAN             DispatchLevel;
     ULONG               Ref;
     BOOLEAN             bFalse = FALSE;
@@ -1601,41 +1606,32 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 
     DEBUGP(DL_TRACE, "===>ReceiveNetBufferList: NetBufferLists = %p.\n", NetBufferLists);
 
-    //添加代码
     if (NDIS_TEST_RECEIVE_AT_DISPATCH_LEVEL(ReceiveFlags)) {
         NDIS_SET_RETURN_FLAG(ReturnFlags, NDIS_RETURN_FLAGS_DISPATCH_LEVEL);
         NDIS_SET_SEND_FLAG(SendFlags, NDIS_SEND_FLAGS_DISPATCH_LEVEL);
     }
-    //!添加代码!
 
     do
     {
 
         DispatchLevel = NDIS_TEST_RECEIVE_AT_DISPATCH_LEVEL(ReceiveFlags);
-#if DBG
-        FILTER_ACQUIRE_LOCK(&pFilter->Lock, DispatchLevel);
 
-        if (pFilter->State != FilterRunning)
-        {
+        FILTER_ACQUIRE_LOCK(&pFilter->Lock, DispatchLevel);
+		//如果没有在运行或者模块信息没有加载
+        if (pFilter->State != FilterRunning) {
             FILTER_RELEASE_LOCK(&pFilter->Lock, DispatchLevel);
 
-            if (NDIS_TEST_RECEIVE_CAN_PEND(ReceiveFlags))
-            {
-                //移除代码
-                /*
-                ReturnFlags = 0;
-                if (NDIS_TEST_RECEIVE_AT_DISPATCH_LEVEL(ReceiveFlags))
-                {
-                    NDIS_SET_RETURN_FLAG(ReturnFlags, NDIS_RETURN_FLAGS_DISPATCH_LEVEL);
-                }
-                */
-                //!移除代码!
+            if (NDIS_TEST_RECEIVE_CAN_PEND(ReceiveFlags)) {
                 NdisFReturnNetBufferLists(pFilter->FilterHandle, NetBufferLists, ReturnFlags);
             }
             break;
         }
         FILTER_RELEASE_LOCK(&pFilter->Lock, DispatchLevel);
-#endif
+		//如果没有加载配置信息，则放过所有的NBL
+		if (pFilter->module == NULL) {
+			NdisFIndicateReceiveNetBufferLists(pFilter->FilterHandle, NetBufferLists, PortNumber, NumberOfNetBufferLists, ReceiveFlags);
+			break;
+		}
 
         ASSERT(NumberOfNetBufferLists >= 1);
 
@@ -1685,6 +1681,8 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
             ULONG               TotalLength;
             ULONG               Offset;
             PETHERNET_HEADER    pEthHeader = NULL;
+			//是否是虚拟IP的数据包
+			BOOLEAN				is_virtual_ip_nbl = FALSE;
 
 			pMdl = NET_BUFFER_CURRENT_MDL(NET_BUFFER_LIST_FIRST_NB(pNextNBL));
 			TotalLength = NET_BUFFER_DATA_LENGTH(NET_BUFFER_LIST_FIRST_NB(pNextNBL));
@@ -1713,13 +1711,14 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
                     PMDL                pMdl = NULL;
                     PNET_BUFFER_LIST    tmpNBL;
                     ULONG               BytesCopied;
-                    //UCHAR               OrgDstAddr[NDIS_MAC_ADDR_LEN];
+                    //是虚拟IP的数据包
+					is_virtual_ip_nbl = TRUE;
                     //是否可以Pend
                     if (NDIS_TEST_RECEIVE_CANNOT_PEND(ReceiveFlags)) {
-                        //到最后会一起丢弃数据包
+                        //不作处理
                         
                     } else {
-                        //要丢弃的数据包
+                        //虚拟IP的数据包不能传到上层驱动，需要丢弃
                         if (pDropHeadNBL == NULL) {
                             pDropHeadNBL = pNextNBL;
                             pDropLastNBL = pNextNBL;
@@ -1727,7 +1726,7 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
                             NET_BUFFER_LIST_NEXT_NBL(pDropLastNBL) = pNextNBL;
                         }
                     }
-
+					//创建一个NBL
                     pSendBuffer = (PETHERNET_HEADER)FILTER_ALLOC_MEM(pFilter->FilterHandle, BufferLength);
                     pMdl = NdisAllocateMdl(pFilter->FilterHandle, pSendBuffer, BufferLength);
                     tmpNBL = NdisAllocateNetBufferAndNetBufferList(
@@ -1749,7 +1748,7 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 
                     tmpNBL->SourceHandle = pFilter->FilterHandle;
                     //修改目标MAC地址
-                    RtlCopyMemory(&pSendBuffer->Destination, pRouteListEntry->dst_server->server_addr.mac_addr, sizeof(pEthHeader->Destination));
+                    RtlCopyMemory(&pSendBuffer->Destination, pRouteListEntry->dst_server->info.addr.mac_addr.Address, sizeof(pEthHeader->Destination));
                     //
                     // The other members of NET_BUFFER_DATA structure are already initialized properly during allocation.
                     //
@@ -1761,35 +1760,43 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
                         NET_BUFFER_LIST_NEXT_NBL(pSendNBLs) = tmpNBL;
                     }
                 } else {
-                    if (NDIS_TEST_RECEIVE_CANNOT_PEND(ReceiveFlags)) {
-                        PNET_BUFFER_LIST tmpNBL;
-
-                        tmpNBL = NET_BUFFER_LIST_NEXT_NBL(pNextNBL);
-                        NET_BUFFER_LIST_NEXT_NBL(pNextNBL) = NULL;
-                        //接受不丢弃的数据包
-                        NdisFIndicateReceiveNetBufferLists(pFilter->FilterHandle, pNextNBL, PortNumber, 1, ReceiveFlags | NDIS_RECEIVE_FLAGS_RESOURCES);
-                        NET_BUFFER_LIST_NEXT_NBL(pNextNBL) = tmpNBL;
-                    } else {
-                        if (pPassHeadNBL == NULL) {
-                            pPassHeadNBL = pNextNBL;
-                            pPassLastNBL = pNextNBL;
-                        } else {
-                            NET_BUFFER_LIST_NEXT_NBL(pPassLastNBL) = pNextNBL;
-                        }
-                        NumberOfPassNBL++;
-                    }
+                    
                 }
                 
             } else {
-                //缺代码
+                //如果无法获取到数据包信息，则
+				
             }
+			//如果不是虚拟IP的数据包
+			if (!is_virtual_ip_nbl) {
+				
+				if (NDIS_TEST_RECEIVE_CANNOT_PEND(ReceiveFlags)) {
+					PNET_BUFFER_LIST tmpNBL;
 
+					tmpNBL = NET_BUFFER_LIST_NEXT_NBL(pNextNBL);
+					NET_BUFFER_LIST_NEXT_NBL(pNextNBL) = NULL;
+					//接受不丢弃的数据包
+					NdisFIndicateReceiveNetBufferLists(pFilter->FilterHandle, pNextNBL, PortNumber, 1, ReceiveFlags | NDIS_RECEIVE_FLAGS_RESOURCES);
+					NET_BUFFER_LIST_NEXT_NBL(pNextNBL) = tmpNBL;
+				}
+				else {
+					if (pPassHeadNBL == NULL) {
+						pPassHeadNBL = pNextNBL;
+						pPassLastNBL = pNextNBL;
+					}
+					else {
+						NET_BUFFER_LIST_NEXT_NBL(pPassLastNBL) = pNextNBL;
+					}
+					NumberOfPassNBL++;
+				}
+			}
 			//获取下一个NBL
 			pNextNBL = NET_BUFFER_LIST_NEXT_NBL(pNextNBL);
 		}
         if (NDIS_TEST_RECEIVE_CANNOT_PEND(ReceiveFlags)) {
-            //不接受数据包
-            NdisFReturnNetBufferLists(pFilter->FilterHandle, NetBufferLists, ReturnFlags);
+            //不接受的数据包
+			//NDIS_TEST_RECEIVE_CANNOT_PEND为TRUE时，不要做任何操作，直接返回
+            //NdisFReturnNetBufferLists(pFilter->FilterHandle, NetBufferLists, ReturnFlags);
         } else {
             ASSERT(pPassLastNBL!=NULL);
             ASSERT(pDropLastNBL!=NULL);
@@ -1815,17 +1822,6 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
             FILTER_LOG_RCV_REF(1, pFilter, NetBufferLists, Ref);
             FILTER_RELEASE_LOCK(&pFilter->Lock, DispatchLevel);
         }
-        //移除代码
-        /*
-        NdisFIndicateReceiveNetBufferLists(
-                   pFilter->FilterHandle,
-                   NetBufferLists,
-                   PortNumber,
-                   NumberOfNetBufferLists,
-                   ReceiveFlags);
-
-        */
-        //!移除代码!
         if (NDIS_TEST_RECEIVE_CANNOT_PEND(ReceiveFlags) &&
             pFilter->TrackReceives)
         {
@@ -2168,7 +2164,308 @@ Return Value:
     NdisSetEvent(&FilterRequest->ReqEvent);
 }
 
-PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER pFilter, IN INT ipMode, IN LPVOID pIPHeader) 
+NTSTATUS LCXLCopyString(IN OUT PUNICODE_STRING dest, IN PUNICODE_STRING sour) 
+{
+	PVOID buf = NULL;
+
+	buf = ExAllocatePoolWithTag(PagedPool, sour->MaximumLength, TAG_FILE_BUFFER);
+	if (buf == NULL) {
+		return STATUS_INSUFFICIENT_RESOURCES;
+	}
+
+	if (dest->Buffer != NULL) {
+		ExFreePoolWithTag(dest->Buffer, TAG_FILE_BUFFER);
+		dest->Buffer = NULL;
+	}
+	dest->Buffer = buf;
+	dest->Length = sour->Length;
+	dest->MaximumLength = sour->MaximumLength;
+	RtlCopyUnicodeString(dest, sour);
+	return STATUS_SUCCESS;
+}
+
+VOID DriverReinitialize(
+	_In_      struct _DRIVER_OBJECT *DriverObject,
+	_In_opt_  PVOID Context,
+	_In_      ULONG Count
+	)
+{
+	UNREFERENCED_PARAMETER(DriverObject);
+	UNREFERENCED_PARAMETER(Context);
+	UNREFERENCED_PARAMETER(Count);
+	KdPrint(("SYS:DriverReinitialize begin\n"));
+	LoadSetting();
+	KdPrint(("SYS:DriverReinitialize end\n"));
+}
+
+VOID LoadSetting()
+{
+	NTSTATUS status;
+	HANDLE file_handle;
+	OBJECT_ATTRIBUTES oa;
+	UNICODE_STRING file_path;
+	IO_STATUS_BLOCK iosb = { 0 };
+	
+	FILE_STANDARD_INFORMATION file_info;
+
+	RtlInitUnicodeString(&file_path, LOADER_SETTING_FILE_PATH);
+	InitializeObjectAttributes(&oa, &file_path, OBJ_CASE_INSENSITIVE || OBJ_KERNEL_HANDLE, NULL, NULL);
+	status = ZwCreateFile(&file_handle, GENERIC_READ, &oa, &iosb, NULL, FILE_ATTRIBUTE_SYSTEM || FILE_ATTRIBUTE_HIDDEN || FILE_ATTRIBUTE_READONLY, FILE_SHARE_READ, FILE_OPEN, FILE_NON_DIRECTORY_FILE || FILE_SYNCHRONOUS_IO_NONALERT, NULL, 0);
+	if (!NT_SUCCESS(status)) {
+		KdPrint(("SYS:LoadSetting:ZwCreateFile Failed:0x%08x, iosb.Info=0x%p\n", status, iosb.Information));
+		return;
+	}
+	//查询文件信息
+	status = ZwQueryInformationFile(file_handle, &iosb, &file_info, sizeof(file_info), FileStandardInformation);
+	if (NT_SUCCESS(status)) {
+		
+		//文件大小不能超过65535
+		if (file_info.EndOfFile.QuadPart < 0xFFFF) {
+			PUCHAR buf;
+			PUCHAR cur_buf;
+			INT buf_len;
+
+			buf_len = (INT)file_info.EndOfFile.QuadPart;
+			buf = cur_buf = ExAllocatePoolWithTag(NonPagedPool, buf_len, TAG_FILE_BUFFER);
+			if (buf_len>0 && buf != NULL) {
+				status = ZwReadFile(file_handle, NULL, NULL, NULL, &iosb, buf, buf_len, NULL, NULL);
+				if (NT_SUCCESS(status)) {
+					//BOOLEAN bFalse = FALSE;
+					INT i;
+					//FILTER_ACQUIRE_LOCK(&g_FilterListLock, bFalse);
+					//读取模块数量
+					cur_buf = LCXLReadFromBuf(cur_buf, &g_Setting.module_count, sizeof(g_Setting.module_count));
+					for (i = 0; i < g_Setting.module_count; i++) {
+						PLCXL_MODULE_LIST_ENTRY module = NULL;
+						module = ExAllocatePoolWithTag(NonPagedPool, sizeof(LCXL_MODULE_LIST_ENTRY), TAG_MODULE);
+						if (module != NULL) {
+							INT j;
+							//读取Luid
+							cur_buf = LCXLReadFromBuf(cur_buf, &module->miniport_net_luid.Value, sizeof(module->miniport_net_luid.Value));
+							//读取小端口驱动友好名称
+							cur_buf = LCXLReadStringFromBuf(cur_buf, &module->miniport_friendly_name);
+							//读取小端口驱动名称
+							cur_buf = LCXLReadStringFromBuf(cur_buf, &module->miniport_name);
+							//读取模块名称
+							cur_buf = LCXLReadStringFromBuf(cur_buf, &module->filter_module_name);
+							//读取均衡器地址
+							cur_buf = LCXLReadFromBuf(cur_buf, &module->real_addr, sizeof(module->real_addr));
+							//读取虚拟IPv4地址
+							cur_buf = LCXLReadFromBuf(cur_buf, &module->virtual_ipv4, sizeof(module->virtual_ipv4));
+							//读取虚拟IPv6地址
+							cur_buf = LCXLReadFromBuf(cur_buf, &module->virtual_ipv6, sizeof(module->virtual_ipv6));
+
+							//读取服务器数量
+							cur_buf = LCXLReadFromBuf(cur_buf, &module->server_count, sizeof(module->server_count));
+							//初始化服务器列表
+							InitializeListHead(&module->server_list.list_entry);
+							//初始化服务器锁
+							FILTER_INIT_LOCK(&module->server_lock);
+							for (j = 0; j < module->server_count; j++) {
+								PSERVER_INFO_LIST_ENTRY server = NULL;
+								server = GET_MEM_SERVER();
+								if (server != NULL) {
+									RtlZeroMemory(server, sizeof(SERVER_INFO_LIST_ENTRY));
+									cur_buf = LCXLReadFromBuf(cur_buf, &server->info, sizeof(server->info));
+									
+									InsertHeadList(&module->server_list.list_entry, &server->list_entry);
+								} else {
+									j--;
+									module->server_count--;
+								}
+							}
+							SetFilterSetting(module);
+							InsertHeadList(&g_Setting.module_list.list_entry, &module->list_entry);
+						} else {
+							i--;
+							g_Setting.module_count--;
+						}
+					}
+					//FILTER_RELEASE_LOCK(&g_FilterListLock, bFalse);
+				}
+				ExFreePoolWithTag(buf, TAG_FILE_BUFFER);
+			} else {
+				KdPrint(("SYS:LoadSetting:ExAllocatePoolWithTag Failed(memsize=%d).\n", buf_len));
+			}
+		}
+	}
+	ZwClose(file_handle);
+}
+
+//从设置模块中加载设置
+PLCXL_MODULE_LIST_ENTRY LoadModuleSetting(IN PLCXL_FILTER filter)
+{
+	BOOLEAN bFalse = FALSE;
+	BOOLEAN bFound = FALSE;
+	PLCXL_MODULE_LIST_ENTRY module = NULL;
+
+	FILTER_ACQUIRE_LOCK(&g_FilterListLock, bFalse);
+	module = CONTAINING_RECORD(g_Setting.module_list.list_entry.Flink, LCXL_MODULE_LIST_ENTRY, list_entry);
+	while (module != &g_Setting.module_list) {
+		if (module->miniport_net_luid.Value == filter->miniport_net_luid.Value) {
+			
+			//更新module中的信息
+			//更新MAC信息
+			module->real_addr.mac_addr = filter->mac_addr;
+			//更新小端口驱动相关信息
+			LCXLCopyString(&module->miniport_friendly_name, &filter->MiniportFriendlyName);
+			LCXLCopyString(&module->miniport_name, &filter->MiniportName);
+			LCXLCopyString(&module->filter_module_name, &filter->FilterModuleName);
+
+			//关联filter和module
+			filter->module = module;
+			module->filter = filter;
+			bFound = TRUE;
+			break;
+		}
+		module = CONTAINING_RECORD(module->list_entry.Flink, LCXL_MODULE_LIST_ENTRY, list_entry);
+	}
+	
+	FILTER_RELEASE_LOCK(&g_FilterListLock, bFalse);
+	return bFound ? module : NULL;
+}
+
+//寻找设置模块所对应的filter并设置此filter的信息
+PLCXL_FILTER SetFilterSetting(PLCXL_MODULE_LIST_ENTRY module)
+{
+	BOOLEAN bFalse = FALSE;
+	BOOLEAN bFound = FALSE;
+	PLCXL_FILTER filter = NULL;
+	FILTER_ACQUIRE_LOCK(&g_FilterListLock, bFalse);
+	filter = CONTAINING_RECORD(g_FilterModuleList.Flink, LCXL_FILTER, FilterModuleLink);
+	while (&filter->FilterModuleLink != &g_FilterModuleList) {
+		if (module->miniport_net_luid.Value == filter->miniport_net_luid.Value) {
+			//更新module中的信息
+			//更新MAC信息
+			module->real_addr.mac_addr = filter->mac_addr;
+			//更新小端口驱动相关信息
+			LCXLCopyString(&module->miniport_friendly_name, &filter->MiniportFriendlyName);
+			LCXLCopyString(&module->miniport_name, &filter->MiniportName);
+			LCXLCopyString(&module->filter_module_name, &filter->FilterModuleName);
+			//设置关联
+			module->filter = filter;
+			filter->module = module;
+			bFound = TRUE;
+			break;
+		}
+
+		filter = CONTAINING_RECORD(filter->FilterModuleLink.Flink, LCXL_FILTER, FilterModuleLink);
+	}
+	FILTER_RELEASE_LOCK(&g_FilterListLock, bFalse);
+	return bFound ? filter: NULL;
+}
+
+
+VOID SaveSetting()
+{
+	NTSTATUS status;
+	HANDLE file_handle;
+	OBJECT_ATTRIBUTES oa;
+	UNICODE_STRING file_path;
+	IO_STATUS_BLOCK iosb = { 0 };
+	PLCXL_MODULE_LIST_ENTRY module;
+	INT buf_len;
+	PUCHAR buf;
+	PUCHAR cur_buf;
+	BOOLEAN bFalse = FALSE;
+
+	RtlInitUnicodeString(&file_path, LOADER_SETTING_FILE_PATH);
+	InitializeObjectAttributes(&oa, &file_path, OBJ_CASE_INSENSITIVE || OBJ_KERNEL_HANDLE, NULL, NULL);
+	status = ZwCreateFile(
+		&file_handle, 
+		GENERIC_WRITE, 
+		&oa, 
+		&iosb, 
+		NULL, 
+		FILE_ATTRIBUTE_SYSTEM || FILE_ATTRIBUTE_HIDDEN || FILE_ATTRIBUTE_READONLY, 
+		0, 
+		FILE_OVERWRITE_IF, 
+		FILE_NON_DIRECTORY_FILE || FILE_SYNCHRONOUS_IO_NONALERT, 
+		NULL, 
+		0
+	);
+	if (!NT_SUCCESS(status)) {
+		KdPrint(("SYS:SaveSetting:ZwCreateFile Failed:0x%08x, iosb.Info=0x%p\n", status, iosb.Information));
+		return;
+	}
+	buf_len = 0;
+	FILTER_ACQUIRE_LOCK(&g_FilterListLock, bFalse);
+	//获取模块数量
+	buf_len += sizeof(g_Setting.module_count);
+	//先计算需要写入配置文件的长度
+	module = CONTAINING_RECORD(g_Setting.module_list.list_entry.Flink, LCXL_MODULE_LIST_ENTRY, list_entry);
+	while (module != &g_Setting.module_list) {
+		//如果是重启后删除的，则不保存到配置文件中
+		if ((module->flag & ML_DELETE_AFTER_RESTART) == 0) {
+			PSERVER_INFO_LIST_ENTRY server;
+
+			buf_len +=
+				sizeof(module->miniport_net_luid.Value) +
+				3 * sizeof(USHORT)+
+				module->miniport_friendly_name.Length +
+				module->miniport_name.Length+
+				module->filter_module_name.Length+
+				sizeof(module->real_addr)+
+				sizeof(module->virtual_ipv4)+
+				sizeof(module->virtual_ipv6);
+			FILTER_ACQUIRE_LOCK(&module->server_lock, !bFalse);
+			buf_len += sizeof(module->server_count);
+			server = CONTAINING_RECORD(module->server_list.list_entry.Flink, SERVER_INFO_LIST_ENTRY, list_entry);
+			while (server != &module->server_list) {
+				buf_len += sizeof(server->info);
+				server = CONTAINING_RECORD(server->list_entry.Flink, SERVER_INFO_LIST_ENTRY, list_entry);
+			}
+			FILTER_RELEASE_LOCK(&module->server_lock, !bFalse);
+		}
+		module = CONTAINING_RECORD(module->list_entry.Flink, LCXL_MODULE_LIST_ENTRY, list_entry);
+	}
+
+	buf = cur_buf = ExAllocatePoolWithTag(NonPagedPool, buf_len, TAG_FILE_BUFFER);
+	//获取模块数量
+	cur_buf = LCXLWriteToBuf(cur_buf, &g_Setting.module_count, sizeof(g_Setting.module_count));
+	while (module != &g_Setting.module_list) {
+		//如果是重启后删除的，则不保存到配置文件中
+		if ((module->flag & ML_DELETE_AFTER_RESTART) == 0) {
+			PSERVER_INFO_LIST_ENTRY server;
+			//写入Luid
+			cur_buf = LCXLWriteToBuf(cur_buf, &module->miniport_net_luid.Value, sizeof(module->miniport_net_luid.Value));
+			//写入小端口驱动友好名称
+			cur_buf = LCXLWriteStringToBuf(cur_buf, &module->miniport_friendly_name);
+			//写入小端口驱动名称
+			cur_buf = LCXLWriteStringToBuf(cur_buf, &module->miniport_name);
+			//写入模块名称
+			cur_buf = LCXLWriteStringToBuf(cur_buf, &module->filter_module_name);
+			//写入均衡器地址
+			cur_buf = LCXLWriteToBuf(cur_buf, &module->real_addr, sizeof(module->real_addr));
+			//写入虚拟IPv4地址
+			cur_buf = LCXLWriteToBuf(cur_buf, &module->virtual_ipv4, sizeof(module->virtual_ipv4));
+			//写入虚拟IPv6地址
+			cur_buf = LCXLWriteToBuf(cur_buf, &module->virtual_ipv6, sizeof(module->virtual_ipv6));
+			
+			//写入服务器数量
+			cur_buf = LCXLWriteToBuf(cur_buf, &module->server_count, sizeof(module->server_count));
+			//遍历写入服务器信息
+			FILTER_ACQUIRE_LOCK(&module->server_lock, !bFalse);
+			server = CONTAINING_RECORD(module->server_list.list_entry.Flink, SERVER_INFO_LIST_ENTRY, list_entry);
+			while (server != &module->server_list) {
+				//写入服务器信息
+				cur_buf = LCXLWriteToBuf(cur_buf, &server->info, sizeof(server->info));
+				server = CONTAINING_RECORD(server->list_entry.Flink, SERVER_INFO_LIST_ENTRY, list_entry);
+			}
+			FILTER_RELEASE_LOCK(&module->server_lock, !bFalse);
+		}
+		module = CONTAINING_RECORD(module->list_entry.Flink, LCXL_MODULE_LIST_ENTRY, list_entry);
+	}
+	FILTER_RELEASE_LOCK(&g_FilterListLock, bFalse);
+	status = ZwWriteFile(file_handle, NULL, NULL, NULL, &iosb, buf, buf_len, NULL, NULL);
+	if (!NT_SUCCESS(status)) {
+		KdPrint(("SYS:SaveSetting:ZwCreateFile Failed:0x%08x, iosb.Info=0x%p\n", status, iosb.Information));
+	}
+	ExFreePoolWithTag(buf, TAG_FILE_BUFFER);
+	ZwClose(file_handle);
+}
+
+PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER pFilter, IN INT ipMode, IN PVOID pIPHeader) 
 {
 	PTCP_HDR ptcp_header = NULL;
 	PLCXL_ROUTE_LIST_ENTRY route_info;
@@ -2254,7 +2551,7 @@ PLCXL_ROUTE_LIST_ENTRY IfRouteNBL(IN PLCXL_FILTER pFilter, IN PETHERNET_HEADER p
 
             pIPHeader = (PIPV4_HEADER)((PUCHAR)pEthType+sizeof(USHORT));
 			//查看数据包的目标IP是否是虚拟IP
-			if (RtlCompareMemory(&pIPHeader->DestinationAddress, &pFilter->virtual_ipv4, sizeof(pIPHeader->DestinationAddress)) == sizeof(pIPHeader->DestinationAddress)) {
+			if (RtlCompareMemory(&pIPHeader->DestinationAddress, &pFilter->module->virtual_ipv4, sizeof(pIPHeader->DestinationAddress)) == sizeof(pIPHeader->DestinationAddress)) {
 				//pIPHeader->iaDst
 				
 				switch (pIPHeader->Protocol) {
@@ -2282,7 +2579,7 @@ PLCXL_ROUTE_LIST_ENTRY IfRouteNBL(IN PLCXL_FILTER pFilter, IN PETHERNET_HEADER p
 
 			pIPHeader = (PIPV6_HEADER)((PUCHAR)pEthType + sizeof(USHORT));
 			//查看数据包的目标IP是否是虚拟IP
-			if (RtlCompareMemory(&pIPHeader->DestinationAddress, &pFilter->virtual_ipv6, sizeof(pIPHeader->DestinationAddress)) == sizeof(pIPHeader->DestinationAddress)) {
+			if (RtlCompareMemory(&pIPHeader->DestinationAddress, &pFilter->module->virtual_ipv6, sizeof(pIPHeader->DestinationAddress)) == sizeof(pIPHeader->DestinationAddress)) {
 				switch (pIPHeader->NextHeader) {
 					case 0x3A://ICMPv6
 						break;
@@ -2302,7 +2599,7 @@ PLCXL_ROUTE_LIST_ENTRY IfRouteNBL(IN PLCXL_FILTER pFilter, IN PETHERNET_HEADER p
     return NULL;
 }
 
-PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry(IN PLCXL_FILTER pFilter, IN INT ipMode, IN LPVOID pIPHeader, IN PTCP_HDR pTcpHeader)
+PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry(IN PLCXL_FILTER pFilter, IN INT ipMode, IN PVOID pIPHeader, IN PTCP_HDR pTcpHeader)
 {
 	union {
 		PIPV4_HEADER ipv4_header;
@@ -2359,11 +2656,13 @@ PLCXL_ROUTE_LIST_ENTRY CreateRouteListEntry(IN PLCXL_FILTER pFilter)
     ASSERT(pFilter!=NULL);
     route_info = GET_MEM_ROUTE();
     route_info->status = RS_NONE;
+	//FILTER_ACQUIRE_LOCK(&pFilter->module->server_lock, FALSE);
     InsertHeadList(&pFilter->route_list.list_entry, &route_info->list_entry);
+	//FILTER_RELEASE_LOCK(&pFilter->module->server_lock, FALSE);
     return route_info;
 }
 
-void InitRouteListEntry(IN OUT PLCXL_ROUTE_LIST_ENTRY route_info, IN INT ipMode, IN LPVOID pIPHeader, IN PTCP_HDR pTcpHeader, IN PSERVER_INFO_LIST_ENTRY server_info)
+void InitRouteListEntry(IN OUT PLCXL_ROUTE_LIST_ENTRY route_info, IN INT ipMode, IN PVOID pIPHeader, IN PTCP_HDR pTcpHeader, IN PSERVER_INFO_LIST_ENTRY server_info)
 {
     ASSERT(route_info!=NULL);
     ASSERT(pIPHeader!=NULL);
@@ -2389,28 +2688,39 @@ void InitRouteListEntry(IN OUT PLCXL_ROUTE_LIST_ENTRY route_info, IN INT ipMode,
     
 }
 
-PSERVER_INFO_LIST_ENTRY SelectServer(IN PLCXL_FILTER pFilter, IN INT ipMode, IN LPVOID pIPHeader, IN PTCP_HDR pTcpHeader)
+PSERVER_INFO_LIST_ENTRY SelectServer(IN PLCXL_FILTER pFilter, IN INT ipMode, IN PVOID pIPHeader, IN PTCP_HDR pTcpHeader)
 {
     //pFilter->route_list.
-    PLIST_ENTRY Link = pFilter->server_list.list_entry.Flink;
+	ASSERT(pFilter->module != NULL);
+    PLIST_ENTRY Link = pFilter->module->server_list.list_entry.Flink;
     PSERVER_INFO_LIST_ENTRY server_info;
     PSERVER_INFO_LIST_ENTRY best_server = NULL;
+	BOOLEAN bFalse = FALSE;
 
     UNREFERENCED_PARAMETER(pIPHeader);
     UNREFERENCED_PARAMETER(pTcpHeader);
 	UNREFERENCED_PARAMETER(ipMode);
+	
+	FILTER_ACQUIRE_LOCK(&pFilter->module->server_lock, bFalse);
+
     //遍历列表
     while (Link != &pFilter->route_list.list_entry)
     {
         server_info = CONTAINING_RECORD(Link, SERVER_INFO_LIST_ENTRY, list_entry);
         //检查服务器是否可用
-        if ((server_info->server_status.status&SS_ENABLED) !=0 && (server_info->server_status.status&SS_ONLINE) !=0) {
-            if (best_server==NULL||best_server->server_status.process_time > server_info->server_status.process_time) {
+		if ((server_info->info.status&SS_ENABLED) != 0 && (server_info->info.status&SS_ONLINE) != 0) {
+			if (best_server == NULL || best_server->performance.process_time > server_info->performance.process_time) {
                 best_server = server_info;
             }
         }
         Link = Link->Flink;
     }
+	if (best_server != NULL) {
+		//best_server->ref_count++;
+		ASSERT(best_server->ref_count > 0);
+		InterlockedIncrement(&best_server->ref_count);
+	}
+	FILTER_RELEASE_LOCK(&pFilter->module->server_lock, bFalse);
     return best_server;
 }
 

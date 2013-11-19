@@ -11,13 +11,13 @@
 ///E:委托的函数类型
 ///用法：
 ///1.定义事件类
-///     typedef void (A::*AEventCallBack)(XX XX, int x, int y);
+///     typedef void (A::*EEventCallBack)(XX XX, int x, int y);
 ///
 ///		class A {
 ///		public:
-///			typedef _LCXLFunctionDelegate<A, AEventCallBack> AMessageEvent;
+///			typedef _LCXLFunctionDelegate<A, EEventCallBack> EMessageEvent;
 ///     public:
-///         void SetAMessageEvent(AMessageEvent &a_event) {
+///         void SetEMessageEvent(AMessageEvent &a_event) {
 ///               this->m_a_message_event = a_event;
 ///         }
 ///         //触发A事件
@@ -26,7 +26,7 @@
 ///             //或者为：TRIGGER_DELEGATE(m_a_message_event)(0, 0);
 ///         }  
 ///     private:
-///         AMessageEvent m_a_message_event;
+///         AMessageEvent m_e_message_event;
 ///     }
 ///
 ///2.使用
@@ -36,7 +36,7 @@
 ///			void HostAEvent(int X, int Y);
 ///		public:
 ///			Host() {
-///				A::AMessageEvent event(this, (AEventCallBack)&HostAEvent);
+///				A::EMessageEvent event(this, (EEventCallBack)&HostAEvent);
 ///             //设置事件
 ///				a.SetAMessageEvent(event);
 ///				//触发事件

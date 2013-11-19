@@ -140,7 +140,7 @@ FilterDeviceIoControl(
     PLIST_ENTRY                 Link;
     PUCHAR                      pInfo;
     ULONG                       InfoLength = 0;
-    PLCXL_FILTER                  pFilter = NULL;
+    PLCXL_FILTER                pFilter = NULL;
     BOOLEAN                     bFalse = FALSE;
 
 
@@ -149,8 +149,7 @@ FilterDeviceIoControl(
 
     IrpSp = IoGetCurrentIrpStackLocation(Irp);
 
-    if (IrpSp->FileObject == NULL)
-    {
+    if (IrpSp->FileObject == NULL) {
         return(STATUS_UNSUCCESSFUL);
     }
 
@@ -161,50 +160,36 @@ FilterDeviceIoControl(
 
     Irp->IoStatus.Information = 0;
 
-    switch (IrpSp->Parameters.DeviceIoControl.IoControlCode)
-    {
+	InputBuffer = OutputBuffer = (PUCHAR)Irp->AssociatedIrp.SystemBuffer;
+	InputBufferLength = OutputBufferLength = IrpSp->Parameters.DeviceIoControl.InputBufferLength;
+
+    switch (IrpSp->Parameters.DeviceIoControl.IoControlCode) {
 
         case IOCTL_FILTER_RESTART_ALL:
             break;
 
         case IOCTL_FILTER_RESTART_ONE_INSTANCE:
-            InputBuffer = OutputBuffer = (PUCHAR)Irp->AssociatedIrp.SystemBuffer;
-            InputBufferLength = IrpSp->Parameters.DeviceIoControl.InputBufferLength;
-
             pFilter = filterFindFilterModule (InputBuffer, InputBufferLength);
 
-            if (pFilter == NULL)
-            {
+            if (pFilter == NULL) {
 
                 break;
             }
-
             NdisFRestartFilter(pFilter->FilterHandle);
-
             break;
 
         case IOCTL_FILTER_ENUERATE_ALL_INSTANCES:
 
-            InputBuffer = OutputBuffer = (PUCHAR)Irp->AssociatedIrp.SystemBuffer;
-            InputBufferLength = IrpSp->Parameters.DeviceIoControl.InputBufferLength;
-            OutputBufferLength = IrpSp->Parameters.DeviceIoControl.OutputBufferLength;
-
-
             pInfo = OutputBuffer;
-
             FILTER_ACQUIRE_LOCK(&g_FilterListLock, bFalse);
-
             Link = g_FilterModuleList.Flink;
 			//遍历列表
-            while (Link != &g_FilterModuleList)
-            {
+            while (Link != &g_FilterModuleList) {
                 pFilter = CONTAINING_RECORD(Link, LCXL_FILTER, FilterModuleLink);
-
 
                 InfoLength += (pFilter->FilterModuleName.Length + sizeof(USHORT));
 
-                if (InfoLength <= OutputBufferLength)
-                {
+                if (InfoLength <= OutputBufferLength) {
                     *(PUSHORT)pInfo = pFilter->FilterModuleName.Length;
                     NdisMoveMemory(pInfo + sizeof(USHORT),
                                    (PUCHAR)(pFilter->FilterModuleName.Buffer),
@@ -212,26 +197,99 @@ FilterDeviceIoControl(
 
                     pInfo += (pFilter->FilterModuleName.Length + sizeof(USHORT));
                 }
-
                 Link = Link->Flink;
             }
 
             FILTER_RELEASE_LOCK(&g_FilterListLock, bFalse);
-            if (InfoLength <= OutputBufferLength)
-            {
-
+            if (InfoLength <= OutputBufferLength) {
                 Status = NDIS_STATUS_SUCCESS;
             }
             //
             // Buffer is small
             //
-            else
-            {
+            else {
                 Status = STATUS_BUFFER_TOO_SMALL;
             }
             break;
 		//添加代码
-		case IOCTL_LOADER_ALL_NET_IFINDEX:
+		case IOCTL_LOADER_ALL_MODULE:
+		{
+			PLCXL_FILTER filter;
+			
+			PAPP_MODULE_INFO cur_buf;
+			
+			cur_buf = (PAPP_MODULE_INFO)OutputBuffer;
+			FILTER_ACQUIRE_LOCK(&g_FilterListLock, bFalse);
+			//遍历filter列表
+			filter = CONTAINING_RECORD(&g_FilterModuleList, LCXL_FILTER, FilterModuleLink);
+			while (filter = CONTAINING_RECORD(filter->FilterModuleLink.Flink, LCXL_FILTER, FilterModuleLink), filter != CONTAINING_RECORD(&g_FilterModuleList, LCXL_FILTER, FilterModuleLink)) {
+				if (OutputBufferLength - (ULONG)((LONG_PTR)cur_buf - (LONG_PTR)OutputBuffer) < sizeof(APP_MODULE_INFO)) {
+					Status = STATUS_BUFFER_TOO_SMALL;
+					break;
+				}
+				RtlZeroMemory(cur_buf, sizeof(APP_MODULE_INFO));
+				cur_buf->app_module_status = (filter->module != NULL) ? AMS_NORMAL : AMS_NO_SETTING;
+				if (filter->module != NULL) {
+					FILTER_ACQUIRE_LOCK(&filter->module->server_lock, bFalse);
+					cur_buf->real_addr = filter->module->real_addr;
+					cur_buf->virtual_ipv4 = filter->module->virtual_ipv4;
+					cur_buf->virtual_ipv6 = filter->module->virtual_ipv6;
+					cur_buf->server_count = filter->module->server_count;
+					FILTER_RELEASE_LOCK(&filter->module->server_lock, bFalse);
+				} else {
+					cur_buf->real_addr.mac_addr = filter->mac_addr;
+					cur_buf->real_addr.status = 0;
+				}
+				cur_buf->miniport_if_index = pFilter->MiniportIfIndex;
+				cur_buf->miniport_net_luid = pFilter->miniport_net_luid;
+
+				cur_buf->filter_module_name_len = (sizeof(cur_buf->filter_module_name) < filter->FilterModuleName.Length) ? sizeof(cur_buf->filter_module_name) : filter->FilterModuleName.Length;
+				RtlCopyMemory(cur_buf->filter_module_name, filter->FilterModuleName.Buffer, cur_buf->filter_module_name_len);
+
+				cur_buf->miniport_friendly_name_len = (sizeof(cur_buf->miniport_friendly_name) < filter->MiniportFriendlyName.Length) ? sizeof(cur_buf->miniport_friendly_name) : filter->MiniportFriendlyName.Length;
+				RtlCopyMemory(cur_buf->miniport_friendly_name, filter->MiniportFriendlyName.Buffer, cur_buf->miniport_friendly_name_len);
+
+				cur_buf->miniport_name_len = (sizeof(cur_buf->miniport_name) < filter->MiniportName.Length) ? sizeof(cur_buf->miniport_name) : filter->MiniportName.Length;
+				RtlCopyMemory(cur_buf->miniport_name, filter->MiniportName.Buffer, cur_buf->miniport_name_len);
+
+				cur_buf++;
+			}
+			if (NT_SUCCESS(Status)) {
+				PLCXL_MODULE_LIST_ENTRY module;
+				
+				module = &g_Setting.module_list;
+				while (module = CONTAINING_RECORD(module->list_entry.Flink, LCXL_MODULE_LIST_ENTRY, list_entry), module != &g_Setting.module_list) {
+					//先判断缓冲区是否足够
+					if (OutputBufferLength - (ULONG)((LONG_PTR)cur_buf - (LONG_PTR)OutputBuffer) < sizeof(APP_MODULE_INFO)) {
+						Status = STATUS_BUFFER_TOO_SMALL;
+						break;
+					}
+					if (module->filter == NULL) {
+						cur_buf->app_module_status = AMS_NO_FILTER;
+						FILTER_ACQUIRE_LOCK(&module->server_lock, bFalse);
+						cur_buf->real_addr = module->real_addr;
+						cur_buf->virtual_ipv4 = module->virtual_ipv4;
+						cur_buf->virtual_ipv6 = module->virtual_ipv6;
+						cur_buf->server_count = module->server_count;
+						FILTER_RELEASE_LOCK(&module->server_lock, bFalse);
+						cur_buf->miniport_net_luid = module->miniport_net_luid;
+
+						cur_buf->filter_module_name_len = (sizeof(cur_buf->filter_module_name) < module->filter_module_name.Length) ? sizeof(cur_buf->filter_module_name) : module->filter_module_name.Length;
+						RtlCopyMemory(cur_buf->filter_module_name, module->filter_module_name.Buffer, cur_buf->filter_module_name_len);
+
+						cur_buf->miniport_friendly_name_len = (sizeof(cur_buf->miniport_friendly_name) < module->miniport_friendly_name.Length) ? sizeof(cur_buf->miniport_friendly_name) : module->miniport_friendly_name.Length;
+						RtlCopyMemory(cur_buf->miniport_friendly_name, module->miniport_friendly_name.Buffer, cur_buf->miniport_friendly_name_len);
+
+						cur_buf->miniport_name_len = (sizeof(cur_buf->miniport_name) < module->miniport_name.Length) ? sizeof(cur_buf->miniport_name) : module->miniport_name.Length;
+						RtlCopyMemory(cur_buf->miniport_name, module->miniport_name.Buffer, cur_buf->miniport_name_len);
+
+						cur_buf++;
+					}
+				}
+			}
+			FILTER_RELEASE_LOCK(&g_FilterListLock, bFalse);
+			InfoLength = (LONG_PTR)cur_buf - (LONG_PTR)OutputBuffer;
+		}
 			break;
 		case IOCTL_LOADER_GET_VIRTUAL_IP:
 			break;
@@ -254,8 +312,6 @@ FilterDeviceIoControl(
     IoCompleteRequest(Irp, IO_NO_INCREMENT);
 
     return Status;
-
-
 }
 
 
@@ -276,14 +332,11 @@ filterFindFilterModule(
 
    Link = g_FilterModuleList.Flink;
 
-   while (Link != &g_FilterModuleList)
-   {
+   while (Link != &g_FilterModuleList) {
        pFilter = CONTAINING_RECORD(Link, LCXL_FILTER, FilterModuleLink);
 
-       if (BufferLength >= pFilter->FilterModuleName.Length)
-       {
-           if (NdisEqualMemory(Buffer, pFilter->FilterModuleName.Buffer, pFilter->FilterModuleName.Length))
-           {
+       if (BufferLength >= pFilter->FilterModuleName.Length) {
+           if (NdisEqualMemory(Buffer, pFilter->FilterModuleName.Buffer, pFilter->FilterModuleName.Length)) {
                FILTER_RELEASE_LOCK(&g_FilterListLock, bFalse);
                return pFilter;
            }

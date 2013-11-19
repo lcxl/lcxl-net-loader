@@ -3,7 +3,7 @@ package lcxl.netloader.action;
 import java.util.ArrayList;
 import java.util.List;
 
-import lcxl.netloader.record.ClusterListItem;
+import lcxl.netloader.record.AppModuleInfo;
 
 import com.opensymphony.xwork2.ActionSupport;
 
@@ -14,7 +14,7 @@ public class ClusterAction extends ActionSupport {
 	 */
 	private static final long serialVersionUID = 1L;
 	
-	private List<ClusterListItem> clusterList = new ArrayList<ClusterListItem>();
+	private List<AppModuleInfo> clusterList = new ArrayList<AppModuleInfo>();
 	/**
 	 * 获得集群列表
 	 * @return clusterList返回集群列表
@@ -23,7 +23,7 @@ public class ClusterAction extends ActionSupport {
 		
 		return SUCCESS;
 	}
-	public List<ClusterListItem> getClusterList() {
+	public List<AppModuleInfo> getClusterList() {
 		return clusterList;
 	}
 }

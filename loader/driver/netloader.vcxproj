@@ -128,7 +128,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <PropertyGroup>
-    <OutDir>$(IntDir)</OutDir>
+    <OutDir>..\bin\$(Platform)\</OutDir>
   </PropertyGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Win7 Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
@@ -248,7 +248,8 @@
   <ItemGroup>
     <ClInclude Include="..\..\common\driver\lcxl_net.h" />
     <ClInclude Include="..\..\common\lcxl_type.h" />
-    <ClInclude Include="..\common\app_interface.h" />
+    <ClInclude Include="..\common\drv_interface.h" />
+    <ClInclude Include="..\common\drv_interface_type.h" />
     <ClInclude Include="filter.h" />
     <ClInclude Include="flt_dbg.h" />
     <ClInclude Include="precomp.h" />

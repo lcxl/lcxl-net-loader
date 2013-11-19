@@ -25,7 +25,8 @@ Notes:
 #define FILTER_REQUEST_ID          'RTLF'
 #define FILTER_ALLOC_TAG           'tliF'
 #define FILTER_TAG                 'dnTF'
-
+#define TAG_FILE_BUFFER				'FISR'
+#define TAG_MODULE					'MODU'
 // TODO: Specify which version of the NDIS contract you will use here.
 // In many cases, 6.0 is the best choice.  You only need to select a later
 // version if you need a feature that is not available in 6.0.
@@ -42,16 +43,6 @@ Notes:
 #define FILTER_MINOR_NDIS_VERSION   NDIS_FILTER_MINOR_VERSION
 
 
-//
-// Global variables
-//
-extern NDIS_HANDLE         g_FilterDriverHandle; // NDIS handle for filter driver
-extern NDIS_HANDLE         g_FilterDriverObject;
-extern NDIS_HANDLE         g_NdisFilterDeviceHandle;
-extern PDEVICE_OBJECT      g_DeviceObject;
-
-extern FILTER_LOCK         g_FilterListLock;
-extern LIST_ENTRY          g_FilterModuleList;
 
 
 #define FILTER_FRIENDLY_NAME        L"LCXL Net Loader(NDIS Filter)"
@@ -62,9 +53,11 @@ extern LIST_ENTRY          g_FilterModuleList;
 //
 // The filter needs to handle IOCTLs
 //
-#define LINKNAME_STRING             L"\\DosDevices\\NDISLWF"
-#define NTDEVICE_STRING             L"\\Device\\NDISLWF"
+#define LINKNAME_STRING             L"\\DosDevices\\netloader"
+#define NTDEVICE_STRING             L"\\Device\\netloader"
 
+//配置文件
+#define LOADER_SETTING_FILE_PATH    L"\\SystemRoot\\System32\\drivers\\etc\\lcxl_loader"
 
 //
 // Types and macros to manipulate packet queue
@@ -235,14 +228,70 @@ ULONG_PTR    filterLogSendRef[0x10000];
 
 //添加代码
 
-
-
-typedef struct _SERVER_STATUS 
+//move from drv_interface
+#define MAX_FILTER_INSTANCE_NAME_LENGTH     256
+#define MAX_FILTER_CONFIG_KEYWORD_LENGTH    256
+typedef struct _FILTER_DRIVER_ALL_STAT
 {
-#define SS_ENABLED	0x01//服务器处于启用状态
-#define SS_ONLINE	0x02//服务器在线
-    //状态值
-    UCHAR               status;
+	ULONG          AttachCount;
+	ULONG          DetachCount;
+	ULONG          ExternalRequestFailedCount;
+	ULONG          ExternalRequestSuccessCount;
+	ULONG          InternalRequestFailedCount;
+} FILTER_DRIVER_ALL_STAT, *PFILTER_DRIVER_ALL_STAT;
+
+
+typedef struct _FILTER_SET_OID
+{
+	WCHAR           InstanceName[MAX_FILTER_INSTANCE_NAME_LENGTH];
+	ULONG           InstanceNameLength;
+	NDIS_OID        Oid;
+	NDIS_STATUS     Status;
+	UCHAR           Data[sizeof(ULONG)];
+
+}FILTER_SET_OID, *PFILTER_SET_OID;
+
+typedef struct _FILTER_QUERY_OID
+{
+	WCHAR           InstanceName[MAX_FILTER_INSTANCE_NAME_LENGTH];
+	ULONG           InstanceNameLength;
+	NDIS_OID        Oid;
+	NDIS_STATUS     Status;
+	UCHAR           Data[sizeof(ULONG)];
+
+}FILTER_QUERY_OID, *PFILTER_QUERY_OID;
+
+typedef struct _FILTER_READ_CONFIG
+{
+	_Field_size_bytes_part_(MAX_FILTER_INSTANCE_NAME_LENGTH, InstanceNameLength)
+	WCHAR                   InstanceName[MAX_FILTER_INSTANCE_NAME_LENGTH];
+	ULONG                   InstanceNameLength;
+	_Field_size_bytes_part_(MAX_FILTER_CONFIG_KEYWORD_LENGTH, KeywordLength)
+		WCHAR                   Keyword[MAX_FILTER_CONFIG_KEYWORD_LENGTH];
+	ULONG                   KeywordLength;
+	NDIS_PARAMETER_TYPE     ParameterType;
+	NDIS_STATUS             Status;
+	UCHAR                   Data[sizeof(ULONG)];
+}FILTER_READ_CONFIG, *PFILTER_READ_CONFIG;
+
+typedef struct _FILTER_WRITE_CONFIG
+{
+	_Field_size_bytes_part_(MAX_FILTER_INSTANCE_NAME_LENGTH, InstanceNameLength)
+	WCHAR                   InstanceName[MAX_FILTER_INSTANCE_NAME_LENGTH];
+	ULONG                   InstanceNameLength;
+	_Field_size_bytes_part_(MAX_FILTER_CONFIG_KEYWORD_LENGTH, KeywordLength)
+		WCHAR                   Keyword[MAX_FILTER_CONFIG_KEYWORD_LENGTH];
+	ULONG                   KeywordLength;
+	NDIS_PARAMETER_TYPE     ParameterType;
+	NDIS_STATUS             Status;
+	UCHAR                   Data[sizeof(ULONG)];
+}FILTER_WRITE_CONFIG, *PFILTER_WRITE_CONFIG;
+//!!
+
+
+//服务器性能
+typedef struct _LCXL_SERVER_PERFORMANCE
+{
     //单个任务的平均处理时间，时间单位为微妙（us）
     //Windows下使用KeQueryPerformanceCounter
     unsigned long       process_time;
@@ -252,18 +301,30 @@ typedef struct _SERVER_STATUS
     unsigned long long  cur_memory;
     //CPU使用率，最高为1
     double              cpu_usage;
+} LCXL_SERVER_PERFORMANCE, *PLCXL_SERVER_PERFORMANCE;
 
-} SERVER_STATUS, PSERVER_STATUS;
+typedef struct _LCXL_SERVER_INFO {
+#define SS_ENABLED	0x01//服务器处于启用状态
+#define SS_ONLINE	0x02//服务器在线
+	//服务器状态
+	UCHAR				status;
+	//计算机名
+	CHAR				computer_name[256];
+	//服务器真实IP地址
+	LCXL_SERVER_ADDR	addr;
+} LCXL_SERVER_INFO, *PLCXL_SERVER_INFO;
 
-//服务器信息
+//服务器信息列表项
 typedef struct _SERVER_INFO_LIST_ENTRY
 {
 	//列表项
-	LIST_ENTRY			list_entry;
+	LIST_ENTRY				list_entry;
+	//引用计数
+	volatile LONG  			ref_count;
 	//服务器状态
-	SERVER_STATUS		server_status;
-	//服务器地址
-	LCXL_SERVER_ADDR	server_addr;
+	LCXL_SERVER_INFO		info;
+	//服务器性能状态
+	LCXL_SERVER_PERFORMANCE	performance;
 } SERVER_INFO_LIST_ENTRY, *PSERVER_INFO_LIST_ENTRY;
 
 
@@ -282,6 +343,8 @@ typedef struct _LCXL_ROUTE_LIST_ENTRY
 	unsigned short	        dst_port;		//目的端口号
 	PSERVER_INFO_LIST_ENTRY dst_server;	    //目标服务器
 } LCXL_ROUTE_LIST_ENTRY, *PLCXL_ROUTE_LIST_ENTRY;
+//前置申明
+typedef struct _LCXL_MODULE_LIST_ENTRY LCXL_MODULE_LIST_ENTRY, *PLCXL_MODULE_LIST_ENTRY;
 //!添加代码!
 //
 // Enum of filter's states
@@ -311,16 +374,17 @@ typedef struct _FILTER_REQUEST
 //
 typedef struct _LCXL_FILTER
 {
-    LIST_ENTRY                     FilterModuleLink;
+    LIST_ENTRY						FilterModuleLink;
     //Reference to this filter
     ULONG                           RefCount;
 
     NDIS_HANDLE                     FilterHandle;
-    NDIS_STRING                     FilterModuleName;
-    //小端口驱动友好名称
-    NDIS_STRING                     MiniportFriendlyName;
-    //小端口驱动名称
-    NDIS_STRING                     MiniportName;
+	//模块名称
+	NDIS_STRING						FilterModuleName;
+	//小端口驱动友好名称
+	NDIS_STRING						MiniportFriendlyName;
+	//小端口驱动名称
+	NDIS_STRING						MiniportName;
     //小端口驱动网络接口序号
     NET_IFINDEX                     MiniportIfIndex;
 
@@ -328,8 +392,8 @@ typedef struct _LCXL_FILTER
     NDIS_EVENT                      Event;
     ULONG                           BackFillSize;
     FILTER_LOCK                     Lock;    // Lock for protection of state and outstanding sends and recvs
-
-    FILTER_STATE                    State;   // Which state the filter is in
+	//过滤驱动当前状态
+    FILTER_STATE                    State; 
     ULONG                           OutstandingSends;
     ULONG                           OutstandingRequest;
     ULONG                           OutstandingRcvs;
@@ -349,20 +413,60 @@ typedef struct _LCXL_FILTER
 
     PNDIS_OID_REQUEST               PendingOidRequest;
     //添加的代码
-    //虚拟IP
-	IN_ADDR							virtual_ipv4;
-	//虚拟IP
-	IN6_ADDR						virtual_ipv6;
-	//服务器列表
-	SERVER_INFO_LIST_ENTRY			server_list;
+	//网卡本地唯一ID
+	NET_LUID						miniport_net_luid;
+    //存储模块指针
+	PLCXL_MODULE_LIST_ENTRY			module;
 	//路由信息
 	LCXL_ROUTE_LIST_ENTRY			route_list;
     //NBL发送池
     NDIS_HANDLE                     send_net_buffer_list_pool;
-	//本地地址
-	LCXL_SERVER_ADDR				address;
+	//MAC地址
+	IF_PHYSICAL_ADDRESS_LH			mac_addr;
     //!添加的代码!
-}LCXL_FILTER, * PLCXL_FILTER;
+}LCXL_FILTER, *PLCXL_FILTER;
+//添加代码
+
+
+//配置文件数据结构
+struct _LCXL_MODULE_LIST_ENTRY {
+	LIST_ENTRY				list_entry;		//列表项
+	
+	//重启后删除此设置
+#define ML_DELETE_AFTER_RESTART 0x1
+	//标识
+	INT						flag;
+	//对应的Filter结构
+	PLCXL_FILTER			filter;
+	//真实地址
+	LCXL_SERVER_ADDR		real_addr;
+	//虚拟IPv4
+	IN_ADDR					virtual_ipv4;
+	//虚拟IPv6
+	IN6_ADDR				virtual_ipv6;
+	//网卡本地唯一ID
+	NET_LUID				miniport_net_luid;
+
+	//模块名称
+	NDIS_STRING             filter_module_name;
+	//小端口驱动友好名称
+	NDIS_STRING             miniport_friendly_name;
+	//小端口驱动名称
+	NDIS_STRING             miniport_name;
+	
+	//服务器数量
+	INT						server_count;
+	//服务器列表
+	SERVER_INFO_LIST_ENTRY	server_list;
+	// 发送接收锁
+	FILTER_LOCK             server_lock;
+};
+
+typedef struct _LCXL_SETTING{
+	INT module_count;
+	LCXL_MODULE_LIST_ENTRY module_list;
+} LCXL_SETTING, *PLCXL_SETTING;
+//!添加代码!
 
 typedef struct _FILTER_DEVICE_EXTENSION
 {
@@ -388,6 +492,19 @@ typedef struct _FL_NDIS_FILTER_LIST
 // The context inside a cloned request
 //
 typedef struct _NDIS_OID_REQUEST *FILTER_REQUEST_CONTEXT,**PFILTER_REQUEST_CONTEXT;
+
+//
+// Global variables
+//
+extern NDIS_HANDLE         g_FilterDriverHandle; // NDIS handle for filter driver
+extern NDIS_HANDLE         g_FilterDriverObject;
+extern NDIS_HANDLE         g_NdisFilterDeviceHandle;
+extern PDEVICE_OBJECT      g_DeviceObject;
+
+extern FILTER_LOCK         g_FilterListLock;
+extern LIST_ENTRY          g_FilterModuleList;
+//配置信息
+extern LCXL_SETTING			g_Setting;
 
 
 //
@@ -479,6 +596,57 @@ filterInternalRequestComplete(
 
 
 //添加代码
+
+NTSTATUS LCXLCopyString(IN OUT PUNICODE_STRING dest, IN PUNICODE_STRING sour);
+
+__inline PUCHAR LCXLReadFromBuf(IN PUCHAR cur_buf, IN OUT PVOID data, IN INT datalen)
+{
+	RtlCopyMemory(data, cur_buf, datalen);
+	return cur_buf + datalen;
+}
+
+__inline PUCHAR LCXLReadStringFromBuf(IN PUCHAR cur_buf, IN OUT PUNICODE_STRING data)
+{
+	return LCXLReadFromBuf(LCXLReadFromBuf(cur_buf, &data->Length, sizeof(data->Length)), data->Buffer, data->Length);
+}
+
+__inline PUCHAR LCXLWriteToBuf(IN PUCHAR cur_buf, IN PVOID data, IN INT datalen)
+{
+	RtlCopyMemory(cur_buf, data, datalen);
+	return cur_buf + datalen;
+}
+
+
+__inline PUCHAR LCXLWriteStringToBuf(IN PUCHAR cur_buf, IN PUNICODE_STRING data)
+{
+	return LCXLWriteToBuf(LCXLWriteToBuf(cur_buf, &data->Length, sizeof(data->Length)), data->Buffer, data->Length);
+}
+
+//驱动初始化使用
+VOID DriverReinitialize(
+	_In_      struct _DRIVER_OBJECT *DriverObject,
+	_In_opt_  PVOID Context,
+	_In_      ULONG Count
+	);
+
+///<summary>
+///加载配置文件
+///</summary>
+VOID LoadSetting();
+//从设置模块中加载设置
+PLCXL_MODULE_LIST_ENTRY LoadModuleSetting(IN PLCXL_FILTER filter);
+//寻找设置模块所对应的filter并设置此filter的信息
+PLCXL_FILTER SetFilterSetting(PLCXL_MODULE_LIST_ENTRY module);
+
+///<summary>
+///保存配置文件
+///</summary>
+VOID SaveSetting();
+///<summary>
+///路由TCP数据包
+///</summary>
+PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER pFilter, IN INT ipMode, IN PVOID pIPHeader);
+
 ///<summary>
 ///是否路由此NBL，如果需要路由此NBL，返回路由信息，否则返回NULL
 ///</summary>
@@ -487,7 +655,7 @@ PLCXL_ROUTE_LIST_ENTRY IfRouteNBL(IN PLCXL_FILTER pFilter, IN PETHERNET_HEADER p
 ///<summary>
 ///获取路由信息项
 ///</summary>
-PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry(IN PLCXL_FILTER pFilter, IN INT ipMode, IN LPVOID pIPHeader, IN PTCP_HDR pTcpHeader);
+PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry(IN PLCXL_FILTER pFilter, IN INT ipMode, IN PVOID pIPHeader, IN PTCP_HDR pTcpHeader);
 
 ///<summary>
 ///获取路由信息项IPv4
@@ -507,7 +675,7 @@ __inline PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry6(IN PLCXL_FILTER pFilter, IN P
 ///<summary>
 //选择服务器
 ///</summary>
-PSERVER_INFO_LIST_ENTRY SelectServer(IN PLCXL_FILTER pFilter, IN INT ipMode, IN LPVOID pIPHeader, IN PTCP_HDR pTcpHeader);
+PSERVER_INFO_LIST_ENTRY SelectServer(IN PLCXL_FILTER pFilter, IN INT ipMode, IN PVOID pIPHeader, IN PTCP_HDR pTcpHeader);
 
 ///<summary>
 ///创建路由信息表项
@@ -516,7 +684,7 @@ PLCXL_ROUTE_LIST_ENTRY CreateRouteListEntry(IN PLCXL_FILTER pFilter);
 ///<summary>
 ///始化路由信息表项
 ///</summary>
-void InitRouteListEntry(IN OUT PLCXL_ROUTE_LIST_ENTRY route_info, IN INT ipMode, IN LPVOID pIPHeader, IN PTCP_HDR pTcpHeader, IN PSERVER_INFO_LIST_ENTRY server_info);
+void InitRouteListEntry(IN OUT PLCXL_ROUTE_LIST_ENTRY route_info, IN INT ipMode, IN PVOID pIPHeader, IN PTCP_HDR pTcpHeader, IN PSERVER_INFO_LIST_ENTRY server_info);
 
 
 //!添加代码!
