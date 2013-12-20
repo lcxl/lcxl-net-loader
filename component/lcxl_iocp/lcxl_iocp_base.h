@@ -26,11 +26,7 @@ void OutputDebugStr(const TCHAR fmt[], ...);
 #define OutputDebugStr(__fmt, ...)
 #endif // _DEBUG
 
-#ifdef _UNICODE
-#define tstring wstring
-#else
-#define tstring string
-#endif
+#define tstring basic_string<TCHAR>
 
 tstring inttostr(int value);
 tstring int64tostr(INT64 value);
@@ -158,7 +154,7 @@ protected:
 	int InternalDecRefCount(int Count=1, BOOL UserMode=FALSE);
 public:
 	SocketBase();
-	~SocketBase();
+	virtual ~SocketBase();
 	virtual void Close();
 	//Property
 	IOCPBaseList *GetOwner() {
@@ -203,7 +199,7 @@ protected:
 	virtual void CreateSockObj(PSocketObj &SockObj);
 public:
 	SocketLst();
-	~SocketLst();
+	virtual ~SocketLst();
 	//Property
 	int GetPort() {
 		return mPort;
@@ -236,7 +232,7 @@ protected:
 	virtual BOOL Init();
 public:
 	SocketObj();
-	~SocketObj();
+	virtual ~SocketObj();
 	/// <summary>
 	/// 连接指定的网络地址，支持IPv6
 	/// </summary>
@@ -361,7 +357,7 @@ protected:
 	virtual void OnListenEvent(ListenEventEnum EventType, SocketLst *SockLst);
 public:
 	IOCPBaseList(IOCPManager *AIOCPMgr);
-	~IOCPBaseList();
+	virtual ~IOCPBaseList();
 	/// <summary>
 	/// 锁定列表，注意的锁定后不能对列表进行增加，删除操作，一切都由SocketMgr类维护
 	/// </summary>
@@ -432,7 +428,7 @@ protected:
 	BOOL PostExitStatus();
 public:
 	IOCPManager(int IOCPThreadCount = 0);
-	~IOCPManager();
+	virtual ~IOCPManager();
 	RELEASE_INLINE void LockSockList();
 
 	vector<IOCPBaseList*> &GetSockList() {
@@ -458,11 +454,13 @@ typedef void (IOCPBase2List::*EOnIOCPEvent)(IocpEventEnum EventType, SocketObj *
 // 监听事件
 typedef void (IOCPBase2List::*EOnListenEvent)(ListenEventEnum EventType, SocketLst *SockLst);
 
+//前置申明
+class IOCPBase2List;
+//定义事件触发函数类型
+typedef _LCXLFunctionDelegate<IOCPBase2List, EOnIOCPEvent> DOnIOCPEvent;
+typedef _LCXLFunctionDelegate<IOCPBase2List, EOnListenEvent> DOnListenEvent;
 
 class IOCPBase2List :public IOCPBaseList {
-public:
-	typedef _LCXLFunctionDelegate<IOCPBase2List, EOnIOCPEvent> DOnIOCPEvent;
-	typedef _LCXLFunctionDelegate<IOCPBase2List, EOnListenEvent> DOnListenEvent;
 private:
 	DOnIOCPEvent mIOCPEvent;
 	DOnListenEvent mOnListenEvent;
@@ -473,6 +471,7 @@ protected:
 	virtual void OnIOCPEvent(IocpEventEnum EventType, SocketObj *SockObj, PIOCPOverlapped Overlapped);
 	virtual void OnListenEvent(ListenEventEnum EventType, SocketLst *SockLst);
 public:
+	IOCPBase2List(IOCPManager *AIOCPMgr);
 	// 外部接口
 	const DOnIOCPEvent &GetIOCPEvent() {
 		return mIOCPEvent;

@@ -12,10 +12,12 @@
 ///用法：
 ///1.定义事件类
 ///     typedef void (A::*EEventCallBack)(XX XX, int x, int y);
-///
+///     class A;//前置申明
+///     
+///     typedef _LCXLFunctionDelegate<A, EEventCallBack> EMessageEvent;
 ///		class A {
 ///		public:
-///			typedef _LCXLFunctionDelegate<A, EEventCallBack> EMessageEvent;
+///			
 ///     public:
 ///         void SetEMessageEvent(AMessageEvent &a_event) {
 ///               this->m_a_message_event = a_event;
@@ -36,7 +38,7 @@
 ///			void HostAEvent(int X, int Y);
 ///		public:
 ///			Host() {
-///				A::EMessageEvent event(this, (EEventCallBack)&HostAEvent);
+///				A::EMessageEvent event(this, (EEventCallBack)&Host::HostAEvent);
 ///             //设置事件
 ///				a.SetAMessageEvent(event);
 ///				//触发事件
@@ -68,6 +70,7 @@ struct _LCXLFunctionDelegate {
 		return (invoker!=NULL&&delegate_func!=NULL);
 	}
 };
+
 ///<summary>
 ///触发委托者函数的宏，用法为DELEGATE(_LCXLFunctionDelegate类型的变量)(委托函数的参数)
 ///</summary>

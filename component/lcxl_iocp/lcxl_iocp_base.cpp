@@ -1313,7 +1313,7 @@ PIOCPOverlapped IOCPManager::NewOverlapped(SocketBase *SockObj, OverlappedTypeEn
 	PIOCPOverlapped _NewOverLapped;
 	LockOverLappedList();
 
-	if (mSockList.size() > 0) {
+	if (mOverLappedList.size() > 0) {
 		_NewOverLapped = mOverLappedList[0];
 		mOverLappedList.erase(mOverLappedList.begin());
 	} else {
@@ -1463,4 +1463,9 @@ void IOCPBase2List::OnListenEvent(ListenEventEnum EventType, SocketLst *SockLst)
 	if (mOnListenEvent.IsAvaliable()) {
 		TRIGGER_DELEGATE(mOnListenEvent)(EventType, SockLst);
 	}
+}
+
+IOCPBase2List::IOCPBase2List(IOCPManager *AIOCPMgr) :IOCPBaseList(AIOCPMgr)
+{
+
 }

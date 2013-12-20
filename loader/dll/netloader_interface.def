@@ -1,0 +1,3 @@
+LIBRARY netloader_interface
+EXPORTS
+	LoaderGetAllModule

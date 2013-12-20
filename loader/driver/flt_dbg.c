@@ -57,7 +57,7 @@ filterAuditAllocMem(
     //
     // Integer overflow check
     //
-    if ((Size + sizeof(FILTERD_ALLOCATION)) < Size)
+    if ((Size + (ULONG)sizeof(FILTERD_ALLOCATION)) < Size)
     {
         DEBUGP(DL_VERY_LOUD+50,
                "filterAuditAllocMem: Integer overflow error file %d, line %d, Size %d \n",

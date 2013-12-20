@@ -288,7 +288,7 @@ FilterDeviceIoControl(
 				}
 			}
 			FILTER_RELEASE_LOCK(&g_FilterListLock, bFalse);
-			InfoLength = (LONG_PTR)cur_buf - (LONG_PTR)OutputBuffer;
+			InfoLength = (ULONG)((ULONG_PTR)cur_buf - (ULONG_PTR)OutputBuffer);
 		}
 			break;
 		case IOCTL_LOADER_GET_VIRTUAL_IP:
