@@ -5,8 +5,8 @@
 #include <windows.h>
 #include <vector>
 #include <queue>
-#include <tchar.h>
 #include <assert.h>
+#include "lcxl_string.h"
 
 #include "lcxl_func_delegate.h"
 
@@ -26,10 +26,7 @@ void OutputDebugStr(const TCHAR fmt[], ...);
 #define OutputDebugStr(__fmt, ...)
 #endif // _DEBUG
 
-#define tstring basic_string<TCHAR>
 
-tstring inttostr(int value);
-tstring int64tostr(INT64 value);
 
 typedef enum _IocpEventEnum {ieAddSocket,
 
@@ -139,8 +136,14 @@ typedef struct _IOCPOverlapped {
 	};
 } IOCPOverlapped, *PIOCPOverlapped;
 
+/// <summary>
+/// Socket类型
+/// </summary>
+typedef enum _SocketType{ STObj, STLst } SocketType;
+
 class SocketBase {
 protected:
+	SocketType mSocketType;
 	int mRefCount;
 	int mUserRefCount;
 	SocketInitStatus mIniteStatus;
@@ -208,7 +211,7 @@ public:
 		return mSocketPoolSize;
 	}
 	void SetSocketPoolSize(int Value);
-	BOOL StartListen(IOCPBaseList &IOCPList, int Port, u_long InAddr = INADDR_ANY);
+	BOOL StartListen(IOCPBaseList *IOCPList, int Port, u_long InAddr = INADDR_ANY);
 	friend class IOCPBaseList;
 	friend unsigned __stdcall IocpWorkThread(void *CompletionPortID);
 };
@@ -251,32 +254,32 @@ public:
 	/// </returns>
 	BOOL ConnectSer(IOCPBaseList &IOCPList, LPCTSTR SerAddr, int Port, int IncRefNumber);
 	//Windows平台下使用WSAAddressToString 
-	string GetRemoteIP() {
-		string Address;
+	tstring GetRemoteIP() {
+		tstring Address;
 		WORD Port;
 		GetRemoteAddr(Address, Port);
 		return Address;
 	}
 	WORD GetRemotePort() {
-		string Address;
+		tstring Address;
 		WORD Port;
 		GetRemoteAddr(Address, Port);
 		return Port;
 	}
-	BOOL GetRemoteAddr(string &Address, WORD &Port);
-	string GetLocalIP() {
-		string Address;
+	BOOL GetRemoteAddr(tstring &Address, WORD &Port);
+	tstring GetLocalIP() {
+		tstring Address;
 		WORD Port;
 		GetLocalAddr(Address, Port);
 		return Address;
 	}
 	WORD GetLocalPort() {
-		string Address;
+		tstring Address;
 		WORD Port;
 		GetLocalAddr(Address, Port);
 		return Port;
 	}
-	BOOL GetLocalAddr(string &Address, WORD &Port);
+	BOOL GetLocalAddr(tstring &Address, WORD &Port);
 	LPVOID GetRecvBuf() {
 		return mRecvBuf;
 	}
@@ -386,14 +389,14 @@ public:
 	IOCPManager *GetOwner() {
 		return mOwner;
 	}
-	vector<SocketBase*> &GetSockBaseList() {
-		return mSockBaseList;
+	vector<SocketBase*> *GetSockBaseList() {
+		return &mSockBaseList;
 	}
-	vector<SocketLst*> &GetSockLstList() {
-		return mSockLstList;
+	vector<SocketLst*> *GetSockLstList() {
+		return &mSockLstList;
 	}
-	vector<SocketObj*> &GetSockObjList() {
-		return mSockObjList;
+	vector<SocketObj*> *GetSockObjList() {
+		return &mSockObjList;
 	}
 	/// <summary>
 	/// 获取本机IP地址列表
@@ -463,7 +466,7 @@ typedef _LCXLFunctionDelegate<IOCPBase2List, EOnListenEvent> DOnListenEvent;
 class IOCPBase2List :public IOCPBaseList {
 private:
 	DOnIOCPEvent mIOCPEvent;
-	DOnListenEvent mOnListenEvent;
+	DOnListenEvent mListenEvent;
 protected:
 	/// <summary>
 	/// IOCP事件
@@ -480,10 +483,10 @@ public:
 		mIOCPEvent = Value;
 	}
 	const DOnListenEvent &GetListenEvent() {
-		return mOnListenEvent;
+		return mListenEvent;
 	}
 	void SetListenEvent(const DOnListenEvent &Value) {
-		mOnListenEvent = Value;
+		mListenEvent = Value;
 	}
 };
 

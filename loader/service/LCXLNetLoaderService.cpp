@@ -36,8 +36,6 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 
 #endif
 
-
-
 void WINAPI ServiceMain(DWORD argc, LPTSTR *argv)
 {
 	g_SerCore.SerMain(argc, argv);
@@ -54,7 +52,7 @@ void SerCore::SerHandler(DWORD dwControl)
 	switch (dwControl){
 	case SERVICE_CONTROL_STOP:case SERVICE_CONTROL_SHUTDOWN:
 		// 关闭服务
-		OutputDebugStr(_T("服务端接收到关闭命令"));
+		OutputDebugStr(_T("服务端接收到关闭命令\n"));
 		SetEvent(mExitEvent);
 		break;
 	case SERVICE_CONTROL_INTERROGATE:
@@ -83,12 +81,12 @@ void SerCore::SerRun()
 
 	mSockLst = new SocketLst();
 	// 启动监听
-	if (mSockLst->StartListen(*mSerList, 9999)) {
+	if (mSockLst->StartListen(mSerList, 9999)) {
 		// 等待退出
 		WaitForSingleObject(mExitEvent, INFINITE);
 		mSockLst->Close();
 	} else {
-		OutputDebugStr(_T("启动监听失败！"));
+		OutputDebugStr(_T("启动监听失败！\n"));
 		delete mSockLst;
 	}
 
@@ -100,7 +98,37 @@ void SerCore::SerRun()
 
 void SerCore::IOCPEvent(IocpEventEnum EventType, SocketObj *SockObj, PIOCPOverlapped Overlapped)
 {
-
+	vector<SocketObj*> *SockList;
+	switch (EventType) {
+	case ieAddSocket:
+		SockList = mSerList->GetSockObjList();
+		OutputDebugStr(_T("SerCore::IOCPEvent ieAddSocket %d\n"), SockList->size());
+		break;
+	case ieDelSocket:
+		SockList = mSerList->GetSockObjList();
+		OutputDebugStr(_T("SerCore::IOCPEvent ieDelSocket %d\n"), SockList->size());
+		break;
+	case ieCloseSocket:
+		SockList = mSerList->GetSockObjList();
+		OutputDebugStr(_T("SerCore::IOCPEvent ieCloseSocket %d\n"), SockList->size());
+		break;
+	case ieError:
+		break;
+	case ieRecvPart:
+		break;
+	case ieRecvAll:
+		break;
+	case ieRecvFailed:
+		break;
+	case ieSendPart:
+		break;
+	case ieSendAll:
+		break;
+	case ieSendFailed:
+		break;
+	default:
+		break;
+	}
 }
 
 BOOL SerMgrBase::ReportStatusToSCMgr()

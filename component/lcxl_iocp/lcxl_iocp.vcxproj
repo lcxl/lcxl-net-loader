@@ -144,9 +144,11 @@
   <ItemGroup>
     <ClInclude Include="lcxl_func_delegate.h" />
     <ClInclude Include="lcxl_iocp_base.h" />
+    <ClInclude Include="lcxl_string.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="lcxl_iocp_base.cpp" />
+    <ClCompile Include="lcxl_string.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

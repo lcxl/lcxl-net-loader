@@ -155,16 +155,16 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\component\lcxl_iocp\lcxl_iocp_base.h" />
+    <ClInclude Include="..\..\component\lcxl_iocp\lcxl_string.h" />
     <ClInclude Include="..\common\dll_interface.h" />
     <ClInclude Include="LCXLNetLoaderService.h" />
-    <ClInclude Include="lcxl_string.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\component\lcxl_iocp\lcxl_string.cpp" />
     <ClCompile Include="LCXLNetLoaderService.cpp" />
-    <ClCompile Include="lcxl_string.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

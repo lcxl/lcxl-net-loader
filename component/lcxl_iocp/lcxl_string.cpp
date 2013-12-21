@@ -1,7 +1,8 @@
 #include "lcxl_string.h"
+// 需包含locale、string头文件、使用setlocale函数。
 #include <locale.h>
 
-std::wstring StringToWstring(const std::string &str)
+std::wstring StringToWString(const std::string &str)
 {
 	// string转wstring
 	size_t len = str.size() * 2;// 预留字节数
@@ -11,10 +12,9 @@ std::wstring StringToWstring(const std::string &str)
 	std::wstring str1(p);
 	delete[] p;// 释放申请的内存
 	return str1;
-
 }
 
-std::string WstringToString(const std::wstring &str)
+std::string WStringToString(const std::wstring &str)
 {
 	// wstring转string
 	size_t len = str.size() * 4;

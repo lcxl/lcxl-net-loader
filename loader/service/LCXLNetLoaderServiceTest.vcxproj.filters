@@ -36,7 +36,7 @@
     <ClInclude Include="..\..\component\lcxl_iocp\lcxl_iocp_base.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="lcxl_string.h">
+    <ClInclude Include="..\..\component\lcxl_iocp\lcxl_string.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -47,7 +47,7 @@
     <ClCompile Include="LCXLNetLoaderService.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="lcxl_string.cpp">
+    <ClCompile Include="..\..\component\lcxl_iocp\lcxl_string.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
