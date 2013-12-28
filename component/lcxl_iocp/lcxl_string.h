@@ -12,19 +12,19 @@
 #define to_tstring to_string
 #endif
 
-std::wstring StringToWString(const std::string &str);
-std::string WStringToString(const std::wstring &str);
+std::wstring string_to_wstring(const std::string &str);
+std::string wstring_to_string(const std::wstring &str);
 
 #ifdef _UNICODE
-#define TStringToWString(__STR)  (__STR)
-#define TStringToString(__STR)  WStringToString(__STR)
-#define WStringToTString(__STR) (__STR)
-#define StringToTString(__STR) StringToWString(__STR)
+#define tstring_to_wstring(__STR) (__STR)
+#define tstring_to_string(__STR) wstring_to_string(__STR)
+#define wstring_to_tstring(__STR) (__STR)
+#define string_to_tstring(__STR) string_to_wstring(__STR)
 #else
-#define TStringToWString(__STR)  StringToWString(__STR)
-#define TStringToString(__STR)  (__STR)
-#define WStringToTString(__STR) WStringToString(__STR)
-#define StringToTString(__STR) (__STR)
+#define tstring_to_wstring(__STR) string_to_wstring(__STR)
+#define tstring_to_string(__STR) (__STR)
+#define wstring_to_tstring(__STR) wstring_to_string(__STR)
+#define string_to_tstring(__STR) (__STR)
 #endif
 
 #endif

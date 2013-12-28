@@ -71,7 +71,7 @@ static unsigned __stdcall IocpWorkThread(void *CompletionPortID)
 			case otRecv:case otSend:
 				if (BytesTransferred == 0) {
 					assert(FIocpOverlapped == SockObj->GetAssignedOverlapped());
-					OutputDebugStr(_T("socket(%d)已关闭:%d\n"),SockObj->GetSocket(), WSAGetLastError());
+					OutputDebugStr(_T("socket(%d)已关闭:%d\n"), SockObj->GetSocket(), WSAGetLastError());
 					// 减少引用
 					SockObj->InternalDecRefCount();
 					// 继续
@@ -183,8 +183,8 @@ static unsigned __stdcall IocpWorkThread(void *CompletionPortID)
 						}
 					}
 					break;
-				
-				
+
+
 				default:
 					break;
 				}
@@ -287,8 +287,7 @@ int SocketBase::InternalDecRefCount(int Count/*=1*/, BOOL UserMode/*=FALSE*/)
 		// 触发close事件
 		if (this->mSocketType == STObj) {
 			mOwner->OnIOCPEvent(ieCloseSocket, static_cast<SocketObj*>(this), NULL);
-		}
-		else {
+		} else {
 			mOwner->OnListenEvent(leCloseSockLst, static_cast<SocketLst*>(this));
 		}
 	}
@@ -361,7 +360,7 @@ BOOL SocketLst::Accept()
 
 	resu = (g_AcceptEx(mSock, mAssignedOverlapped->AcceptSocket, mLstBuf, 0,
 		sizeof(sockaddr_storage)+16, sizeof(sockaddr_storage)+16, &BytesReceived,
-	&mAssignedOverlapped->lpOverlapped) == TRUE) || (WSAGetLastError() == WSA_IO_PENDING);
+		&mAssignedOverlapped->lpOverlapped) == TRUE) || (WSAGetLastError() == WSA_IO_PENDING);
 	// 投递AcceptEx
 	if (!resu) {
 		OutputDebugStr(_T("AcceptEx函数失败: %d\n"), WSAGetLastError());
@@ -378,7 +377,7 @@ BOOL SocketLst::Init()
 	return TRUE;
 }
 
-void SocketLst::CreateSockObj(PSocketObj &SockObj)
+void SocketLst::CreateSockObj(SocketObj* &SockObj)
 {
 	assert(SockObj == NULL);
 	SockObj = new SocketObj;
@@ -389,7 +388,7 @@ SocketLst::SocketLst()
 {
 	mSocketType = STLst;
 	mSocketPoolSize = 10;
-	mLstBufLen = (sizeof(sockaddr_storage) + 16) * 2;
+	mLstBufLen = (sizeof(sockaddr_storage)+16) * 2;
 
 	mPort = 0;
 	mLstBuf = NULL;
@@ -504,7 +503,6 @@ BOOL SocketObj::Init()
 }
 
 SocketObj::SocketObj()
-
 {
 	mSocketType = STObj;
 	// 设置初始缓冲区为4096
@@ -615,7 +613,7 @@ BOOL SocketObj::GetRemoteAddr(tstring &Address, WORD &Port)
 	namelen = sizeof(name);
 	if (getpeername(mSock, (PSOCKADDR)&name, &namelen) == 0) {
 		if (getnameinfo((PSOCKADDR)&name, namelen, addrbuf, NI_MAXHOST, portbuf, NI_MAXSERV, NI_NUMERICHOST || NI_NUMERICSERV) == 0) {
-			Address = StringToTString(string(addrbuf));
+			Address = string_to_tstring(string(addrbuf));
 			Port = stoi(portbuf);
 		}
 		return TRUE;
@@ -629,14 +627,14 @@ BOOL SocketObj::GetLocalAddr(tstring &Address, WORD &Port)
 	int namelen;
 	char addrbuf[NI_MAXHOST];
 	char portbuf[NI_MAXSERV];
-	
+
 	Address.clear();
 	Port = 0;
 
 	namelen = sizeof(name);
 	if (getsockname(mSock, (PSOCKADDR)&name, &namelen) == 0) {
 		if (getnameinfo((PSOCKADDR)&name, namelen, addrbuf, NI_MAXHOST, portbuf, NI_MAXSERV, NI_NUMERICHOST || NI_NUMERICSERV) == 0) {
-			Address = StringToTString(string(addrbuf));
+			Address = string_to_tstring(string(addrbuf));
 			Port = stoi(portbuf);
 		}
 		return TRUE;
@@ -682,7 +680,7 @@ BOOL SocketObj::SendData(LPVOID Data, DWORD DataLen, BOOL UseGetSendDataFunc /*=
 		FIocpOverlapped->DataBuf.buf = (CHAR *)FIocpOverlapped->CurSendData;
 		FIocpOverlapped->DataBuf.len = FIocpOverlapped->SendDataLen;
 		mOwner->Lock();
-		_PauseSend = mIsSending ||(mIniteStatus == sisInitializing);
+		_PauseSend = mIsSending || (mIniteStatus == sisInitializing);
 		// 如果里面有正在发送的
 		if (_PauseSend) {
 			mSendDataQueue.push(FIocpOverlapped);
@@ -692,7 +690,7 @@ BOOL SocketObj::SendData(LPVOID Data, DWORD DataLen, BOOL UseGetSendDataFunc /*=
 		}
 		mOwner->Unlock();
 		if (!(_PauseSend)) {
-			// OutputDebugStr(Format('SendData:Overlapped=%p,Overlapped=%d\n',[FIocpOverlapped, Integer(FIocpOverlapped.OverlappedType)]));
+			// OutputDebugStr(_T("SendData:Overlapped=%p,Overlapped=%d\n"),FIocpOverlapped, Integer(FIocpOverlapped.OverlappedType)));
 			// 投递WSASend
 			if (!WSASend(FIocpOverlapped)){
 				// 如果有错误
@@ -865,7 +863,7 @@ BOOL IOCPBaseList::InitSockBase(SocketBase *SockBase)
 		}
 	}
 	catch (...){
-		
+
 	}
 	// 锁定
 	assert(SockBase->GetRefCount() > 0);
@@ -899,7 +897,7 @@ BOOL IOCPBaseList::InitSockBase(SocketBase *SockBase)
 			}
 			// 减少引用
 			SockBase->InternalDecRefCount();
-		} 
+		}
 	} else {
 		SocketLst *_SockLst = static_cast<SocketLst*>(SockBase);
 		// 获得Listen的Overlapped
@@ -949,7 +947,7 @@ RELEASE_INLINE BOOL IOCPBaseList::IOCPRegSockBase(SocketBase *SockBase)
 		(ULONG_PTR)SockBase, 0);
 	resu = SockBase->mIOComp != 0;
 	if (!resu) {
-		OutputDebugStr(_T("Socket(%d)IOCP注册失败！Error:%d\n"),SockBase->GetSocket(), WSAGetLastError());
+		OutputDebugStr(_T("Socket(%d)IOCP注册失败！Error:%d\n"), SockBase->GetSocket(), WSAGetLastError());
 	}
 	return resu;
 }
@@ -987,7 +985,7 @@ void IOCPBaseList::CheckCanDestroy()
 
 	Lock();
 	_CanDestroy = (mSockBaseList.size() == 0) && (mSockBaseAddList.size() == 0) &&
-	(mSockBaseDelList.size() == 0);
+		(mSockBaseDelList.size() == 0);
 	Unlock();
 	if (_CanDestroy) {
 		SetEvent(mCanDestroyEvent);
@@ -1323,9 +1321,9 @@ PIOCPOverlapped IOCPManager::NewOverlapped(SocketBase *SockObj, OverlappedTypeEn
 	// 清零
 	switch (OverlappedType) {
 	case otSend:
-		_NewOverLapped->SendData  = NULL;
-		_NewOverLapped->CurSendData  = NULL;
-		_NewOverLapped->SendDataLen  = 0;
+		_NewOverLapped->SendData = NULL;
+		_NewOverLapped->CurSendData = NULL;
+		_NewOverLapped->SendDataLen = 0;
 	case otRecv:
 		_NewOverLapped->RecvData = NULL;
 		_NewOverLapped->RecvDataLen = 0;
@@ -1461,5 +1459,5 @@ void IOCPBase2List::OnListenEvent(ListenEventEnum EventType, SocketLst *SockLst)
 
 IOCPBase2List::IOCPBase2List(IOCPManager *AIOCPMgr) :IOCPBaseList(AIOCPMgr)
 {
-	
+
 }

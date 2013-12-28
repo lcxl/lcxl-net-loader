@@ -199,7 +199,7 @@ private:
 protected:
 	BOOL Accept();
 	virtual BOOL Init();
-	virtual void CreateSockObj(PSocketObj &SockObj);
+	virtual void CreateSockObj(SocketObj* &SockObj);
 public:
 	SocketLst();
 	virtual ~SocketLst();

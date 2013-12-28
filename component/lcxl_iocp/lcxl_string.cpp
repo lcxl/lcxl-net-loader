@@ -2,7 +2,7 @@
 // 需包含locale、string头文件、使用setlocale函数。
 #include <locale.h>
 
-std::wstring StringToWString(const std::string &str)
+std::wstring string_to_wstring(const std::string &str)
 {
 	// string转wstring
 	size_t len = str.size() * 2;// 预留字节数
@@ -14,7 +14,7 @@ std::wstring StringToWString(const std::string &str)
 	return str1;
 }
 
-std::string WStringToString(const std::wstring &str)
+std::string wstring_to_string(const std::wstring &str)
 {
 	// wstring转string
 	size_t len = str.size() * 4;
