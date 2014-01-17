@@ -27,12 +27,30 @@
     <ClInclude Include="lcxl_string.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="lcxl_http_comm.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="lcxl_iocp_lcxl.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="lcxl_iocp_cmd.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="lcxl_iocp_base.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="lcxl_string.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="lcxl_http_comm.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="lcxl_iocp_lcxl.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="lcxl_iocp_cmd.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

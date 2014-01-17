@@ -686,7 +686,8 @@ PLCXL_ROUTE_LIST_ENTRY CreateRouteListEntry(IN PLCXL_FILTER pFilter);
 ///</summary>
 void InitRouteListEntry(IN OUT PLCXL_ROUTE_LIST_ENTRY route_info, IN INT ipMode, IN PVOID pIPHeader, IN PTCP_HDR pTcpHeader, IN PSERVER_INFO_LIST_ENTRY server_info);
 
-
+PLCXL_FILTER FindAndLockFilter(IN NET_LUID miniport_net_luid);
+void UnlockFilter(IN PLCXL_FILTER pFilter);
 //!Ìí¼Ó´úÂë!
 
 #endif  //_FILT_H

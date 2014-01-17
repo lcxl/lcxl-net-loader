@@ -2330,29 +2330,23 @@ PLCXL_FILTER SetFilterSetting(PLCXL_MODULE_LIST_ENTRY module)
 {
 	BOOLEAN bFalse = FALSE;
 	BOOLEAN bFound = FALSE;
-	PLCXL_FILTER filter = NULL;
-	FILTER_ACQUIRE_LOCK(&g_FilterListLock, bFalse);
-	filter = CONTAINING_RECORD(g_FilterModuleList.Flink, LCXL_FILTER, FilterModuleLink);
-	while (&filter->FilterModuleLink != &g_FilterModuleList) {
-		if (module->miniport_net_luid.Value == filter->miniport_net_luid.Value) {
-			//更新module中的信息
-			//更新MAC信息
-			module->real_addr.mac_addr = filter->mac_addr;
-			//更新小端口驱动相关信息
-			LCXLCopyString(&module->miniport_friendly_name, &filter->MiniportFriendlyName);
-			LCXLCopyString(&module->miniport_name, &filter->MiniportName);
-			LCXLCopyString(&module->filter_module_name, &filter->FilterModuleName);
-			//设置关联
-			module->filter = filter;
-			filter->module = module;
-			bFound = TRUE;
-			break;
-		}
+	PLCXL_FILTER filter = FindAndLockFilter(module->miniport_net_luid);
 
-		filter = CONTAINING_RECORD(filter->FilterModuleLink.Flink, LCXL_FILTER, FilterModuleLink);
+	if (filter != NULL) {
+		//更新module中的信息
+		//更新MAC信息
+		module->real_addr.mac_addr = filter->mac_addr;
+		//更新小端口驱动相关信息
+		LCXLCopyString(&module->miniport_friendly_name, &filter->MiniportFriendlyName);
+		LCXLCopyString(&module->miniport_name, &filter->MiniportName);
+		LCXLCopyString(&module->filter_module_name, &filter->FilterModuleName);
+		//设置关联
+		module->filter = filter;
+		filter->module = module;
+
+		UnlockFilter(filter);
 	}
-	FILTER_RELEASE_LOCK(&g_FilterListLock, bFalse);
-	return bFound ? filter: NULL;
+	return filter;
 }
 
 
@@ -2722,6 +2716,36 @@ PSERVER_INFO_LIST_ENTRY SelectServer(IN PLCXL_FILTER pFilter, IN INT ipMode, IN 
 	}
 	FILTER_RELEASE_LOCK(&pFilter->module->server_lock, bFalse);
     return best_server;
+}
+
+PLCXL_FILTER FindAndLockFilter(IN NET_LUID miniport_net_luid)
+{
+	PLCXL_FILTER filter = NULL;
+	BOOLEAN bFalse = FALSE;
+	BOOLEAN bFound = FALSE;
+	FILTER_ACQUIRE_LOCK(&g_FilterListLock, bFalse);
+	filter = CONTAINING_RECORD(g_FilterModuleList.Flink, LCXL_FILTER, FilterModuleLink);
+	while (&filter->FilterModuleLink != &g_FilterModuleList) {
+		if (miniport_net_luid.Value == filter->miniport_net_luid.Value) {
+			
+			bFound = TRUE;
+			break;
+		}
+
+		filter = CONTAINING_RECORD(filter->FilterModuleLink.Flink, LCXL_FILTER, FilterModuleLink);
+	}
+	if (!bFound) {
+		FILTER_RELEASE_LOCK(&g_FilterListLock, bFalse);
+		filter = NULL;
+	}
+	return filter;
+}
+
+void UnlockFilter(IN PLCXL_FILTER pFilter)
+{
+	BOOLEAN bFalse = FALSE;
+	UNREFERENCED_PARAMETER(pFilter);
+	FILTER_RELEASE_LOCK(&g_FilterListLock, bFalse);
 }
 
 

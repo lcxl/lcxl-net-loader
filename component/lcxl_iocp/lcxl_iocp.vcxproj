@@ -144,10 +144,16 @@
   <ItemGroup>
     <ClInclude Include="lcxl_func_delegate.h" />
     <ClInclude Include="lcxl_iocp_base.h" />
+    <ClInclude Include="lcxl_http_comm.h" />
+    <ClInclude Include="lcxl_iocp_cmd.h" />
+    <ClInclude Include="lcxl_iocp_lcxl.h" />
     <ClInclude Include="lcxl_string.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="lcxl_http_comm.cpp" />
     <ClCompile Include="lcxl_iocp_base.cpp" />
+    <ClCompile Include="lcxl_iocp_cmd.cpp" />
+    <ClCompile Include="lcxl_iocp_lcxl.cpp" />
     <ClCompile Include="lcxl_string.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

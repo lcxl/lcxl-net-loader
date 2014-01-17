@@ -292,17 +292,56 @@ FilterDeviceIoControl(
 		}
 			break;
 		case IOCTL_LOADER_GET_VIRTUAL_IP:
+			
 			break;
 		case IOCTL_LOADER_SET_VIRTUAL_IP:
 			break;
 		case IOCTL_LOADER_GET_SERVER_LIST:
+			if (InputBufferLength == sizeof(NET_LUID)) {
+				PLCXL_FILTER pFilter = FindAndLockFilter(*(PNET_LUID)InputBuffer);
+				if (pFilter != NULL) {
+					if (pFilter->module != NULL && (pFilter->module->flag & ML_DELETE_AFTER_RESTART) == 0) {
+						
+					} else {
+						Status = STATUS_NOT_FOUND;
+					}
+					UnlockFilter(pFilter);
+				} else {
+					Status = STATUS_NOT_FOUND;
+				}
+			} else {
+				Status = STATUS_INFO_LENGTH_MISMATCH;
+			}
 			break;
 		case IOCTL_LOADER_ADD_SERVER:
+			if (sizeof(APP_ADD_SERVER) == InputBufferLength) {
+				PAPP_ADD_SERVER app_add_server = (PAPP_ADD_SERVER)InputBuffer;
+				
+				PLCXL_FILTER pFilter = FindAndLockFilter(app_add_server->miniport_net_luid);
+				if (pFilter != NULL) {
+
+					UnlockFilter(pFilter);
+				}
+			} else {
+				Status = STATUS_INFO_LENGTH_MISMATCH;
+			}
 			break;
 		case IOCTL_LOADER_DEL_SERVER:
+			if (sizeof(APP_DEL_SERVER) == InputBufferLength) {
+				PAPP_DEL_SERVER app_del_server = (PAPP_DEL_SERVER)InputBuffer;
+
+				PLCXL_FILTER pFilter = FindAndLockFilter(app_del_server->miniport_net_luid);
+				if (pFilter != NULL) {
+
+					UnlockFilter(pFilter);
+				}
+			} else {
+				Status = STATUS_INFO_LENGTH_MISMATCH;
+			}
 			break;
 		//!Ìí¼Ó´úÂë!
         default:
+			Status = STATUS_INVALID_PARAMETER;
             break;
     }
 

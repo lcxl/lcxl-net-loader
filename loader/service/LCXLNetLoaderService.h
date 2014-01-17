@@ -49,10 +49,10 @@ class SerCore : public SerMgrBase{
 private:
 	//ÍË³öÊÂ¼þ
 	HANDLE mExitEvent;
-	IOCPBase2List *mSerList;
-	IOCPManager *mIOCPMgr;
-	SocketLst *mSockLst;
-	void IOCPEvent(IocpEventEnum EventType, SocketObj *SockObj, PIOCPOverlapped Overlapped);
+	CIOCPBaseList *mSerList;
+	CIOCPManager *mIOCPMgr;
+	CSocketLst *mSockLst;
+	void IOCPEvent(IocpEventEnum EventType, CSocketObj *SockObj, PIOCPOverlapped Overlapped);
 protected:
 	virtual void SerHandler(DWORD dwControl);
 	virtual void SerRun();

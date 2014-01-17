@@ -71,15 +71,15 @@ void SerCore::SerHandler(DWORD dwControl)
 
 void SerCore::SerRun()
 {
-	mIOCPMgr = new IOCPManager();
-	mSerList = new IOCPBase2List(mIOCPMgr);
+	mIOCPMgr = new CIOCPManager();
+	mSerList = new CIOCPBaseList(mIOCPMgr);
 
 	DOnIOCPEvent iocp_event(this, reinterpret_cast<EOnIOCPEvent>(&SerCore::IOCPEvent));
 	mSerList->SetIOCPEvent(iocp_event);
 
 	mExitEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 
-	mSockLst = new SocketLst();
+	mSockLst = new CSocketLst();
 	// Æô¶¯¼àÌý
 	if (mSockLst->StartListen(mSerList, 9999)) {
 		// µÈ´ýÍË³ö
@@ -96,9 +96,9 @@ void SerCore::SerRun()
 
 }
 
-void SerCore::IOCPEvent(IocpEventEnum EventType, SocketObj *SockObj, PIOCPOverlapped Overlapped)
+void SerCore::IOCPEvent(IocpEventEnum EventType, CSocketObj *SockObj, PIOCPOverlapped Overlapped)
 {
-	vector<SocketObj*> *SockList;
+	vector<CSocketObj*> *SockList;
 	switch (EventType) {
 	case ieAddSocket:
 		SockList = mSerList->GetSockObjList();

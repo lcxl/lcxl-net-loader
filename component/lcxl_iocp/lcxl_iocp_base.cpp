@@ -36,9 +36,9 @@ static unsigned __stdcall IocpWorkThread(void *CompletionPortID)
 	while (TRUE) {
 		BOOL FIsSuc;
 		PIOCPOverlapped FIocpOverlapped;
-		SocketBase *SockBase;
-		SocketObj *SockObj = NULL;
-		SocketLst *SockLst = NULL;
+		CSocketBase *SockBase;
+		CSocketObj *SockObj = NULL;
+		CSocketLst *SockLst = NULL;
 		BOOL _IsSockObj = FALSE;
 		DWORD BytesTransferred;
 		INT resuInt;
@@ -49,9 +49,9 @@ static unsigned __stdcall IocpWorkThread(void *CompletionPortID)
 			assert(SockBase == FIocpOverlapped->AssignedSockObj);
 			_IsSockObj = SockBase->mSocketType == STObj;
 			if (_IsSockObj) {
-				SockObj = static_cast<SocketObj*>(SockBase);
+				SockObj = static_cast<CSocketObj*>(SockBase);
 			} else {
-				SockLst = static_cast<SocketLst*>(SockBase);
+				SockLst = static_cast<CSocketLst*>(SockBase);
 			}
 		} else {
 			// IOCP 线程退出指令
@@ -65,7 +65,7 @@ static unsigned __stdcall IocpWorkThread(void *CompletionPortID)
 			// 如果是退出线程消息，则退出
 			BOOL _NeedContinue = FALSE;
 			SOCKET tmpSock;
-			PSocketObj _NewSockObj;
+			PCSocketObj _NewSockObj;
 
 			switch (FIocpOverlapped->OverlappedType) {
 			case otRecv:case otSend:
@@ -246,7 +246,7 @@ static unsigned __stdcall IocpWorkThread(void *CompletionPortID)
 }
 
 
-int SocketBase::InternalIncRefCount(int Count/*=1*/, BOOL UserMode/*=FALSE*/)
+int CSocketBase::InternalIncRefCount(int Count/*=1*/, BOOL UserMode/*=FALSE*/)
 {
 	int resu;
 	mOwner->Lock();
@@ -262,7 +262,7 @@ int SocketBase::InternalIncRefCount(int Count/*=1*/, BOOL UserMode/*=FALSE*/)
 	return resu;
 }
 
-int SocketBase::InternalDecRefCount(int Count/*=1*/, BOOL UserMode/*=FALSE*/)
+int CSocketBase::InternalDecRefCount(int Count/*=1*/, BOOL UserMode/*=FALSE*/)
 {
 	// socket是否关闭
 	BOOL _IsSocketClosed1;
@@ -286,9 +286,9 @@ int SocketBase::InternalDecRefCount(int Count/*=1*/, BOOL UserMode/*=FALSE*/)
 	if (!_IsSocketClosed1 && _IsSocketClosed2) {
 		// 触发close事件
 		if (this->mSocketType == STObj) {
-			mOwner->OnIOCPEvent(ieCloseSocket, static_cast<SocketObj*>(this), NULL);
+			mOwner->OnIOCPEvent(ieCloseSocket, static_cast<CSocketObj*>(this), NULL);
 		} else {
-			mOwner->OnListenEvent(leCloseSockLst, static_cast<SocketLst*>(this));
+			mOwner->OnListenEvent(leCloseSockLst, static_cast<CSocketLst*>(this));
 		}
 	}
 	if (_CanFree){
@@ -298,7 +298,7 @@ int SocketBase::InternalDecRefCount(int Count/*=1*/, BOOL UserMode/*=FALSE*/)
 	return resu;
 }
 
-SocketBase::SocketBase()
+CSocketBase::CSocketBase()
 {
 	mSock = INVALID_SOCKET;
 	// 引用计数默认为1
@@ -313,7 +313,7 @@ SocketBase::SocketBase()
 	mTag = 0;
 }
 
-SocketBase::~SocketBase()
+CSocketBase::~CSocketBase()
 {
 	if (mAssignedOverlapped != NULL) {
 		assert(mOwner != NULL);
@@ -322,7 +322,7 @@ SocketBase::~SocketBase()
 	}
 }
 
-void SocketBase::Close()
+void CSocketBase::Close()
 {
 	shutdown(mSock, SD_BOTH);
 	if (closesocket(mSock) != ERROR_SUCCESS) {
@@ -331,13 +331,13 @@ void SocketBase::Close()
 	mSock = INVALID_SOCKET;
 }
 
-int SocketBase::IncRefCount(int Count/*=1*/)
+int CSocketBase::IncRefCount(int Count/*=1*/)
 {
 	assert(Count > 0);
 	return InternalIncRefCount(Count, TRUE);
 }
 
-int SocketBase::DecRefCount(int Count/*=1*/)
+int CSocketBase::DecRefCount(int Count/*=1*/)
 {
 	assert(Count > 0);
 	if (mUserRefCount == 0) {
@@ -347,7 +347,7 @@ int SocketBase::DecRefCount(int Count/*=1*/)
 }
 
 
-BOOL SocketLst::Accept()
+BOOL CSocketLst::Accept()
 {
 	DWORD BytesReceived;
 	BOOL resu;
@@ -370,21 +370,21 @@ BOOL SocketLst::Accept()
 	return resu;
 }
 
-BOOL SocketLst::Init()
+BOOL CSocketLst::Init()
 {
 	// 分配接受数据的内存
 	mLstBuf = malloc(mLstBufLen);
 	return TRUE;
 }
 
-void SocketLst::CreateSockObj(SocketObj* &SockObj)
+void CSocketLst::CreateSockObj(CSocketObj* &SockObj)
 {
 	assert(SockObj == NULL);
-	SockObj = new SocketObj;
+	SockObj = new CSocketObj;
 	SockObj->SetTag(GetTag());
 }
 
-SocketLst::SocketLst()
+CSocketLst::CSocketLst()
 {
 	mSocketType = STLst;
 	mSocketPoolSize = 10;
@@ -395,14 +395,14 @@ SocketLst::SocketLst()
 
 }
 
-SocketLst::~SocketLst()
+CSocketLst::~CSocketLst()
 {
 	if (mLstBuf != NULL) {
 		free(mLstBuf);
 	}
 }
 
-void SocketLst::SetSocketPoolSize(int Value)
+void CSocketLst::SetSocketPoolSize(int Value)
 {
 	if (mIniteStatus == sisInitializing) {
 		if (Value > 0) {
@@ -413,7 +413,7 @@ void SocketLst::SetSocketPoolSize(int Value)
 	}
 }
 
-BOOL SocketLst::StartListen(IOCPBaseList *IOCPList, int Port, u_long InAddr /*= INADDR_ANY*/)
+BOOL CSocketLst::StartListen(CCustomIOCPBaseList *IOCPList, int Port, u_long InAddr /*= INADDR_ANY*/)
 {
 	SOCKADDR_IN InternetAddr;
 	PSOCKADDR sockaddr;
@@ -464,7 +464,7 @@ BOOL SocketLst::StartListen(IOCPBaseList *IOCPList, int Port, u_long InAddr /*= 
 
 
 
-RELEASE_INLINE BOOL SocketObj::WSARecv()
+RELEASE_INLINE BOOL CSocketObj::WSARecv()
 {
 	DWORD Flags;
 
@@ -478,7 +478,7 @@ RELEASE_INLINE BOOL SocketObj::WSARecv()
 		&mAssignedOverlapped->lpOverlapped, NULL) == 0) || (WSAGetLastError() == WSA_IO_PENDING);
 }
 
-RELEASE_INLINE BOOL SocketObj::WSASend(PIOCPOverlapped Overlapped)
+RELEASE_INLINE BOOL CSocketObj::WSASend(PIOCPOverlapped Overlapped)
 {
 	// OutputDebugStr(Format('WSASend:Overlapped=%p,Overlapped=%d\n',[Overlapped, Integer(Overlapped.OverlappedType)]));
 	// 清空Overlapped
@@ -489,7 +489,7 @@ RELEASE_INLINE BOOL SocketObj::WSASend(PIOCPOverlapped Overlapped)
 		&Overlapped->lpOverlapped, NULL) == 0) || (WSAGetLastError() == WSA_IO_PENDING);
 }
 
-BOOL SocketObj::Init()
+BOOL CSocketObj::Init()
 {
 	assert(mRecvBufLen > 0);
 	// 分配接受数据的内存
@@ -502,7 +502,7 @@ BOOL SocketObj::Init()
 	return TRUE;
 }
 
-SocketObj::SocketObj()
+CSocketObj::CSocketObj()
 {
 	mSocketType = STObj;
 	// 设置初始缓冲区为4096
@@ -513,7 +513,7 @@ SocketObj::SocketObj()
 	mIsSending = FALSE;
 }
 
-SocketObj::~SocketObj()
+CSocketObj::~CSocketObj()
 {
 	while (!mSendDataQueue.empty()) {
 		PIOCPOverlapped _IOCPOverlapped;
@@ -527,7 +527,7 @@ SocketObj::~SocketObj()
 	}
 }
 
-BOOL SocketObj::ConnectSer(IOCPBaseList &IOCPList, LPCTSTR SerAddr, int Port, int IncRefNumber)
+BOOL CSocketObj::ConnectSer(CCustomIOCPBaseList &IOCPList, LPCTSTR SerAddr, int Port, int IncRefNumber)
 {
 	BOOL resu = FALSE;
 	ADDRINFOT _Hints;
@@ -600,7 +600,7 @@ BOOL SocketObj::ConnectSer(IOCPBaseList &IOCPList, LPCTSTR SerAddr, int Port, in
 	return resu;
 }
 
-BOOL SocketObj::GetRemoteAddr(tstring &Address, WORD &Port)
+BOOL CSocketObj::GetRemoteAddr(tstring &Address, WORD &Port)
 {
 	SOCKADDR_STORAGE name;
 	int namelen;
@@ -621,7 +621,7 @@ BOOL SocketObj::GetRemoteAddr(tstring &Address, WORD &Port)
 	return FALSE;
 }
 
-BOOL SocketObj::GetLocalAddr(tstring &Address, WORD &Port)
+BOOL CSocketObj::GetLocalAddr(tstring &Address, WORD &Port)
 {
 	SOCKADDR_STORAGE name;
 	int namelen;
@@ -642,7 +642,7 @@ BOOL SocketObj::GetLocalAddr(tstring &Address, WORD &Port)
 	return FALSE;
 }
 
-RELEASE_INLINE void SocketObj::SetRecvBufLenBeforeInit(DWORD NewRecvBufLen)
+RELEASE_INLINE void CSocketObj::SetRecvBufLenBeforeInit(DWORD NewRecvBufLen)
 {
 	assert(this->mIniteStatus == sisInitializing && NewRecvBufLen > 0);
 	if (mRecvBufLen != NewRecvBufLen) {
@@ -650,7 +650,7 @@ RELEASE_INLINE void SocketObj::SetRecvBufLenBeforeInit(DWORD NewRecvBufLen)
 	}
 }
 
-BOOL SocketObj::SendData(LPVOID Data, DWORD DataLen, BOOL UseGetSendDataFunc /*= FALSE*/)
+BOOL CSocketObj::SendData(LPVOID Data, DWORD DataLen, BOOL UseGetSendDataFunc /*= FALSE*/)
 {
 	PIOCPOverlapped FIocpOverlapped;
 	PVOID _NewData;
@@ -722,17 +722,17 @@ BOOL SocketObj::SendData(LPVOID Data, DWORD DataLen, BOOL UseGetSendDataFunc /*=
 	return resu;
 }
 
-RELEASE_INLINE LPVOID SocketObj::GetSendData(DWORD DataLen)
+RELEASE_INLINE LPVOID CSocketObj::GetSendData(DWORD DataLen)
 {
 	return malloc(DataLen);
 }
 
-RELEASE_INLINE void SocketObj::FreeSendData(LPVOID Data)
+RELEASE_INLINE void CSocketObj::FreeSendData(LPVOID Data)
 {
 	free(Data);
 }
 
-BOOL SocketObj::SetKeepAlive(BOOL IsOn, int KeepAliveTime /*= 50000*/, int KeepAliveInterval /*= 30000*/)
+BOOL CSocketObj::SetKeepAlive(BOOL IsOn, int KeepAliveTime /*= 50000*/, int KeepAliveInterval /*= 30000*/)
 {
 	struct tcp_keepalive alive_in;
 	struct tcp_keepalive alive_out;
@@ -746,17 +746,17 @@ BOOL SocketObj::SetKeepAlive(BOOL IsOn, int KeepAliveTime /*= 50000*/, int KeepA
 }
 
 
-RELEASE_INLINE void IOCPBaseList::Lock()
+RELEASE_INLINE void CCustomIOCPBaseList::Lock()
 {
 	EnterCriticalSection(&mSockBaseCS);
 }
 
-RELEASE_INLINE void IOCPBaseList::Unlock()
+RELEASE_INLINE void CCustomIOCPBaseList::Unlock()
 {
 	LeaveCriticalSection(&mSockBaseCS);
 }
 
-BOOL IOCPBaseList::AddSockBase(SocketBase *SockBase)
+BOOL CCustomIOCPBaseList::AddSockBase(CSocketBase *SockBase)
 {
 	BOOL _IsLocked;
 	BOOL resu;
@@ -785,9 +785,9 @@ BOOL IOCPBaseList::AddSockBase(SocketBase *SockBase)
 		mSockBaseList.push_back(SockBase);
 		// 添加到影子List
 		if (SockBase->mSocketType == STObj) {
-			mSockObjList.push_back(static_cast<SocketObj*>(SockBase));
+			mSockObjList.push_back(static_cast<CSocketObj*>(SockBase));
 		} else {
-			mSockLstList.push_back(static_cast<SocketLst*>(SockBase));
+			mSockLstList.push_back(static_cast<CSocketLst*>(SockBase));
 		}
 	}
 	Unlock();
@@ -807,7 +807,7 @@ BOOL IOCPBaseList::AddSockBase(SocketBase *SockBase)
 	return resu;
 }
 
-BOOL IOCPBaseList::RemoveSockBase(SocketBase *SockBase)
+BOOL CCustomIOCPBaseList::RemoveSockBase(CSocketBase *SockBase)
 {
 	BOOL _IsLocked;
 
@@ -815,7 +815,7 @@ BOOL IOCPBaseList::RemoveSockBase(SocketBase *SockBase)
 	Lock();
 	_IsLocked = mLockRefNum > 0;
 	if (!_IsLocked) {
-		vector<SocketBase*>::iterator it;
+		vector<CSocketBase*>::iterator it;
 		for (it = mSockBaseList.begin(); it != mSockBaseList.end(); it++) {
 			if ((*it) == SockBase) {
 				it = mSockBaseList.erase(it);
@@ -823,7 +823,7 @@ BOOL IOCPBaseList::RemoveSockBase(SocketBase *SockBase)
 			}
 		}
 		if (SockBase->mSocketType == STObj) {
-			vector<SocketObj*>::iterator it;
+			vector<CSocketObj*>::iterator it;
 			for (it = mSockObjList.begin(); it != mSockObjList.end(); it++) {
 				if ((*it) == SockBase) {
 					it = mSockObjList.erase(it);
@@ -831,7 +831,7 @@ BOOL IOCPBaseList::RemoveSockBase(SocketBase *SockBase)
 				}
 			}
 		} else {
-			vector<SocketLst*>::iterator it;
+			vector<CSocketLst*>::iterator it;
 			for (it = mSockLstList.begin(); it != mSockLstList.end(); it++) {
 				if ((*it) == SockBase) {
 					it = mSockLstList.erase(it);
@@ -849,7 +849,7 @@ BOOL IOCPBaseList::RemoveSockBase(SocketBase *SockBase)
 	return TRUE;
 }
 
-BOOL IOCPBaseList::InitSockBase(SocketBase *SockBase)
+BOOL CCustomIOCPBaseList::InitSockBase(CSocketBase *SockBase)
 {
 	// 进入到这里，就说明已经添加到socket列表中了，所以要触发
 	BOOL _IsSockObj;
@@ -857,9 +857,9 @@ BOOL IOCPBaseList::InitSockBase(SocketBase *SockBase)
 	_IsSockObj = SockBase->mSocketType == STObj;
 	try {
 		if (_IsSockObj) {
-			OnIOCPEvent(ieAddSocket, static_cast<SocketObj*>(SockBase), NULL);
+			OnIOCPEvent(ieAddSocket, static_cast<CSocketObj*>(SockBase), NULL);
 		} else {
-			OnListenEvent(leAddSockLst, static_cast<SocketLst*>(SockBase));
+			OnListenEvent(leAddSockLst, static_cast<CSocketLst*>(SockBase));
 		}
 	}
 	catch (...){
@@ -882,7 +882,7 @@ BOOL IOCPBaseList::InitSockBase(SocketBase *SockBase)
 	SockBase->mIniteStatus = sisInitialized;
 	Unlock();
 	if (_IsSockObj) {
-		SocketObj *_SockObj = static_cast<SocketObj*>(SockBase);
+		CSocketObj *_SockObj = static_cast<CSocketObj*>(SockBase);
 		// 获得Recv的Overlapped
 		_SockObj->mAssignedOverlapped = mOwner->NewOverlapped(_SockObj, otRecv);
 		// 投递WSARecv
@@ -899,7 +899,7 @@ BOOL IOCPBaseList::InitSockBase(SocketBase *SockBase)
 			SockBase->InternalDecRefCount();
 		}
 	} else {
-		SocketLst *_SockLst = static_cast<SocketLst*>(SockBase);
+		CSocketLst *_SockLst = static_cast<CSocketLst*>(SockBase);
 		// 获得Listen的Overlapped
 		_SockLst->mAssignedOverlapped = mOwner->NewOverlapped(_SockLst, otListen);
 		// 投递AcceptEx
@@ -911,7 +911,7 @@ BOOL IOCPBaseList::InitSockBase(SocketBase *SockBase)
 	return TRUE;
 }
 
-BOOL IOCPBaseList::FreeSockBase(SocketBase *SockBase)
+BOOL CCustomIOCPBaseList::FreeSockBase(CSocketBase *SockBase)
 {
 	BOOL _IsSockObj;
 
@@ -919,14 +919,14 @@ BOOL IOCPBaseList::FreeSockBase(SocketBase *SockBase)
 	_IsSockObj = SockBase->mSocketType == STObj;
 	if (_IsSockObj) {
 		try {
-			OnIOCPEvent(ieDelSocket, static_cast<SocketObj*>(SockBase), NULL);
+			OnIOCPEvent(ieDelSocket, static_cast<CSocketObj*>(SockBase), NULL);
 		}
 		catch (...) {
 
 		}
 	} else {
 		try {
-			OnListenEvent(leDelSockLst, static_cast<SocketLst*>(SockBase));
+			OnListenEvent(leDelSockLst, static_cast<CSocketLst*>(SockBase));
 		}
 		catch (...) {
 
@@ -939,7 +939,7 @@ BOOL IOCPBaseList::FreeSockBase(SocketBase *SockBase)
 	return TRUE;
 }
 
-RELEASE_INLINE BOOL IOCPBaseList::IOCPRegSockBase(SocketBase *SockBase)
+RELEASE_INLINE BOOL CCustomIOCPBaseList::IOCPRegSockBase(CSocketBase *SockBase)
 {
 	BOOL resu;
 	// 在IOCP中注册此Socket
@@ -952,7 +952,7 @@ RELEASE_INLINE BOOL IOCPBaseList::IOCPRegSockBase(SocketBase *SockBase)
 	return resu;
 }
 
-void IOCPBaseList::WaitForDestroyEvent()
+void CCustomIOCPBaseList::WaitForDestroyEvent()
 {
 #define EVENT_NUMBER 1
 	BOOL _IsEnd;
@@ -979,7 +979,7 @@ void IOCPBaseList::WaitForDestroyEvent()
 	}
 }
 
-void IOCPBaseList::CheckCanDestroy()
+void CCustomIOCPBaseList::CheckCanDestroy()
 {
 	BOOL _CanDestroy;
 
@@ -992,17 +992,17 @@ void IOCPBaseList::CheckCanDestroy()
 	}
 }
 
-void IOCPBaseList::OnIOCPEvent(IocpEventEnum EventType, SocketObj *SockObj, PIOCPOverlapped Overlapped)
+void CCustomIOCPBaseList::OnIOCPEvent(IocpEventEnum EventType, CSocketObj *SockObj, PIOCPOverlapped Overlapped)
 {
 
 }
 
-void IOCPBaseList::OnListenEvent(ListenEventEnum EventType, SocketLst *SockLst)
+void CCustomIOCPBaseList::OnListenEvent(ListenEventEnum EventType, CSocketLst *SockLst)
 {
 
 }
 
-IOCPBaseList::IOCPBaseList(IOCPManager *AIOCPMgr)
+CCustomIOCPBaseList::CCustomIOCPBaseList(CIOCPManager *AIOCPMgr)
 {
 	mOwner = AIOCPMgr;
 	mLockRefNum = 0;
@@ -1015,7 +1015,7 @@ IOCPBaseList::IOCPBaseList(IOCPManager *AIOCPMgr)
 	mOwner->AddSockList(this);
 }
 
-IOCPBaseList::~IOCPBaseList()
+CCustomIOCPBaseList::~CCustomIOCPBaseList()
 {
 	mCanDestroyEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 	mIsFreeing = TRUE;
@@ -1027,7 +1027,7 @@ IOCPBaseList::~IOCPBaseList()
 	CloseHandle(mCanDestroyEvent);
 }
 
-void IOCPBaseList::LockSockList()
+void CCustomIOCPBaseList::LockSockList()
 {
 	Lock();
 	assert(mLockRefNum >= 0);
@@ -1035,12 +1035,12 @@ void IOCPBaseList::LockSockList()
 	Unlock();
 }
 
-void IOCPBaseList::UnlockSockList()
+void CCustomIOCPBaseList::UnlockSockList()
 {
 	BOOL _IsEnd;
 
 	do {
-		SocketBase *_SockBase = NULL;
+		CSocketBase *_SockBase = NULL;
 		BOOL isAdd = FALSE;
 
 		Lock();
@@ -1050,7 +1050,7 @@ void IOCPBaseList::UnlockSockList()
 		if (!_IsEnd) {
 			// 只有本线程锁住了socket，然后查看socket删除列表是否为空
 			if (mSockBaseDelList.size() > 0) {
-				vector<SocketBase*>::iterator it;
+				vector<CSocketBase*>::iterator it;
 				BOOL _IsSockObj;
 
 				// 不为空，从第一个开始删
@@ -1065,7 +1065,7 @@ void IOCPBaseList::UnlockSockList()
 				}
 				_IsSockObj = _SockBase->mSocketType == STObj;
 				if (_IsSockObj) {
-					vector<SocketObj*>::iterator it;
+					vector<CSocketObj*>::iterator it;
 					for (it = mSockObjList.begin(); it != mSockObjList.end(); it++) {
 						if ((*it) == _SockBase) {
 							mSockObjList.erase(it);
@@ -1073,7 +1073,7 @@ void IOCPBaseList::UnlockSockList()
 						}
 					}
 				} else {
-					vector<SocketLst*>::iterator it;
+					vector<CSocketLst*>::iterator it;
 					for (it = mSockLstList.begin(); it != mSockLstList.end(); it++) {
 						if ((*it) == _SockBase) {
 							mSockLstList.erase(it);
@@ -1095,9 +1095,9 @@ void IOCPBaseList::UnlockSockList()
 					mSockBaseList.push_back(_SockBase);
 					_IsSockObj = _SockBase->mSocketType == STObj;
 					if (_IsSockObj) {
-						mSockObjList.push_back(static_cast<SocketObj*>(_SockBase));
+						mSockObjList.push_back(static_cast<CSocketObj*>(_SockBase));
 					} else {
-						mSockLstList.push_back(static_cast<SocketLst*>(_SockBase));
+						mSockLstList.push_back(static_cast<CSocketLst*>(_SockBase));
 					}
 				} else {
 					// 都为空，则表示已经结束了
@@ -1127,7 +1127,7 @@ void IOCPBaseList::UnlockSockList()
 	} while (!_IsEnd);
 }
 
-void IOCPBaseList::ProcessMsgEvent()
+void CCustomIOCPBaseList::ProcessMsgEvent()
 {
 	MSG Msg;
 
@@ -1152,9 +1152,9 @@ void IOCPBaseList::ProcessMsgEvent()
 	}
 }
 
-void IOCPBaseList::CloseAllSockObj()
+void CCustomIOCPBaseList::CloseAllSockObj()
 {
-	vector<SocketObj*>::iterator it;
+	vector<CSocketObj*>::iterator it;
 
 	LockSockList();
 	for (it = mSockObjList.begin(); it != mSockObjList.end(); it++) {
@@ -1163,9 +1163,9 @@ void IOCPBaseList::CloseAllSockObj()
 	UnlockSockList();
 }
 
-void IOCPBaseList::CloseAllSockLst()
+void CCustomIOCPBaseList::CloseAllSockLst()
 {
-	vector<SocketLst*>::iterator it;
+	vector<CSocketLst*>::iterator it;
 
 	LockSockList();
 	for (it = mSockLstList.begin(); it != mSockLstList.end(); it++) {
@@ -1174,9 +1174,9 @@ void IOCPBaseList::CloseAllSockLst()
 	UnlockSockList();
 }
 
-void IOCPBaseList::CloseAllSockBase()
+void CCustomIOCPBaseList::CloseAllSockBase()
 {
-	vector<SocketBase*>::iterator it;
+	vector<CSocketBase*>::iterator it;
 
 	LockSockList();
 	for (it = mSockBaseList.begin(); it != mSockBaseList.end(); it++) {
@@ -1191,7 +1191,7 @@ void IOCPBaseList::CloseAllSockBase()
 #define GetHostName gethostname
 #endif // _UNICODE
 
-void IOCPBaseList::GetLocalAddrs(vector<tstring> &Addrs)
+void CCustomIOCPBaseList::GetLocalAddrs(vector<tstring> &Addrs)
 {
 	LPTSTR sHostName;
 	ADDRINFOT _Hints;
@@ -1241,16 +1241,16 @@ void IOCPBaseList::GetLocalAddrs(vector<tstring> &Addrs)
 	delete[] sHostName;
 }
 
-void IOCPManager::AddSockList(IOCPBaseList *SockList)
+void CIOCPManager::AddSockList(CCustomIOCPBaseList *SockList)
 {
 	LockSockList();
 	mSockList.push_back(SockList);
 	UnlockSockList();
 }
 
-void IOCPManager::RemoveSockList(IOCPBaseList *SockList)
+void CIOCPManager::RemoveSockList(CCustomIOCPBaseList *SockList)
 {
-	vector<IOCPBaseList*>::iterator it;
+	vector<CCustomIOCPBaseList*>::iterator it;
 	LockSockList();
 	for (it = mSockList.begin(); it != mSockList.end(); it++) {
 		if ((*it) == SockList) {
@@ -1261,7 +1261,7 @@ void IOCPManager::RemoveSockList(IOCPBaseList *SockList)
 	UnlockSockList();
 }
 
-void IOCPManager::FreeOverLappedList()
+void CIOCPManager::FreeOverLappedList()
 {
 	vector<PIOCPOverlapped>::iterator it;
 	LockOverLappedList();
@@ -1273,7 +1273,7 @@ void IOCPManager::FreeOverLappedList()
 	UnlockOverLappedList();
 }
 
-void IOCPManager::DelOverlapped(PIOCPOverlapped UsedOverlapped)
+void CIOCPManager::DelOverlapped(PIOCPOverlapped UsedOverlapped)
 {
 	assert(UsedOverlapped != NULL);
 	// 正在使用设置为False
@@ -1300,7 +1300,7 @@ void IOCPManager::DelOverlapped(PIOCPOverlapped UsedOverlapped)
 	UnlockOverLappedList();
 }
 
-PIOCPOverlapped IOCPManager::NewOverlapped(SocketBase *SockObj, OverlappedTypeEnum OverlappedType)
+PIOCPOverlapped CIOCPManager::NewOverlapped(CSocketBase *SockObj, OverlappedTypeEnum OverlappedType)
 {
 	PIOCPOverlapped _NewOverLapped;
 	LockOverLappedList();
@@ -1335,13 +1335,13 @@ PIOCPOverlapped IOCPManager::NewOverlapped(SocketBase *SockObj, OverlappedTypeEn
 	return _NewOverLapped;
 }
 
-BOOL IOCPManager::PostExitStatus()
+BOOL CIOCPManager::PostExitStatus()
 {
 	OutputDebugStr(_T("发送线程退出命令。\n"));
 	return PostQueuedCompletionStatus(mCompletionPort, 0, 0, NULL);
 }
 
-IOCPManager::IOCPManager(int IOCPThreadCount /*= 0*/)
+CIOCPManager::CIOCPManager(int IOCPThreadCount /*= 0*/)
 {
 	SOCKET TmpSock;
 	GUID guidAcceptEx = WSAID_ACCEPTEX;
@@ -1389,7 +1389,7 @@ IOCPManager::IOCPManager(int IOCPThreadCount /*= 0*/)
 	}
 }
 
-IOCPManager::~IOCPManager()
+CIOCPManager::~CIOCPManager()
 {
 	BOOL Resu;
 	LockSockList();
@@ -1423,41 +1423,41 @@ IOCPManager::~IOCPManager()
 	WSACleanup();
 }
 
-RELEASE_INLINE void IOCPManager::LockSockList()
+RELEASE_INLINE void CIOCPManager::LockSockList()
 {
 	EnterCriticalSection(&mSockListCS);
 }
 
-RELEASE_INLINE void IOCPManager::UnlockSockList()
+RELEASE_INLINE void CIOCPManager::UnlockSockList()
 {
 	LeaveCriticalSection(&mSockListCS);
 }
 
-RELEASE_INLINE void IOCPManager::LockOverLappedList()
+RELEASE_INLINE void CIOCPManager::LockOverLappedList()
 {
 	EnterCriticalSection(&mOverLappedListCS);
 }
 
-RELEASE_INLINE void IOCPManager::UnlockOverLappedList()
+RELEASE_INLINE void CIOCPManager::UnlockOverLappedList()
 {
 	LeaveCriticalSection(&mOverLappedListCS);
 }
 
-void IOCPBase2List::OnIOCPEvent(IocpEventEnum EventType, SocketObj *SockObj, PIOCPOverlapped Overlapped)
+void CIOCPBaseList::OnIOCPEvent(IocpEventEnum EventType, CSocketObj *SockObj, PIOCPOverlapped Overlapped)
 {
 	if (mIOCPEvent.IsAvaliable()) {
 		TRIGGER_DELEGATE(mIOCPEvent)(EventType, SockObj, Overlapped);
 	}
 }
 
-void IOCPBase2List::OnListenEvent(ListenEventEnum EventType, SocketLst *SockLst)
+void CIOCPBaseList::OnListenEvent(ListenEventEnum EventType, CSocketLst *SockLst)
 {
 	if (mListenEvent.IsAvaliable()) {
 		TRIGGER_DELEGATE(mListenEvent)(EventType, SockLst);
 	}
 }
 
-IOCPBase2List::IOCPBase2List(IOCPManager *AIOCPMgr) :IOCPBaseList(AIOCPMgr)
+CIOCPBaseList::CIOCPBaseList(CIOCPManager *AIOCPMgr) :CCustomIOCPBaseList(AIOCPMgr)
 {
 
 }
