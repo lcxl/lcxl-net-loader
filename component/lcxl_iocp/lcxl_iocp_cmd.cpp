@@ -59,6 +59,7 @@ BOOL CCmdSockObj::SendData(WORD CMD, PVOID Data[], ULONG DataLen[], INT DataCoun
 	ULONG TotalDataLen = 0;
 	CMDDataRec SendRec;
 	unsigned char *DataPos;
+	BOOL resu;
 
 	for (I = 0; I < DataCount; I++) {
 		TotalDataLen += DataLen[I];
@@ -70,7 +71,11 @@ BOOL CCmdSockObj::SendData(WORD CMD, PVOID Data[], ULONG DataLen[], INT DataCoun
 		DataPos += DataLen[I];
 	}
 	SendRec.SetCMD(CMD);
-	return SendData(SendRec);
+	resu = SendData(SendRec);
+	if (!resu) {
+		FreeSendData(SendRec);
+	}
+	return resu;
 }
 
 void CCmdSockObj::GetSendData(ULONG DataLen, CMDDataRec &ASendDataRec)

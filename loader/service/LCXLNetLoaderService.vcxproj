@@ -154,6 +154,8 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\common\service\lcxl_net_service.h" />
+    <ClInclude Include="..\..\common\service\lcxl_service.h" />
     <ClInclude Include="..\..\component\lcxl_iocp\lcxl_iocp_base.h" />
     <ClInclude Include="..\..\component\lcxl_iocp\lcxl_string.h" />
     <ClInclude Include="..\common\dll_interface.h" />
@@ -163,6 +165,8 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\common\service\lcxl_net_service.cpp" />
+    <ClCompile Include="..\..\common\service\lcxl_service.cpp" />
     <ClCompile Include="..\..\component\lcxl_iocp\lcxl_string.cpp" />
     <ClCompile Include="LCXLNetLoaderService.cpp" />
     <ClCompile Include="stdafx.cpp">

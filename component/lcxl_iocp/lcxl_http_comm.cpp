@@ -1,4 +1,5 @@
 #include "lcxl_http_comm.h"
+#include "lcxl_string.h"
 #include <assert.h>
 URLRec DecodeURL(const std::string &url)
 {
@@ -97,15 +98,58 @@ std::string CHeadList::SaveToString(const std::string Separator, const std::stri
 
 bool CHeadList::LoadFromString(const std::string AStr, const std::string Separator, const std::string LineBreak)
 {
+	size_t BIndex, EIndex;
+	size_t I;
+	std::string TmpStr;
+	HeadRec NewHeadRec;
 
+	if (AStr.empty() || Separator.empty() || LineBreak.empty() || AStr.length() >= LineBreak.length()) {
+		return false;
+	}
+	clear();
+	BIndex = 0;
+	EIndex = AStr.find(LineBreak, BIndex);
+	while (EIndex != AStr.npos){
+		TmpStr = AStr.substr(BIndex, EIndex - BIndex);
+		I = TmpStr.find(Separator);
+		if (I != TmpStr.npos) {
+			NewHeadRec.Key = trim(TmpStr.substr(0, I));
+			NewHeadRec.Value = trim(TmpStr.substr(I + 1));
+			push_back(NewHeadRec);
+		}
+		BIndex += LineBreak.length();
+		EIndex = AStr.find(LineBreak, BIndex);
+	}
+	
+	return true;
 }
 
 std::string CHeadList::GetHeadItems(const std::string Index)
 {
-
+	std::string resu;
+	CHeadList::iterator it;
+	for (it = begin(); it != end(); it++) {
+		if (it->Key == Index) {
+			resu = it->Value;
+		}
+		break;
+	}
+	return resu;
 }
 
 void CHeadList::SetHeadItems(const std::string Index, const std::string Value)
 {
-
+	bool Found = false;
+	CHeadList::iterator it;
+	for (it = begin(); it != end(); it++) {
+		if (it->Key == Index) {
+			it->Value = Value;
+			Found = true;
+			break;
+		}
+	}
+	if (!Found) {
+		HeadRec TmpHead = { Index , Value};
+		push_back(TmpHead);
+	}
 }

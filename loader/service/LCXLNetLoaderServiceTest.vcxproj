@@ -70,25 +70,29 @@
     <LinkIncremental>true</LinkIncremental>
     <OutDir>..\bin\$(Platform)\</OutDir>
     <LibraryPath>$(OutDir);..\..\component\lcxl_iocp\bin\$(Platform)\;$(LibraryPath)</LibraryPath>
-    <IntDir>$(ProjectName)\$(Configuration)\</IntDir>
+    <IntDir>$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>..\bin\$(Platform)\</OutDir>
     <LibraryPath>$(OutDir);..\..\component\lcxl_iocp\bin\$(Platform)\;$(LibraryPath)</LibraryPath>
     <IntDir>$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>..\bin\$(Platform)\</OutDir>
     <LibraryPath>$(OutDir);..\..\component\lcxl_iocp\bin\$(Platform)\;$(LibraryPath)</LibraryPath>
-    <IntDir>$(ProjectName)\$(Configuration)\</IntDir>
+    <IntDir>$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>..\bin\$(Platform)\</OutDir>
     <LibraryPath>$(OutDir);..\..\component\lcxl_iocp\bin\$(Platform)\;$(LibraryPath)</LibraryPath>
     <IntDir>$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -97,6 +101,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;LCXL_SHADOW_SER_TEST;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
+      <EnablePREfast>true</EnablePREfast>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -111,6 +116,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;LCXL_SHADOW_SER_TEST;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
+      <EnablePREfast>true</EnablePREfast>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -127,6 +133,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;LCXL_SHADOW_SER_TEST;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
+      <EnablePREfast>true</EnablePREfast>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -145,6 +152,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;LCXL_SHADOW_SER_TEST;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
+      <EnablePREfast>true</EnablePREfast>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -158,6 +166,8 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\common\service\lcxl_net_service.h" />
+    <ClInclude Include="..\..\common\service\lcxl_service.h" />
     <ClInclude Include="..\..\component\lcxl_iocp\lcxl_iocp_base.h" />
     <ClInclude Include="..\..\component\lcxl_iocp\lcxl_string.h" />
     <ClInclude Include="..\common\dll_interface.h" />
@@ -167,6 +177,8 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\common\service\lcxl_net_service.cpp" />
+    <ClCompile Include="..\..\common\service\lcxl_service.cpp" />
     <ClCompile Include="..\..\component\lcxl_iocp\lcxl_string.cpp" />
     <ClCompile Include="LCXLNetLoaderService.cpp" />
     <ClCompile Include="stdafx.cpp">

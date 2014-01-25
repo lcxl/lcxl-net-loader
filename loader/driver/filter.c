@@ -2328,8 +2328,6 @@ PLCXL_MODULE_LIST_ENTRY LoadModuleSetting(IN PLCXL_FILTER filter)
 //寻找设置模块所对应的filter并设置此filter的信息
 PLCXL_FILTER SetFilterSetting(PLCXL_MODULE_LIST_ENTRY module)
 {
-	BOOLEAN bFalse = FALSE;
-	BOOLEAN bFound = FALSE;
 	PLCXL_FILTER filter = FindAndLockFilter(module->miniport_net_luid);
 
 	if (filter != NULL) {

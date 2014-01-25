@@ -27,4 +27,13 @@ std::string wstring_to_string(const std::wstring &str);
 #define string_to_tstring(__STR) (__STR)
 #endif
 
+// trim from start
+std::string &ltrim(std::string &_Str);
+std::wstring &ltrim(std::wstring &_Str);
+// trim from end
+std::string &rtrim(std::string &_Str);
+std::wstring &rtrim(std::wstring &_Str);
+// trim from both ends
+std::string &trim(std::string &_Str);
+std::wstring &trim(std::wstring &_Str);
 #endif

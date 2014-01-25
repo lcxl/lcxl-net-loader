@@ -29,6 +29,7 @@ BOOL CLLSockObj::Init()
 	mCurDataLen = 0;
 	mBufLen = 1024;
 	mBuf = malloc(mBufLen);
+	return resu;
 }
 
 PVOID CLLSockObj::GetRecvData()
@@ -64,24 +65,18 @@ BOOL CLLSockObj::SendData(const SendDataRec &ASendDataRec)
 BOOL CLLSockObj::SendData(PVOID Data, ULONG DataLen)
 {
 	SendDataRec SendRec;
-
+	BOOL resu;
 	GetSendData(DataLen, SendRec);
 	CopyMemory(SendRec.GetData(), Data, DataLen);
-	return SendData(SendRec);
+	resu = SendData(SendRec);
+	if (!resu) {
+		FreeSendData(SendRec);
+	}
+	return resu;
 }
 
 void CLLSockObj::GetSendData(ULONG DataLen, SendDataRec &ASendDataRec)
 {
-	/*
-	var
-	IsSuc: Boolean;
-	begin
-	SendDataRec.FTotalLen := DataLen + SizeOf(DataLen);
-	SendDataRec.FTotalData := inherited GetSendData(SendDataRec.FTotalLen);
-	PLongWord(SendDataRec.FTotalData)^ := DataLen;
-
-	IsSuc := SendDataRec.Assgin(SendDataRec.FTotalData, SendDataRec.FTotalLen);
-	Assert(IsSuc=True);*/
 	ASendDataRec.mTotalLen = DataLen + sizeof(DataLen);
 	ASendDataRec.mTotalData = CSocketObj::GetSendData(ASendDataRec.mTotalLen);
 	*(PULONG)ASendDataRec.mTotalData = DataLen;
@@ -99,48 +94,6 @@ void CLLSockObj::FreeSendData(const SendDataRec &ASendDataRec)
 
 void CCustomIOCPLCXLList::OnIOCPEvent(IocpEventEnum EventType, CSocketObj *SockObj, PIOCPOverlapped Overlapped)
 {
-	/*
-	var
-	LLSockObj: TLLSockObj absolute SockObj;
-	begin
-	case EventType of
-	ieRecvAll:
-	begin
-
-	// ÖØÐÂÉêÇëÄÚ´æ
-	if LLSockObj.FCurDataLen + Overlapped.GetRecvDataLen > LLSockObj.FBufLen then
-	begin
-	LLSockObj.FBufLen := LLSockObj.FCurDataLen + Overlapped.GetRecvDataLen;
-	ReallocMem(LLSockObj.FBuf, LLSockObj.FBufLen);
-	end;
-	CopyMemory(PByte(LLSockObj.FBuf) + LLSockObj.FCurDataLen, Overlapped.GetRecvData,
-	Overlapped.GetRecvDataLen);
-	LLSockObj.FCurDataLen := LLSockObj.FCurDataLen + Overlapped.GetRecvDataLen;
-	while (LLSockObj.FCurDataLen >= SizeOf(LongWord)) and
-	(PLongWord(LLSockObj.FBuf)^ >= LLSockObj.FCurDataLen - SizeOf(LongWord)) do
-	begin
-
-	LLSockObj.FRecvData := LLSockObj.FBuf;
-	LLSockObj.FRecvDataLen := PLongWord(LLSockObj.FBuf)^ + SizeOf(LongWord);
-	LLSockObj.FIsRecvAll := True;
-	OnIOCPEvent(ieRecvAll, LLSockObj, Overlapped);
-
-	LLSockObj.FIsRecvAll := False;
-	MoveMemory(LLSockObj.FBuf, PByte(LLSockObj.FBuf) + LLSockObj.FRecvDataLen,
-	LLSockObj.FCurDataLen - LLSockObj.FRecvDataLen);
-
-	LLSockObj.FCurDataLen := LLSockObj.FCurDataLen - LLSockObj.FRecvDataLen;
-
-	end;
-	if LLSockObj.FCurDataLen > 0 then
-	begin
-	OnIOCPEvent(ieRecvPart, LLSockObj, Overlapped);
-	end;
-	end;
-	else
-	OnIOCPEvent(EventType, LLSockObj, Overlapped);
-	end;
-	*/
 	CLLSockObj *LLSockObj = static_cast<CLLSockObj *>(SockObj);
 	switch (EventType) {
 	case ieRecvAll:
@@ -153,8 +106,7 @@ void CCustomIOCPLCXLList::OnIOCPEvent(IocpEventEnum EventType, CSocketObj *SockO
 			Overlapped->GetRecvDataLen());
 		LLSockObj->mCurDataLen = LLSockObj->mCurDataLen + Overlapped->GetRecvDataLen();
 		while (LLSockObj->mCurDataLen >= sizeof(ULONG) &&
-			*(PULONG)LLSockObj->mBuf >= LLSockObj->mCurDataLen - sizeof(ULONG)) {
-
+			LLSockObj->mCurDataLen - sizeof(ULONG) >= *(PULONG)LLSockObj->mBuf) {
 
 			LLSockObj->mRecvData = LLSockObj->mBuf;
 			LLSockObj->mRecvDataLen = *(PULONG)LLSockObj->mBuf + sizeof(ULONG);
