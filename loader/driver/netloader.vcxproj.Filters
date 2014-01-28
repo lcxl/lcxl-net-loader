@@ -31,6 +31,18 @@
     <ClCompile Include="precompsrc.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="lcxl_func.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lcxl_route.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lcxl_server.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lcxl_setting.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="filter.h">
@@ -51,12 +63,9 @@
     <ClInclude Include="filter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="flt_dbg.h" />
-    <ClInclude Include="precomp.h" />
     <ClInclude Include="filter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="filteruser.h" />
     <ClInclude Include="flt_dbg.h" />
     <ClInclude Include="precomp.h" />
     <ClInclude Include="filteruser.h">
@@ -105,6 +114,27 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="precomp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lcxl_func.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lcxl_queue.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lcxl_route.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lcxl_server.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lcxl_setting.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="precomp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="flt_dbg.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

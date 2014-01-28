@@ -28,6 +28,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	SetErrorMode(SEM_FAILCRITICALERRORS);//使程序出现异常时不报错
 	//初始化一个分配表  
 	g_NetLoadSer.SetServiceName(LCXLSHADOW_SER_NAME);
+	g_NetLoadSer.SetListenPort(9999);
 	g_NetLoadSer.Run();
 	return 0;
 }
@@ -47,6 +48,7 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(nCmdShow);
 	SetErrorMode(SEM_FAILCRITICALERRORS);//使程序出现异常时不报错
 	g_NetLoadSer.SetServiceName(LCXLSHADOW_SER_NAME);
+	g_NetLoadSer.SetListenPort(9999);
 	//初始化一个分配表  
 	g_NetLoadSer.Run();
 	return 0;

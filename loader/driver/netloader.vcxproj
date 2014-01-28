@@ -228,6 +228,10 @@
       <PreCompiledHeader>Use</PreCompiledHeader>
       <PreCompiledHeaderOutputFile>$(IntDir)\precomp.h.pch</PreCompiledHeaderOutputFile>
     </ClCompile>
+    <ClCompile Include="lcxl_func.c" />
+    <ClCompile Include="lcxl_route.c" />
+    <ClCompile Include="lcxl_server.c" />
+    <ClCompile Include="lcxl_setting.c" />
     <ClCompile Include="precompsrc.c">
       <AdditionalIncludeDirectories>;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreCompiledHeaderFile>precomp.h</PreCompiledHeaderFile>
@@ -252,6 +256,11 @@
     <ClInclude Include="..\common\drv_interface_type.h" />
     <ClInclude Include="filter.h" />
     <ClInclude Include="flt_dbg.h" />
+    <ClInclude Include="lcxl_func.h" />
+    <ClInclude Include="lcxl_queue.h" />
+    <ClInclude Include="lcxl_route.h" />
+    <ClInclude Include="lcxl_server.h" />
+    <ClInclude Include="lcxl_setting.h" />
     <ClInclude Include="precomp.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

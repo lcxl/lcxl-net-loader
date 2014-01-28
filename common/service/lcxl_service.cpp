@@ -14,6 +14,12 @@ void CServiceBase::SerMain(DWORD dwNumServicesArgs, LPTSTR lpServiceArgVectors[]
 {
 	// 注册控制
 	m_ServiceStatusHandle = RegisterServiceCtrlHandlerEx(m_SerivceName.c_str(), &CServiceBase::HandlerEx, this);
+	if (m_ServiceStatusHandle == NULL) {
+#ifdef _DEBUG
+		OutputDebugString(_T("CServiceBase::SerMain RegisterServiceCtrlHandlerEx failed\n"));
+#endif
+		return;
+	}
 	// 报告正在启动
 	SetCurrentState(SERVICE_START_PENDING);
 	// 报告启动成功
@@ -127,7 +133,7 @@ void CServiceBase::SetServiceName(std::tstring szServiceName)
 
 DWORD WINAPI CServiceBase::HandlerEx(_In_ DWORD dwControl, _In_ DWORD dwEventType, _In_ LPVOID lpEventData, _In_ LPVOID lpContext)
 {
-	reinterpret_cast<CServiceBase *>(lpContext)->SerHandler(dwControl);
+	reinterpret_cast<CServiceBase *>(lpContext)->SerHandler(dwControl, dwEventType, lpEventData);
 	return NO_ERROR;
 }
 

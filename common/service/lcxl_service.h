@@ -21,7 +21,7 @@ private:
 protected:
 	SERVICE_STATUS m_SerStatus;
 	void SerMain(DWORD dwNumServicesArgs, LPTSTR lpServiceArgVectors[]);
-	virtual void SerHandler(DWORD dwControl) = 0;
+	virtual DWORD SerHandler(DWORD dwControl, DWORD dwEventType, LPVOID lpEventData) = 0;
 	//如果服务运行成功，则需要执行SetCurrentState(SERVICE_RUNNING);
 	virtual void SerRun() = 0;
 public:

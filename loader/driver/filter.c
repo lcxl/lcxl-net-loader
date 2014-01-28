@@ -13,6 +13,7 @@ Abstract:
 --*/
 
 #include "precomp.h"
+#include "filter.h"//filter.c
 
 #define __FILENUMBER    'PNPF'
 
@@ -22,51 +23,19 @@ Abstract:
 // during initialization here.
 #pragma NDIS_INIT_FUNCTION(DriverEntry)
 
-
-USHORT UTIL_htons( USHORT hostshort )
-{
-  PUCHAR  pBuffer;
-  USHORT  nResult;
-
-  nResult = 0;
-  pBuffer = (PUCHAR )&hostshort;
-
-  nResult = ( (pBuffer[ 0 ] << 8) & 0xFF00) | (pBuffer[ 1 ] & 0x00FF);
-
-  return( nResult );
-}
-
-
-/*UTIL_ntohs把网络字节顺序转换成主机字节顺序*/
-USHORT UTIL_ntohs( USHORT netshort )
-{
-  return( UTIL_htons( netshort ) );
-}
-
 //
 // Global variables
 //
-NDIS_HANDLE         g_FilterDriverHandle; // NDIS handle for filter driver
-NDIS_HANDLE         g_FilterDriverObject;
-NDIS_HANDLE         g_NdisFilterDeviceHandle = NULL;
-PDEVICE_OBJECT      g_DeviceObject = NULL;
+NDIS_HANDLE         g_filter_driver_handle; // NDIS handle for filter driver
+NDIS_HANDLE         g_filter_driver_object;
+NDIS_HANDLE         g_ndis_filter_device_handle = NULL;
+PDEVICE_OBJECT      g_device_object = NULL;
 //过滤列表锁
-FILTER_LOCK         g_FilterListLock;
-//过滤模块列表
-LIST_ENTRY          g_FilterModuleList;
-//配置信息
-LCXL_SETTING		g_Setting;
-//添加代码
-//定义lookaside列表
-#define TAG_ROUTE       'ROUT'
-#define TAG_SERVER      'SERV'
-NPAGED_LOOKASIDE_LIST  g_route_mem_mgr;
-NPAGED_LOOKASIDE_LIST  g_server_mem_mgr;
+FILTER_LOCK         g_filter_list_lock;
 
-#define GET_MEM_ROUTE() (PLCXL_ROUTE_LIST_ENTRY)ExAllocateFromNPagedLookasideList(&g_route_mem_mgr)
-#define FREE_MEM_ROUTE(__buf) ExFreeToNPagedLookasideList(&g_route_mem_mgr, __buf)
-#define GET_MEM_SERVER() (PSERVER_INFO_LIST_ENTRY)ExAllocateFromNPagedLookasideList(&g_server_mem_mgr)
-#define FREE_MEM_SERVER(__buf) ExFreeToNPagedLookasideList(&g_server_mem_mgr, __buf)
+//过滤模块列表
+LIST_ENTRY          g_filter_list;
+
 //转发的NBL的内存TAG
 #define TAG_SEND_NBL 'SEND'
 //!添加代码!
@@ -121,13 +90,13 @@ Return Value:
 
     DEBUGP(DL_TRACE, "===>DriverEntry...\n");
 	KdPrint(("SYS:DriverEntry\n"));
-    g_FilterDriverObject = DriverObject;
+    g_filter_driver_object = DriverObject;
 
     do
     {
         //添加代码
-        ExInitializeNPagedLookasideList(&g_route_mem_mgr, NULL, NULL, 0, sizeof(LCXL_ROUTE_LIST_ENTRY), TAG_ROUTE, 0);
-        ExInitializeNPagedLookasideList(&g_server_mem_mgr, NULL, NULL, 0, sizeof(SERVER_INFO_LIST_ENTRY), TAG_SERVER, 0);
+		INIT_SERVER_MEM_MGR();
+		INIT_ROUTE_MEM_MGR();
         //!添加代码!
 
         NdisZeroMemory(&FChars, sizeof(NDIS_FILTER_DRIVER_CHARACTERISTICS));
@@ -176,20 +145,21 @@ Return Value:
 
         DriverObject->DriverUnload = FilterUnload;
 
-        g_FilterDriverHandle = NULL;
+        g_filter_driver_handle = NULL;
 
         //
         // Initialize spin locks
         //
-        FILTER_INIT_LOCK(&g_FilterListLock);
+        FILTER_INIT_LOCK(&g_filter_list_lock);
+        InitializeListHead(&g_filter_list);
 
-        InitializeListHead(&g_FilterModuleList);
+		FILTER_INIT_LOCK(&g_Setting.module_list_lock);
 		InitializeListHead(&g_Setting.module_list.list_entry);
 		g_Setting.module_count = 0;
         Status = NdisFRegisterFilterDriver(DriverObject,
-                                           (NDIS_HANDLE)g_FilterDriverObject,
+                                           (NDIS_HANDLE)g_filter_driver_object,
                                            &FChars,
-                                           &g_FilterDriverHandle);
+                                           &g_filter_driver_handle);
         if (Status != NDIS_STATUS_SUCCESS)
         {
             DEBUGP(DL_WARN, "Register filter driver failed.\n");
@@ -200,8 +170,8 @@ Return Value:
 
         if (Status != NDIS_STATUS_SUCCESS)
         {
-            NdisFDeregisterFilterDriver(g_FilterDriverHandle);
-            FILTER_FREE_LOCK(&g_FilterListLock);
+            NdisFDeregisterFilterDriver(g_filter_driver_handle);
+            FILTER_FREE_LOCK(&g_filter_list_lock);
             DEBUGP(DL_WARN, "Register device for the filter driver failed.\n");
             break;
         }
@@ -248,11 +218,11 @@ Return Value:
 {
     DEBUGP(DL_TRACE, "===>FilterRegisterOptions\n");
 
-    ASSERT(NdisFilterDriverHandle == g_FilterDriverHandle);
-    ASSERT(FilterDriverContext == (NDIS_HANDLE)g_FilterDriverObject);
+    ASSERT(NdisFilterDriverHandle == g_filter_driver_handle);
+    ASSERT(FilterDriverContext == (NDIS_HANDLE)g_filter_driver_object);
 
-    if ((NdisFilterDriverHandle != (NDIS_HANDLE)g_FilterDriverHandle) ||
-        (FilterDriverContext != (NDIS_HANDLE)g_FilterDriverObject))
+    if ((NdisFilterDriverHandle != (NDIS_HANDLE)g_filter_driver_handle) ||
+        (FilterDriverContext != (NDIS_HANDLE)g_filter_driver_object))
     {
         return NDIS_STATUS_INVALID_PARAMETER;
     }
@@ -312,8 +282,8 @@ N.B.:  FILTER can use NdisRegisterDeviceEx to create a device, so the upper
 	KdPrint(("SYS:FilterAttach:miniport:%I64u %wZ %wZ %wZ\n", AttachParameters->BaseMiniportNetLuid, AttachParameters->FilterModuleGuidName, AttachParameters->BaseMiniportInstanceName, AttachParameters->BaseMiniportName));
     do
     {
-        ASSERT(FilterDriverContext == (NDIS_HANDLE)g_FilterDriverObject);
-        if (FilterDriverContext != (NDIS_HANDLE)g_FilterDriverObject)
+        ASSERT(FilterDriverContext == (NDIS_HANDLE)g_filter_driver_object);
+        if (FilterDriverContext != (NDIS_HANDLE)g_filter_driver_object)
         {
             Status = NDIS_STATUS_INVALID_PARAMETER;
             break;
@@ -337,10 +307,7 @@ N.B.:  FILTER can use NdisRegisterDeviceEx to create a device, so the upper
            break;
         }
 
-        Size = sizeof(LCXL_FILTER) +
-               AttachParameters->FilterModuleGuidName->Length +
-               AttachParameters->BaseMiniportInstanceName->Length +
-               AttachParameters->BaseMiniportName->Length;
+        Size = sizeof(LCXL_FILTER);
 
         pFilter = (PLCXL_FILTER)FILTER_ALLOC_MEM(NdisFilterHandle, Size);
         if (pFilter == NULL)
@@ -351,28 +318,7 @@ N.B.:  FILTER can use NdisRegisterDeviceEx to create a device, so the upper
         }
 
         NdisZeroMemory(pFilter, sizeof(LCXL_FILTER));
-		//模块名称
-        pFilter->FilterModuleName.Length = pFilter->FilterModuleName.MaximumLength = AttachParameters->FilterModuleGuidName->Length;
-        pFilter->FilterModuleName.Buffer = (PWSTR)((PUCHAR)pFilter + sizeof(LCXL_FILTER));
-        NdisMoveMemory(pFilter->FilterModuleName.Buffer,
-                        AttachParameters->FilterModuleGuidName->Buffer,
-                        pFilter->FilterModuleName.Length);
-
-
-
-        pFilter->MiniportFriendlyName.Length = pFilter->MiniportFriendlyName.MaximumLength = AttachParameters->BaseMiniportInstanceName->Length;
-        pFilter->MiniportFriendlyName.Buffer = (PWSTR)((PUCHAR)pFilter->FilterModuleName.Buffer + pFilter->FilterModuleName.Length);
-        NdisMoveMemory(pFilter->MiniportFriendlyName.Buffer,
-                        AttachParameters->BaseMiniportInstanceName->Buffer,
-                        pFilter->MiniportFriendlyName.Length);
-
-
-        pFilter->MiniportName.Length = pFilter->MiniportName.MaximumLength = AttachParameters->BaseMiniportName->Length;
-        pFilter->MiniportName.Buffer = (PWSTR)((PUCHAR)pFilter->MiniportFriendlyName.Buffer +
-                                                   pFilter->MiniportFriendlyName.Length);
-        NdisMoveMemory(pFilter->MiniportName.Buffer,
-                        AttachParameters->BaseMiniportName->Buffer,
-                        pFilter->MiniportName.Length);
+		pFilter->attach_paramters = AttachParameters;
         
         pFilter->MiniportIfIndex = AttachParameters->BaseMiniportIfIndex;
         //添加代码
@@ -424,10 +370,11 @@ N.B.:  FILTER can use NdisRegisterDeviceEx to create a device, so the upper
 
 
         pFilter->State = FilterPaused;
-		LoadModuleSetting(pFilter);
-        FILTER_ACQUIRE_LOCK(&g_FilterListLock, bFalse);
-        InsertHeadList(&g_FilterModuleList, &pFilter->FilterModuleLink);
-        FILTER_RELEASE_LOCK(&g_FilterListLock, bFalse);
+		//加载配置文件
+		pFilter->module_setting = LoadModuleSetting(AttachParameters);
+        FILTER_ACQUIRE_LOCK(&g_filter_list_lock, bFalse);
+        InsertHeadList(&g_filter_list, &pFilter->FilterModuleLink);
+        FILTER_RELEASE_LOCK(&g_filter_list_lock, bFalse);
 
     }
     while (bFalse);
@@ -554,7 +501,7 @@ Return Value:
     ConfigObject.Header.Type = NDIS_OBJECT_TYPE_CONFIGURATION_OBJECT;
     ConfigObject.Header.Revision = NDIS_CONFIGURATION_OBJECT_REVISION_1;
     ConfigObject.Header.Size = sizeof(NDIS_CONFIGURATION_OBJECT);
-    ConfigObject.NdisHandle = g_FilterDriverHandle;
+    ConfigObject.NdisHandle = g_filter_driver_handle;
     ConfigObject.Flags = 0;
 
     Status = NdisOpenConfigurationEx(&ConfigObject, &ConfigurationHandle);
@@ -730,12 +677,13 @@ NOTE: Called at PASSIVE_LEVEL and the filter is in paused state
     //添加代码
     if (pFilter->send_net_buffer_list_pool!=NULL) {
         NdisFreeNetBufferListPool(pFilter->send_net_buffer_list_pool);
-    }
+	}
+	pFilter->module_setting->ref_count--;
     //!添加代码!
 
-    FILTER_ACQUIRE_LOCK(&g_FilterListLock, bFalse);
+    FILTER_ACQUIRE_LOCK(&g_filter_list_lock, bFalse);
     RemoveEntryList(&pFilter->FilterModuleLink);
-    FILTER_RELEASE_LOCK(&g_FilterListLock, bFalse);
+    FILTER_RELEASE_LOCK(&g_filter_list_lock, bFalse);
 
 
     //
@@ -781,22 +729,22 @@ Return Value:
     // Should free the filter context list
     //
     FilterDeregisterDevice();
-    NdisFDeregisterFilterDriver(g_FilterDriverHandle);
+    NdisFDeregisterFilterDriver(g_filter_driver_handle);
 
 #if DBG
-    FILTER_ACQUIRE_LOCK(&g_FilterListLock, bFalse);
-    ASSERT(IsListEmpty(&g_FilterModuleList));
+    FILTER_ACQUIRE_LOCK(&g_filter_list_lock, bFalse);
+    ASSERT(IsListEmpty(&g_filter_list));
 
-    FILTER_RELEASE_LOCK(&g_FilterListLock, bFalse);
+    FILTER_RELEASE_LOCK(&g_filter_list_lock, bFalse);
 
 #endif
 
-    FILTER_FREE_LOCK(&g_FilterListLock);
+    FILTER_FREE_LOCK(&g_filter_list_lock);
 
     DEBUGP(DL_TRACE, "<===FilterUnload\n");
     //添加代码
-    ExDeleteNPagedLookasideList(&g_route_mem_mgr);
-    ExDeleteNPagedLookasideList(&g_server_mem_mgr);
+	DEL_ROUTE_MEM_MGR();
+	DEL_SERVER_MEM_MGR();
     //!添加代码!
     return;
 
@@ -1628,7 +1576,7 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
         }
         FILTER_RELEASE_LOCK(&pFilter->Lock, DispatchLevel);
 		//如果没有加载配置信息，则放过所有的NBL
-		if (pFilter->module == NULL) {
+		if (pFilter->module_setting == NULL) {
 			NdisFIndicateReceiveNetBufferLists(pFilter->FilterHandle, NetBufferLists, PortNumber, NumberOfNetBufferLists, ReceiveFlags);
 			break;
 		}
@@ -2164,26 +2112,6 @@ Return Value:
     NdisSetEvent(&FilterRequest->ReqEvent);
 }
 
-NTSTATUS LCXLCopyString(IN OUT PUNICODE_STRING dest, IN PUNICODE_STRING sour) 
-{
-	PVOID buf = NULL;
-
-	buf = ExAllocatePoolWithTag(PagedPool, sour->MaximumLength, TAG_FILE_BUFFER);
-	if (buf == NULL) {
-		return STATUS_INSUFFICIENT_RESOURCES;
-	}
-
-	if (dest->Buffer != NULL) {
-		ExFreePoolWithTag(dest->Buffer, TAG_FILE_BUFFER);
-		dest->Buffer = NULL;
-	}
-	dest->Buffer = buf;
-	dest->Length = sour->Length;
-	dest->MaximumLength = sour->MaximumLength;
-	RtlCopyUnicodeString(dest, sour);
-	return STATUS_SUCCESS;
-}
-
 VOID DriverReinitialize(
 	_In_      struct _DRIVER_OBJECT *DriverObject,
 	_In_opt_  PVOID Context,
@@ -2195,266 +2123,8 @@ VOID DriverReinitialize(
 	UNREFERENCED_PARAMETER(Count);
 	KdPrint(("SYS:DriverReinitialize begin\n"));
 	LoadSetting();
+	UpdateFiltersSetting();
 	KdPrint(("SYS:DriverReinitialize end\n"));
-}
-
-VOID LoadSetting()
-{
-	NTSTATUS status;
-	HANDLE file_handle;
-	OBJECT_ATTRIBUTES oa;
-	UNICODE_STRING file_path;
-	IO_STATUS_BLOCK iosb = { 0 };
-	
-	FILE_STANDARD_INFORMATION file_info;
-
-	RtlInitUnicodeString(&file_path, LOADER_SETTING_FILE_PATH);
-	InitializeObjectAttributes(&oa, &file_path, OBJ_CASE_INSENSITIVE || OBJ_KERNEL_HANDLE, NULL, NULL);
-	status = ZwCreateFile(&file_handle, GENERIC_READ, &oa, &iosb, NULL, FILE_ATTRIBUTE_SYSTEM || FILE_ATTRIBUTE_HIDDEN || FILE_ATTRIBUTE_READONLY, FILE_SHARE_READ, FILE_OPEN, FILE_NON_DIRECTORY_FILE || FILE_SYNCHRONOUS_IO_NONALERT, NULL, 0);
-	if (!NT_SUCCESS(status)) {
-		KdPrint(("SYS:LoadSetting:ZwCreateFile Failed:0x%08x, iosb.Info=0x%p\n", status, iosb.Information));
-		return;
-	}
-	//查询文件信息
-	status = ZwQueryInformationFile(file_handle, &iosb, &file_info, sizeof(file_info), FileStandardInformation);
-	if (NT_SUCCESS(status)) {
-		
-		//文件大小不能超过65535
-		if (file_info.EndOfFile.QuadPart < 0xFFFF) {
-			PUCHAR buf;
-			PUCHAR cur_buf;
-			INT buf_len;
-
-			buf_len = (INT)file_info.EndOfFile.QuadPart;
-			buf = cur_buf = ExAllocatePoolWithTag(NonPagedPool, buf_len, TAG_FILE_BUFFER);
-			if (buf_len>0 && buf != NULL) {
-				status = ZwReadFile(file_handle, NULL, NULL, NULL, &iosb, buf, buf_len, NULL, NULL);
-				if (NT_SUCCESS(status)) {
-					//BOOLEAN bFalse = FALSE;
-					INT i;
-					//FILTER_ACQUIRE_LOCK(&g_FilterListLock, bFalse);
-					//读取模块数量
-					cur_buf = LCXLReadFromBuf(cur_buf, &g_Setting.module_count, sizeof(g_Setting.module_count));
-					for (i = 0; i < g_Setting.module_count; i++) {
-						PLCXL_MODULE_LIST_ENTRY module = NULL;
-						module = ExAllocatePoolWithTag(NonPagedPool, sizeof(LCXL_MODULE_LIST_ENTRY), TAG_MODULE);
-						if (module != NULL) {
-							INT j;
-							//读取Luid
-							cur_buf = LCXLReadFromBuf(cur_buf, &module->miniport_net_luid.Value, sizeof(module->miniport_net_luid.Value));
-							//读取小端口驱动友好名称
-							cur_buf = LCXLReadStringFromBuf(cur_buf, &module->miniport_friendly_name);
-							//读取小端口驱动名称
-							cur_buf = LCXLReadStringFromBuf(cur_buf, &module->miniport_name);
-							//读取模块名称
-							cur_buf = LCXLReadStringFromBuf(cur_buf, &module->filter_module_name);
-							//读取均衡器地址
-							cur_buf = LCXLReadFromBuf(cur_buf, &module->real_addr, sizeof(module->real_addr));
-							//读取虚拟IPv4地址
-							cur_buf = LCXLReadFromBuf(cur_buf, &module->virtual_ipv4, sizeof(module->virtual_ipv4));
-							//读取虚拟IPv6地址
-							cur_buf = LCXLReadFromBuf(cur_buf, &module->virtual_ipv6, sizeof(module->virtual_ipv6));
-
-							//读取服务器数量
-							cur_buf = LCXLReadFromBuf(cur_buf, &module->server_count, sizeof(module->server_count));
-							//初始化服务器列表
-							InitializeListHead(&module->server_list.list_entry);
-							//初始化服务器锁
-							FILTER_INIT_LOCK(&module->server_lock);
-							for (j = 0; j < module->server_count; j++) {
-								PSERVER_INFO_LIST_ENTRY server = NULL;
-								server = GET_MEM_SERVER();
-								if (server != NULL) {
-									RtlZeroMemory(server, sizeof(SERVER_INFO_LIST_ENTRY));
-									cur_buf = LCXLReadFromBuf(cur_buf, &server->info, sizeof(server->info));
-									
-									InsertHeadList(&module->server_list.list_entry, &server->list_entry);
-								} else {
-									j--;
-									module->server_count--;
-								}
-							}
-							SetFilterSetting(module);
-							InsertHeadList(&g_Setting.module_list.list_entry, &module->list_entry);
-						} else {
-							i--;
-							g_Setting.module_count--;
-						}
-					}
-					//FILTER_RELEASE_LOCK(&g_FilterListLock, bFalse);
-				}
-				ExFreePoolWithTag(buf, TAG_FILE_BUFFER);
-			} else {
-				KdPrint(("SYS:LoadSetting:ExAllocatePoolWithTag Failed(memsize=%d).\n", buf_len));
-			}
-		}
-	}
-	ZwClose(file_handle);
-}
-
-//从设置模块中加载设置
-PLCXL_MODULE_LIST_ENTRY LoadModuleSetting(IN PLCXL_FILTER filter)
-{
-	BOOLEAN bFalse = FALSE;
-	BOOLEAN bFound = FALSE;
-	PLCXL_MODULE_LIST_ENTRY module = NULL;
-
-	FILTER_ACQUIRE_LOCK(&g_FilterListLock, bFalse);
-	module = CONTAINING_RECORD(g_Setting.module_list.list_entry.Flink, LCXL_MODULE_LIST_ENTRY, list_entry);
-	while (module != &g_Setting.module_list) {
-		if (module->miniport_net_luid.Value == filter->miniport_net_luid.Value) {
-			
-			//更新module中的信息
-			//更新MAC信息
-			module->real_addr.mac_addr = filter->mac_addr;
-			//更新小端口驱动相关信息
-			LCXLCopyString(&module->miniport_friendly_name, &filter->MiniportFriendlyName);
-			LCXLCopyString(&module->miniport_name, &filter->MiniportName);
-			LCXLCopyString(&module->filter_module_name, &filter->FilterModuleName);
-
-			//关联filter和module
-			filter->module = module;
-			module->filter = filter;
-			bFound = TRUE;
-			break;
-		}
-		module = CONTAINING_RECORD(module->list_entry.Flink, LCXL_MODULE_LIST_ENTRY, list_entry);
-	}
-	
-	FILTER_RELEASE_LOCK(&g_FilterListLock, bFalse);
-	return bFound ? module : NULL;
-}
-
-//寻找设置模块所对应的filter并设置此filter的信息
-PLCXL_FILTER SetFilterSetting(PLCXL_MODULE_LIST_ENTRY module)
-{
-	PLCXL_FILTER filter = FindAndLockFilter(module->miniport_net_luid);
-
-	if (filter != NULL) {
-		//更新module中的信息
-		//更新MAC信息
-		module->real_addr.mac_addr = filter->mac_addr;
-		//更新小端口驱动相关信息
-		LCXLCopyString(&module->miniport_friendly_name, &filter->MiniportFriendlyName);
-		LCXLCopyString(&module->miniport_name, &filter->MiniportName);
-		LCXLCopyString(&module->filter_module_name, &filter->FilterModuleName);
-		//设置关联
-		module->filter = filter;
-		filter->module = module;
-
-		UnlockFilter(filter);
-	}
-	return filter;
-}
-
-
-VOID SaveSetting()
-{
-	NTSTATUS status;
-	HANDLE file_handle;
-	OBJECT_ATTRIBUTES oa;
-	UNICODE_STRING file_path;
-	IO_STATUS_BLOCK iosb = { 0 };
-	PLCXL_MODULE_LIST_ENTRY module;
-	INT buf_len;
-	PUCHAR buf;
-	PUCHAR cur_buf;
-	BOOLEAN bFalse = FALSE;
-
-	RtlInitUnicodeString(&file_path, LOADER_SETTING_FILE_PATH);
-	InitializeObjectAttributes(&oa, &file_path, OBJ_CASE_INSENSITIVE || OBJ_KERNEL_HANDLE, NULL, NULL);
-	status = ZwCreateFile(
-		&file_handle, 
-		GENERIC_WRITE, 
-		&oa, 
-		&iosb, 
-		NULL, 
-		FILE_ATTRIBUTE_SYSTEM || FILE_ATTRIBUTE_HIDDEN || FILE_ATTRIBUTE_READONLY, 
-		0, 
-		FILE_OVERWRITE_IF, 
-		FILE_NON_DIRECTORY_FILE || FILE_SYNCHRONOUS_IO_NONALERT, 
-		NULL, 
-		0
-	);
-	if (!NT_SUCCESS(status)) {
-		KdPrint(("SYS:SaveSetting:ZwCreateFile Failed:0x%08x, iosb.Info=0x%p\n", status, iosb.Information));
-		return;
-	}
-	buf_len = 0;
-	FILTER_ACQUIRE_LOCK(&g_FilterListLock, bFalse);
-	//获取模块数量
-	buf_len += sizeof(g_Setting.module_count);
-	//先计算需要写入配置文件的长度
-	module = CONTAINING_RECORD(g_Setting.module_list.list_entry.Flink, LCXL_MODULE_LIST_ENTRY, list_entry);
-	while (module != &g_Setting.module_list) {
-		//如果是重启后删除的，则不保存到配置文件中
-		if ((module->flag & ML_DELETE_AFTER_RESTART) == 0) {
-			PSERVER_INFO_LIST_ENTRY server;
-
-			buf_len +=
-				sizeof(module->miniport_net_luid.Value) +
-				3 * sizeof(USHORT)+
-				module->miniport_friendly_name.Length +
-				module->miniport_name.Length+
-				module->filter_module_name.Length+
-				sizeof(module->real_addr)+
-				sizeof(module->virtual_ipv4)+
-				sizeof(module->virtual_ipv6);
-			FILTER_ACQUIRE_LOCK(&module->server_lock, !bFalse);
-			buf_len += sizeof(module->server_count);
-			server = CONTAINING_RECORD(module->server_list.list_entry.Flink, SERVER_INFO_LIST_ENTRY, list_entry);
-			while (server != &module->server_list) {
-				buf_len += sizeof(server->info);
-				server = CONTAINING_RECORD(server->list_entry.Flink, SERVER_INFO_LIST_ENTRY, list_entry);
-			}
-			FILTER_RELEASE_LOCK(&module->server_lock, !bFalse);
-		}
-		module = CONTAINING_RECORD(module->list_entry.Flink, LCXL_MODULE_LIST_ENTRY, list_entry);
-	}
-
-	buf = cur_buf = ExAllocatePoolWithTag(NonPagedPool, buf_len, TAG_FILE_BUFFER);
-	//获取模块数量
-	cur_buf = LCXLWriteToBuf(cur_buf, &g_Setting.module_count, sizeof(g_Setting.module_count));
-	while (module != &g_Setting.module_list) {
-		//如果是重启后删除的，则不保存到配置文件中
-		if ((module->flag & ML_DELETE_AFTER_RESTART) == 0) {
-			PSERVER_INFO_LIST_ENTRY server;
-			//写入Luid
-			cur_buf = LCXLWriteToBuf(cur_buf, &module->miniport_net_luid.Value, sizeof(module->miniport_net_luid.Value));
-			//写入小端口驱动友好名称
-			cur_buf = LCXLWriteStringToBuf(cur_buf, &module->miniport_friendly_name);
-			//写入小端口驱动名称
-			cur_buf = LCXLWriteStringToBuf(cur_buf, &module->miniport_name);
-			//写入模块名称
-			cur_buf = LCXLWriteStringToBuf(cur_buf, &module->filter_module_name);
-			//写入均衡器地址
-			cur_buf = LCXLWriteToBuf(cur_buf, &module->real_addr, sizeof(module->real_addr));
-			//写入虚拟IPv4地址
-			cur_buf = LCXLWriteToBuf(cur_buf, &module->virtual_ipv4, sizeof(module->virtual_ipv4));
-			//写入虚拟IPv6地址
-			cur_buf = LCXLWriteToBuf(cur_buf, &module->virtual_ipv6, sizeof(module->virtual_ipv6));
-			
-			//写入服务器数量
-			cur_buf = LCXLWriteToBuf(cur_buf, &module->server_count, sizeof(module->server_count));
-			//遍历写入服务器信息
-			FILTER_ACQUIRE_LOCK(&module->server_lock, !bFalse);
-			server = CONTAINING_RECORD(module->server_list.list_entry.Flink, SERVER_INFO_LIST_ENTRY, list_entry);
-			while (server != &module->server_list) {
-				//写入服务器信息
-				cur_buf = LCXLWriteToBuf(cur_buf, &server->info, sizeof(server->info));
-				server = CONTAINING_RECORD(server->list_entry.Flink, SERVER_INFO_LIST_ENTRY, list_entry);
-			}
-			FILTER_RELEASE_LOCK(&module->server_lock, !bFalse);
-		}
-		module = CONTAINING_RECORD(module->list_entry.Flink, LCXL_MODULE_LIST_ENTRY, list_entry);
-	}
-	FILTER_RELEASE_LOCK(&g_FilterListLock, bFalse);
-	status = ZwWriteFile(file_handle, NULL, NULL, NULL, &iosb, buf, buf_len, NULL, NULL);
-	if (!NT_SUCCESS(status)) {
-		KdPrint(("SYS:SaveSetting:ZwCreateFile Failed:0x%08x, iosb.Info=0x%p\n", status, iosb.Information));
-	}
-	ExFreePoolWithTag(buf, TAG_FILE_BUFFER);
-	ZwClose(file_handle);
 }
 
 PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER pFilter, IN INT ipMode, IN PVOID pIPHeader) 
@@ -2472,19 +2142,22 @@ PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER pFilter, IN INT ipMode, IN PV
 		ASSERT(FALSE);
 		break;
 	}
-	route_info = GetRouteListEntry(pFilter, ipMode, pIPHeader, ptcp_header);
+	route_info = GetRouteListEntry(&pFilter->route_list.list_entry, ipMode, pIPHeader, ptcp_header);
 	//建立连接的阶段
 	//有TH_SYN的阶段是建立连接的阶段，这个时候就得选择路由信息
 	if ((ptcp_header->th_flags & TH_SYN) != 0) {
 		PSERVER_INFO_LIST_ENTRY server;
 
 		//选择一个服务器
-		server = SelectServer(pFilter, ipMode, pIPHeader, ptcp_header);
+		NdisAcquireSpinLock(&pFilter->module_setting->module_setting_lock);
+		
+		server = SelectServer(&pFilter->module_setting->server_list.list_entry, ipMode, pIPHeader, ptcp_header);
+		NdisReleaseSpinLock(&pFilter->module_setting->module_setting_lock);
 		if (server == NULL) {
 			return NULL;
 		}
 		if (route_info == NULL) {
-			route_info = CreateRouteListEntry(pFilter);
+			route_info = CreateRouteListEntry(&pFilter->route_list.list_entry);
 		}
 		//初始化路由信息
 		InitRouteListEntry(route_info, ipMode, pIPHeader, ptcp_header, server);
@@ -2543,7 +2216,7 @@ PLCXL_ROUTE_LIST_ENTRY IfRouteNBL(IN PLCXL_FILTER pFilter, IN PETHERNET_HEADER p
 
             pIPHeader = (PIPV4_HEADER)((PUCHAR)pEthType+sizeof(USHORT));
 			//查看数据包的目标IP是否是虚拟IP
-			if (RtlCompareMemory(&pIPHeader->DestinationAddress, &pFilter->module->virtual_ipv4, sizeof(pIPHeader->DestinationAddress)) == sizeof(pIPHeader->DestinationAddress)) {
+			if (RtlCompareMemory(&pIPHeader->DestinationAddress, &pFilter->module_setting->virtual_ipv4, sizeof(pIPHeader->DestinationAddress)) == sizeof(pIPHeader->DestinationAddress)) {
 				//pIPHeader->iaDst
 				
 				switch (pIPHeader->Protocol) {
@@ -2564,6 +2237,17 @@ PLCXL_ROUTE_LIST_ENTRY IfRouteNBL(IN PLCXL_FILTER pFilter, IN PETHERNET_HEADER p
         break;
 	case ETHERNET_TYPE_ARP:
 		//ARP_OPCODE  ARP_REQUEST  ARP_RESPONSE
+		if (BufferLength >= sizeof(ARP_HEADER)) {
+			PARP_HEADER pARPHeader;
+
+			pARPHeader = (PARP_HEADER)((PUCHAR)pEthType + sizeof(USHORT));
+			KdPrint(("SYS:ARP:HardwareAddressSpace=%d, ProtocolAddressSpace=%d, HardwareAddressLength=%d, ProtocolAddressLength=%d, Opcode=%d\n", 
+				pARPHeader->HardwareAddressSpace,
+				pARPHeader->ProtocolAddressSpace,
+				pARPHeader->HardwareAddressLength,
+				pARPHeader->ProtocolAddressLength,
+				pARPHeader->Opcode));
+		}
 		break;
     case ETHERNET_TYPE_IPV6://IPv6协议
 		if (BufferLength >= sizeof(IPV6_HEADER)){
@@ -2571,16 +2255,20 @@ PLCXL_ROUTE_LIST_ENTRY IfRouteNBL(IN PLCXL_FILTER pFilter, IN PETHERNET_HEADER p
 
 			pIPHeader = (PIPV6_HEADER)((PUCHAR)pEthType + sizeof(USHORT));
 			//查看数据包的目标IP是否是虚拟IP
-			if (RtlCompareMemory(&pIPHeader->DestinationAddress, &pFilter->module->virtual_ipv6, sizeof(pIPHeader->DestinationAddress)) == sizeof(pIPHeader->DestinationAddress)) {
+			if (RtlCompareMemory(&pIPHeader->DestinationAddress, &pFilter->module_setting->virtual_ipv6, sizeof(pIPHeader->DestinationAddress)) == sizeof(pIPHeader->DestinationAddress)) {
 				switch (pIPHeader->NextHeader) {
-					case 0x3A://ICMPv6
-						break;
-					case 0x06://TCP
-						//目前仅支持TCP
-						return RouteTCPNBL(pFilter, IM_IPV6, pIPHeader);
-						break;
-					case 0x11://PROT_UDP
-						break;
+				case 0x3A://ICMPv6
+				{
+					PICMPV6_MESSAGE pICMPv6Message = (PICMPV6_MESSAGE)((PUCHAR)pIPHeader + sizeof(IPV6_HEADER));
+					KdPrint(("SYS:ICMPv6:Type=%d, Code=%d, Checksum=%d\n", pICMPv6Message->Header.Type, pICMPv6Message->Header.Code, pICMPv6Message->Header.Checksum));
+				}
+					break;
+				case 0x06://TCP
+					//目前仅支持TCP
+					return RouteTCPNBL(pFilter, IM_IPV6, pIPHeader);
+					break;
+				case 0x11://PROT_UDP
+					break;
 				}
 			}
 		}
@@ -2591,139 +2279,14 @@ PLCXL_ROUTE_LIST_ENTRY IfRouteNBL(IN PLCXL_FILTER pFilter, IN PETHERNET_HEADER p
     return NULL;
 }
 
-PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry(IN PLCXL_FILTER pFilter, IN INT ipMode, IN PVOID pIPHeader, IN PTCP_HDR pTcpHeader)
-{
-	union {
-		PIPV4_HEADER ipv4_header;
-		PIPV6_HEADER ipv6_header;
-	} ip_header = {0};
-	//pFilter->route_list.
-	PLIST_ENTRY Link = pFilter->route_list.list_entry.Flink;
-	PLCXL_ROUTE_LIST_ENTRY route_info;
-
-	switch (ipMode) {
-	case IM_IPV4:
-		ip_header.ipv4_header = (PIPV4_HEADER)pIPHeader;
-		
-		break;
-	case IM_IPV6:
-		ip_header.ipv6_header = (PIPV6_HEADER)pIPHeader;
-		break;
-	default:
-		ASSERT(FALSE);
-	}
-
-	
-	//遍历列表
-	while (Link != &pFilter->route_list.list_entry)
-	{
-		route_info = CONTAINING_RECORD(Link, LCXL_ROUTE_LIST_ENTRY, list_entry);
-		if (ipMode == route_info->src_ip.ip_mode && route_info->src_port == pTcpHeader->th_sport && route_info->dst_port == pTcpHeader->th_dport) {
-			switch (ipMode)
-			{
-			case IM_IPV4:
-				//查看是否匹配
-				if (RtlCompareMemory(&route_info->src_ip.addr.ip_4, &ip_header.ipv4_header->SourceAddress, sizeof(ip_header.ipv4_header->SourceAddress)) == sizeof(ip_header.ipv4_header->SourceAddress)) {
-					return route_info;
-				}
-				break;
-			case IM_IPV6:
-				if (RtlCompareMemory(&route_info->src_ip.addr.ip_6, &ip_header.ipv6_header->SourceAddress, sizeof(ip_header.ipv6_header->SourceAddress)) == sizeof(ip_header.ipv6_header->SourceAddress)) {
-					return route_info;
-				}
-					break;
-			default:
-				break;
-			}
-		}
-		Link = Link->Flink;
-	}
-	return NULL;
-}
-
-PLCXL_ROUTE_LIST_ENTRY CreateRouteListEntry(IN PLCXL_FILTER pFilter)
-{
-    PLCXL_ROUTE_LIST_ENTRY route_info;
-    
-    ASSERT(pFilter!=NULL);
-    route_info = GET_MEM_ROUTE();
-    route_info->status = RS_NONE;
-	//FILTER_ACQUIRE_LOCK(&pFilter->module->server_lock, FALSE);
-    InsertHeadList(&pFilter->route_list.list_entry, &route_info->list_entry);
-	//FILTER_RELEASE_LOCK(&pFilter->module->server_lock, FALSE);
-    return route_info;
-}
-
-void InitRouteListEntry(IN OUT PLCXL_ROUTE_LIST_ENTRY route_info, IN INT ipMode, IN PVOID pIPHeader, IN PTCP_HDR pTcpHeader, IN PSERVER_INFO_LIST_ENTRY server_info)
-{
-    ASSERT(route_info!=NULL);
-    ASSERT(pIPHeader!=NULL);
-    ASSERT(pTcpHeader!=NULL);
-    ASSERT(server_info!=NULL);
-
-    route_info->status = RS_NORMAL;
-    route_info->dst_server = server_info;
-    route_info->dst_port = pTcpHeader->th_dport;
-    route_info->src_port = pTcpHeader->th_sport;
-	switch (ipMode)
-	{
-	case IM_IPV4:
-		route_info->src_ip.addr.ip_4 = ((PIPV4_HEADER)pIPHeader)->SourceAddress;
-		break;
-	case IM_IPV6:
-		route_info->src_ip.addr.ip_6 = ((PIPV6_HEADER)pIPHeader)->SourceAddress;
-		break;
-	default:
-		ASSERT(FALSE);
-		break;
-	}
-    
-}
-
-PSERVER_INFO_LIST_ENTRY SelectServer(IN PLCXL_FILTER pFilter, IN INT ipMode, IN PVOID pIPHeader, IN PTCP_HDR pTcpHeader)
-{
-    //pFilter->route_list.
-	ASSERT(pFilter->module != NULL);
-    PLIST_ENTRY Link = pFilter->module->server_list.list_entry.Flink;
-    PSERVER_INFO_LIST_ENTRY server_info;
-    PSERVER_INFO_LIST_ENTRY best_server = NULL;
-	BOOLEAN bFalse = FALSE;
-
-    UNREFERENCED_PARAMETER(pIPHeader);
-    UNREFERENCED_PARAMETER(pTcpHeader);
-	UNREFERENCED_PARAMETER(ipMode);
-	
-	FILTER_ACQUIRE_LOCK(&pFilter->module->server_lock, bFalse);
-
-    //遍历列表
-    while (Link != &pFilter->route_list.list_entry)
-    {
-        server_info = CONTAINING_RECORD(Link, SERVER_INFO_LIST_ENTRY, list_entry);
-        //检查服务器是否可用
-		if ((server_info->info.status&SS_ENABLED) != 0 && (server_info->info.status&SS_ONLINE) != 0) {
-			if (best_server == NULL || best_server->performance.process_time > server_info->performance.process_time) {
-                best_server = server_info;
-            }
-        }
-        Link = Link->Flink;
-    }
-	if (best_server != NULL) {
-		//best_server->ref_count++;
-		ASSERT(best_server->ref_count > 0);
-		InterlockedIncrement(&best_server->ref_count);
-	}
-	FILTER_RELEASE_LOCK(&pFilter->module->server_lock, bFalse);
-    return best_server;
-}
-
 PLCXL_FILTER FindAndLockFilter(IN NET_LUID miniport_net_luid)
 {
 	PLCXL_FILTER filter = NULL;
 	BOOLEAN bFalse = FALSE;
 	BOOLEAN bFound = FALSE;
-	FILTER_ACQUIRE_LOCK(&g_FilterListLock, bFalse);
-	filter = CONTAINING_RECORD(g_FilterModuleList.Flink, LCXL_FILTER, FilterModuleLink);
-	while (&filter->FilterModuleLink != &g_FilterModuleList) {
+	FILTER_ACQUIRE_LOCK(&g_filter_list_lock, bFalse);
+	filter = CONTAINING_RECORD(g_filter_list.Flink, LCXL_FILTER, FilterModuleLink);
+	while (&filter->FilterModuleLink != &g_filter_list) {
 		if (miniport_net_luid.Value == filter->miniport_net_luid.Value) {
 			
 			bFound = TRUE;
@@ -2733,7 +2296,7 @@ PLCXL_FILTER FindAndLockFilter(IN NET_LUID miniport_net_luid)
 		filter = CONTAINING_RECORD(filter->FilterModuleLink.Flink, LCXL_FILTER, FilterModuleLink);
 	}
 	if (!bFound) {
-		FILTER_RELEASE_LOCK(&g_FilterListLock, bFalse);
+		FILTER_RELEASE_LOCK(&g_filter_list_lock, bFalse);
 		filter = NULL;
 	}
 	return filter;
@@ -2743,7 +2306,33 @@ void UnlockFilter(IN PLCXL_FILTER pFilter)
 {
 	BOOLEAN bFalse = FALSE;
 	UNREFERENCED_PARAMETER(pFilter);
-	FILTER_RELEASE_LOCK(&g_FilterListLock, bFalse);
+	FILTER_RELEASE_LOCK(&g_filter_list_lock, bFalse);
+}
+
+void UpdateFiltersSetting()
+{
+	PLCXL_FILTER filter;
+
+	NdisAcquireSpinLock(&g_filter_list_lock);
+	filter = CONTAINING_RECORD(g_filter_list.Flink, LCXL_FILTER, FilterModuleLink);
+	while (&filter->FilterModuleLink != &g_filter_list) {
+		
+		PLCXL_MODULE_SETTING_LIST_ENTRY module_setting;
+		NdisAcquireSpinLock(&g_Setting.module_list_lock);
+		module_setting = CONTAINING_RECORD(g_Setting.module_list.list_entry.Flink, LCXL_MODULE_SETTING_LIST_ENTRY, list_entry);
+		while (&module_setting->list_entry != &g_Setting.module_list.list_entry) {
+			if (filter->module_setting == NULL && module_setting->miniport_net_luid.Value == filter->miniport_net_luid.Value) {
+				filter->module_setting = module_setting;
+				break;
+			}
+			module_setting = CONTAINING_RECORD(module_setting->list_entry.Flink, LCXL_MODULE_SETTING_LIST_ENTRY, list_entry);
+		}
+
+		NdisReleaseSpinLock(&g_Setting.module_list_lock);
+		filter = CONTAINING_RECORD(filter->FilterModuleLink.Flink, LCXL_FILTER, FilterModuleLink);
+
+	}
+	NdisReleaseSpinLock(&g_filter_list_lock);
 }
 
 

@@ -157,6 +157,8 @@
     <ClInclude Include="..\..\common\service\lcxl_net_service.h" />
     <ClInclude Include="..\..\common\service\lcxl_service.h" />
     <ClInclude Include="..\..\component\lcxl_iocp\lcxl_iocp_base.h" />
+    <ClInclude Include="..\..\component\lcxl_iocp\lcxl_iocp_cmd.h" />
+    <ClInclude Include="..\..\component\lcxl_iocp\lcxl_iocp_lcxl.h" />
     <ClInclude Include="..\..\component\lcxl_iocp\lcxl_string.h" />
     <ClInclude Include="..\common\dll_interface.h" />
     <ClInclude Include="LCXLNetLoaderService.h" />

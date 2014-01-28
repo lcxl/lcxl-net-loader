@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.21005.1
+VisualStudioVersion = 12.0.30110.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "netloader", "loader\driver\netloader.vcxproj", "{7D21AF72-2FA4-4C13-BE8A-8186604BE0D4}"
 EndProject
@@ -367,7 +367,8 @@ Global
 		{BCD8F0B6-712D-4474-959A-634E08E5B7E7}.Win8.1 Release|x64.Build.0 = Release|x64
 		{D72B031B-E065-49CD-8EE9-D1ADC3C024A3}.Debug|Win32.ActiveCfg = Debug|Win32
 		{D72B031B-E065-49CD-8EE9-D1ADC3C024A3}.Debug|Win32.Build.0 = Debug|Win32
-		{D72B031B-E065-49CD-8EE9-D1ADC3C024A3}.Debug|x64.ActiveCfg = Debug|Win32
+		{D72B031B-E065-49CD-8EE9-D1ADC3C024A3}.Debug|x64.ActiveCfg = Debug|x64
+		{D72B031B-E065-49CD-8EE9-D1ADC3C024A3}.Debug|x64.Build.0 = Debug|x64
 		{D72B031B-E065-49CD-8EE9-D1ADC3C024A3}.Release|Win32.ActiveCfg = Release|Win32
 		{D72B031B-E065-49CD-8EE9-D1ADC3C024A3}.Release|Win32.Build.0 = Release|Win32
 		{D72B031B-E065-49CD-8EE9-D1ADC3C024A3}.Release|x64.ActiveCfg = Release|Win32

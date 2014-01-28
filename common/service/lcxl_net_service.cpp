@@ -1,10 +1,11 @@
 #include "lcxl_net_service.h"
 
-void CNetServiceBase::SerHandler(DWORD dwControl)
+DWORD CNetServiceBase::SerHandler(DWORD dwControl, DWORD dwEventType, LPVOID lpEventData)
 {
 	// Handle the requested control code.
 	switch (dwControl){
-	case SERVICE_CONTROL_STOP:case SERVICE_CONTROL_SHUTDOWN:
+	case SERVICE_CONTROL_STOP:
+	case SERVICE_CONTROL_SHUTDOWN:
 		// 关闭服务
 		OutputDebugStr(_T("服务端接收到关闭命令\n"));
 		SetExitEvent();
@@ -19,12 +20,17 @@ void CNetServiceBase::SerHandler(DWORD dwControl)
 	default:
 		// update the service status.
 		SetCurrentState(GetCurrentState());
+		return ERROR_CALL_NOT_IMPLEMENTED;
 		break;
 	}
+	return NO_ERROR;
 }
 
 void CNetServiceBase::SerRun()
 {
+	if (m_ListenPort == 0) {
+		throw std::exception("port must be set");
+	}
 	mIOCPMgr = new CIOCPManager();
 	mSerList = new CIOCPBaseList(mIOCPMgr);
 
@@ -35,7 +41,7 @@ void CNetServiceBase::SerRun()
 
 	mSockLst = new CSocketLst();
 	// 启动监听
-	if (mSockLst->StartListen(mSerList, 9999)) {
+	if (mSockLst->StartListen(mSerList, m_ListenPort)) {
 		//
 		SetCurrentState(SERVICE_RUNNING);
 		// 等待退出
@@ -44,14 +50,38 @@ void CNetServiceBase::SerRun()
 	} else {
 		OutputDebugStr(_T("启动监听失败！\n"));
 		delete mSockLst;
+		mSockLst = NULL;
 	}
 
 	CloseHandle(mExitEvent);
 	delete mSerList;
 	delete mIOCPMgr;
+
+	mSerList = NULL;
+	mIOCPMgr = NULL;
 }
 
 void CNetServiceBase::SetExitEvent()
 {
 	SetEvent(mExitEvent);
+}
+
+CNetServiceBase::~CNetServiceBase()
+{
+
+}
+
+int CNetServiceBase::GetListenPort()
+{
+	return m_ListenPort;
+}
+
+void CNetServiceBase::SetListenPort(int Port)
+{
+	m_ListenPort = Port;
+}
+
+CNetServiceBase::CNetServiceBase()
+{
+	m_ListenPort = 0;
 }

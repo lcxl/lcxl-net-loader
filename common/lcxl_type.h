@@ -1,5 +1,8 @@
 #ifndef _LCXL_TYPE_H_
 #define _LCXL_TYPE_H_
+//如果是驱动程序，需要前面加头文件lcxl_net.h
+//如果是Win32程序，需要前面加WinSock2.h
+//#include "driver/lcxl_net.h"
 #include <ifdef.h>
 
 #ifdef __cplusplus

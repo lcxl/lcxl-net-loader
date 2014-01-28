@@ -17,8 +17,7 @@ extern "C" {
 	typedef struct _APP_MODULE_INFO {
 #define AMS_NONE		0x00
 #define AMS_NORMAL		0x01
-#define AMS_NO_SETTING	0x02
-#define AMS_NO_FILTER	0x03
+#define AMS_NO_FILTER	0x02
 		//模块模式
 		INT					app_module_status;
 		//小端口驱动ifindex

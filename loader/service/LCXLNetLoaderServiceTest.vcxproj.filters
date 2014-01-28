@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="头文件\lcxl_iocp">
+      <UniqueIdentifier>{6d54829a-1239-4d4c-b46e-bd3a59127c05}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -33,9 +36,6 @@
     <ClInclude Include="..\common\dll_interface.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\component\lcxl_iocp\lcxl_iocp_base.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\component\lcxl_iocp\lcxl_string.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -44,6 +44,15 @@
     </ClInclude>
     <ClInclude Include="..\..\common\service\lcxl_net_service.h">
       <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\component\lcxl_iocp\lcxl_iocp_base.h">
+      <Filter>头文件\lcxl_iocp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\component\lcxl_iocp\lcxl_iocp_cmd.h">
+      <Filter>头文件\lcxl_iocp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\component\lcxl_iocp\lcxl_iocp_lcxl.h">
+      <Filter>头文件\lcxl_iocp</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
