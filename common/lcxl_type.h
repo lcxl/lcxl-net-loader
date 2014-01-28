@@ -29,7 +29,7 @@ extern "C" {
 		IN_ADDR			ipv4;
 		IN6_ADDR		ipv6;
 		//MAC地址
-		IF_PHYSICAL_ADDRESS_LH mac_addr;
+		IF_PHYSICAL_ADDRESS mac_addr;
 	} LCXL_SERVER_ADDR, *PLCXL_SERVER_ADDR;//服务器地址
 
 #ifdef __cplusplus

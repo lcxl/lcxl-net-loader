@@ -54,24 +54,6 @@ __inline PUCHAR LCXLWriteStringToBuf(IN PUCHAR cur_buf, IN PUNICODE_STRING data)
 	
 }
 
-__inline USHORT UTIL_htons(USHORT hostshort)
-{
-	PUCHAR  pBuffer;
-	USHORT  nResult;
-
-	nResult = 0;
-	pBuffer = (PUCHAR)&hostshort;
-
-	nResult = ((pBuffer[0] << 8) & 0xFF00) | (pBuffer[1] & 0x00FF);
-
-	return(nResult);
-}
-
-
-/*UTIL_ntohs把网络字节顺序转换成主机字节顺序*/
-__inline USHORT UTIL_ntohs(USHORT netshort)
-{
-	return(UTIL_htons(netshort));
-}
+//VOID LCXLTransARP
 
 #endif

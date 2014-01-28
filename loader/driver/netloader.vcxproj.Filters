@@ -66,11 +66,6 @@
     <ClInclude Include="filter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="flt_dbg.h" />
-    <ClInclude Include="precomp.h" />
-    <ClInclude Include="filteruser.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="flt_dbg.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -116,9 +111,6 @@
     <ClInclude Include="precomp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="lcxl_func.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="lcxl_queue.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -137,6 +129,11 @@
     <ClInclude Include="flt_dbg.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="lcxl_func.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="flt_dbg.h" />
+    <ClInclude Include="precomp.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="filter.rc">

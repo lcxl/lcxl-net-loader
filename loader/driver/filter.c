@@ -431,6 +431,7 @@ N.B.: When the filter is in Pausing state, it can still process OID requests,
     UNREFERENCED_PARAMETER(PauseParameters);
 
     DEBUGP(DL_TRACE, "===>NDISLWF FilterPause: FilterInstance %p\n", FilterModuleContext);
+	KdPrint(("SYS:FilterPause:miniport:%I64u %wZ %wZ %wZ\n", pFilter->miniport_net_luid.Value, pFilter->attach_paramters->FilterModuleGuidName, pFilter->attach_paramters->BaseMiniportInstanceName, pFilter->attach_paramters->BaseMiniportName));
 
     //
     // Set the flag that the filter is going to pause
@@ -495,6 +496,7 @@ Return Value:
     NDIS_CONFIGURATION_OBJECT        ConfigObject;
 
     DEBUGP(DL_TRACE, "===>FilterRestart:   FilterModuleContext %p\n", FilterModuleContext);
+	KdPrint(("SYS:FilterRestart:miniport:%I64u %wZ %wZ %wZ\n", pFilter->miniport_net_luid.Value, pFilter->attach_paramters->FilterModuleGuidName, pFilter->attach_paramters->BaseMiniportInstanceName, pFilter->attach_paramters->BaseMiniportName));
 
     FILTER_ASSERT(pFilter->State == FilterPaused);
 
@@ -655,8 +657,9 @@ NOTE: Called at PASSIVE_LEVEL and the filter is in paused state
 
     DEBUGP(DL_TRACE, "===>FilterDetach:    FilterInstance %p\n", FilterModuleContext);
 
+	KdPrint(("SYS:FilterDetach:miniport:%I64u %wZ %wZ %wZ\n", pFilter->miniport_net_luid.Value, pFilter->attach_paramters->FilterModuleGuidName, pFilter->attach_paramters->BaseMiniportInstanceName, pFilter->attach_paramters->BaseMiniportName));
 
-    //
+	//
     // Filter must be in paused state
     //
     FILTER_ASSERT(pFilter->State == FilterPaused);
@@ -1746,15 +1749,20 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 			//NDIS_TEST_RECEIVE_CANNOT_PEND为TRUE时，不要做任何操作，直接返回
             //NdisFReturnNetBufferLists(pFilter->FilterHandle, NetBufferLists, ReturnFlags);
         } else {
-            ASSERT(pPassLastNBL!=NULL);
-            ASSERT(pDropLastNBL!=NULL);
+			ASSERT(pPassLastNBL != NULL || pDropLastNBL != NULL);
             //将两个链表的最后一项的Next域清空
-            NET_BUFFER_LIST_NEXT_NBL(pPassLastNBL) = NULL;
-            NET_BUFFER_LIST_NEXT_NBL(pDropLastNBL) = NULL;
-            //接受PassHeadNBL
-            NdisFIndicateReceiveNetBufferLists(pFilter->FilterHandle, pPassHeadNBL, PortNumber, NumberOfPassNBL, ReceiveFlags);
-            //丢弃DropHeadNBL
-            NdisFReturnNetBufferLists(pFilter->FilterHandle, pDropHeadNBL, ReturnFlags);
+			if (pPassLastNBL != NULL) {
+				NET_BUFFER_LIST_NEXT_NBL(pPassLastNBL) = NULL;
+				//接受PassHeadNBL
+				NdisFIndicateReceiveNetBufferLists(pFilter->FilterHandle, pPassHeadNBL, PortNumber, NumberOfPassNBL, ReceiveFlags);
+			}
+			if (pDropLastNBL != NULL) {
+				NET_BUFFER_LIST_NEXT_NBL(pDropLastNBL) = NULL;
+
+				//丢弃DropHeadNBL
+				NdisFReturnNetBufferLists(pFilter->FilterHandle, pDropHeadNBL, ReturnFlags);
+			}
+           
         }
         //转发数据包给真实的服务器
         if (NULL!=pSendNBLs) {
@@ -2239,14 +2247,51 @@ PLCXL_ROUTE_LIST_ENTRY IfRouteNBL(IN PLCXL_FILTER pFilter, IN PETHERNET_HEADER p
 		//ARP_OPCODE  ARP_REQUEST  ARP_RESPONSE
 		if (BufferLength >= sizeof(ARP_HEADER)) {
 			PARP_HEADER pARPHeader;
+			LCXL_ARP_ETHERNET lcxl_arp_ethernet;
 
 			pARPHeader = (PARP_HEADER)((PUCHAR)pEthType + sizeof(USHORT));
-			KdPrint(("SYS:ARP:HardwareAddressSpace=%d, ProtocolAddressSpace=%d, HardwareAddressLength=%d, ProtocolAddressLength=%d, Opcode=%d\n", 
-				pARPHeader->HardwareAddressSpace,
-				pARPHeader->ProtocolAddressSpace,
-				pARPHeader->HardwareAddressLength,
-				pARPHeader->ProtocolAddressLength,
-				pARPHeader->Opcode));
+			LCXLReadARPEthernet(pARPHeader, &lcxl_arp_ethernet);
+
+			KdPrint(("SYS:ARP:HardwareAddressSpace=%d, ProtocolAddressSpace=%d, Opcode=%d, SenderHardwareAddress=%02x:%02x:%02x:%02x:%02x:%02x, SenderProtocolAddress=%d.%d.%d.%d, SenderHardwareAddress=%02x:%02x:%02x:%02x:%02x:%02x, SenderProtocolAddress=%d.%d.%d.%d\n", 
+				lcxl_arp_ethernet.HardwareAddressSpace,
+				lcxl_arp_ethernet.ProtocolAddressSpace,
+				lcxl_arp_ethernet.Opcode,
+				lcxl_arp_ethernet.SenderHardwareAddress.Address[0],
+				lcxl_arp_ethernet.SenderHardwareAddress.Address[1],
+				lcxl_arp_ethernet.SenderHardwareAddress.Address[2],
+				lcxl_arp_ethernet.SenderHardwareAddress.Address[3],
+				lcxl_arp_ethernet.SenderHardwareAddress.Address[4],
+				lcxl_arp_ethernet.SenderHardwareAddress.Address[5],
+				lcxl_arp_ethernet.SenderProtocolAddress.S_un.S_un_b.s_b1,
+				lcxl_arp_ethernet.SenderProtocolAddress.S_un.S_un_b.s_b2,
+				lcxl_arp_ethernet.SenderProtocolAddress.S_un.S_un_b.s_b3,
+				lcxl_arp_ethernet.SenderProtocolAddress.S_un.S_un_b.s_b4,
+				lcxl_arp_ethernet.TargetHardwareAddress.Address[0],
+				lcxl_arp_ethernet.TargetHardwareAddress.Address[1],
+				lcxl_arp_ethernet.TargetHardwareAddress.Address[2],
+				lcxl_arp_ethernet.TargetHardwareAddress.Address[3],
+				lcxl_arp_ethernet.TargetHardwareAddress.Address[4],
+				lcxl_arp_ethernet.TargetHardwareAddress.Address[5],
+				lcxl_arp_ethernet.TargetProtocolAddress.S_un.S_un_b.s_b1,
+				lcxl_arp_ethernet.TargetProtocolAddress.S_un.S_un_b.s_b2,
+				lcxl_arp_ethernet.TargetProtocolAddress.S_un.S_un_b.s_b3,
+				lcxl_arp_ethernet.TargetProtocolAddress.S_un.S_un_b.s_b4));
+			
+			if (lcxl_arp_ethernet.ProtocolAddressSpace != ETHERNET_TYPE_IPV4) {
+				return NULL;
+			}
+			
+			switch (lcxl_arp_ethernet.Opcode)
+			{
+			case ARP_REQUEST:
+
+				break;
+			case ARP_RESPONSE:
+
+				break;
+			default:
+				break;
+			}
 		}
 		break;
     case ETHERNET_TYPE_IPV6://IPv6协议
