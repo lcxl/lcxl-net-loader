@@ -93,7 +93,7 @@ Return Value:
     {
         //添加代码
 		InitServerMemMgr();
-		INIT_ROUTE_MEM_MGR();
+		InitRouteMemMgr();
         //!添加代码!
 
         NdisZeroMemory(&FChars, sizeof(NDIS_FILTER_DRIVER_CHARACTERISTICS));
@@ -726,7 +726,7 @@ Return Value:
 
     DEBUGP(DL_TRACE, "<===FilterUnload\n");
     //添加代码
-	DEL_ROUTE_MEM_MGR();
+	DelRouteMemMgr();
 	DelServerMemMgr();
     //!添加代码!
     return;
@@ -1554,7 +1554,7 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 	FILTER_RELEASE_LOCK(&filter->lock, DispatchLevel);
 	ASSERT(filter->module_setting != NULL);
 	//如果没有加载配置信息，则放过所有的NBL
-	if ((filter->module_setting->flag & ML_ENABLED) == 0) {
+	if ((filter->module_setting->flag & MSF_ENABLED) == 0) {
 		NdisFIndicateReceiveNetBufferLists(filter->filter_handle, NetBufferLists, PortNumber, NumberOfNetBufferLists, ReceiveFlags);
 		return;
 	}
@@ -1685,6 +1685,9 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 						send_nbl_list = send_nbl;
 					} else {
 						NET_BUFFER_LIST_NEXT_NBL(send_nbl_list) = send_nbl;
+					}
+					if (route->status == RS_CLOSED) {
+						DeleteRouteListEntry(route, &filter->module_setting->server_list);
 					}
 				}
 			} else {
@@ -2134,7 +2137,7 @@ PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER pFilter, IN INT ipMode, IN PV
 		if (route_info == NULL) {
 			route_info = CreateRouteListEntry(&pFilter->route_list);
 		} else {
-			DecRefServer(route_info->dst_server);
+			DecRefServerAndCheckIfCanDel(&pFilter->module_setting->server_list, route_info->dst_server);
 		}
 		//初始化路由信息
 		InitRouteListEntry(route_info, ipMode, pIPHeader, ptcp_header, server);

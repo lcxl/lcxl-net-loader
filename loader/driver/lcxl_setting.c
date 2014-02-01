@@ -87,6 +87,8 @@ VOID LoadSetting()
 								if (server != NULL) {
 									cur_buf = LCXLReadFromBuf(cur_buf, &server->info, sizeof(server->info));
 									AddtoLCXLLockList(&module_setting->server_list, &server->list_entry);
+								} else {
+									KdPrint(("SYS:LoadSetting:AllocServer failed.\n"));
 								}
 							}
 							AddtoLCXLLockList(&g_setting.module_list, &module_setting->list_entry);
@@ -202,7 +204,7 @@ VOID SaveSetting()
 	module = CONTAINING_RECORD(GetListofLCXLLockList(&g_setting.module_list)->Flink, LCXL_MODULE_SETTING_LIST_ENTRY, list_entry);
 	while (&module->list_entry != GetListofLCXLLockList(&g_setting.module_list)) {
 		//如果是重启后删除的，则不保存到配置文件中
-		if ((module->flag & ML_DELETE_AFTER_RESTART) == 0) {
+		if ((module->flag & MSF_DELETE_AFTER_RESTART) == 0) {
 			PSERVER_INFO_LIST_ENTRY server;
 
 			buf_len +=
@@ -220,7 +222,10 @@ VOID SaveSetting()
 			buf_len += sizeof(module->server_list.list_count);
 			server = CONTAINING_RECORD(GetListofLCXLLockList(&module->server_list)->Flink, SERVER_INFO_LIST_ENTRY, list_entry);
 			while (&server->list_entry != GetListofLCXLLockList(&module->server_list)) {
-				buf_len += sizeof(server->info);
+				if ((server->info.status & SS_DELETED) == 0) {
+					buf_len += sizeof(server->info);
+				}
+				
 				server = CONTAINING_RECORD(server->list_entry.Flink, SERVER_INFO_LIST_ENTRY, list_entry);
 			}
 			UnlockLCXLLockList(&module->server_list);
@@ -235,7 +240,7 @@ VOID SaveSetting()
 	module = CONTAINING_RECORD(GetListofLCXLLockList(&g_setting.module_list)->Flink, LCXL_MODULE_SETTING_LIST_ENTRY, list_entry);
 	while (&module->list_entry != GetListofLCXLLockList(&g_setting.module_list)) {
 		//如果是重启后删除的，则不保存到配置文件中
-		if ((module->flag & ML_DELETE_AFTER_RESTART) == 0) {
+		if ((module->flag & MSF_DELETE_AFTER_RESTART) == 0) {
 			PSERVER_INFO_LIST_ENTRY server;
 			
 			//写入Luid
@@ -261,7 +266,9 @@ VOID SaveSetting()
 			server = CONTAINING_RECORD(GetListofLCXLLockList(&module->server_list)->Flink, SERVER_INFO_LIST_ENTRY, list_entry);
 			while (&server->list_entry != GetListofLCXLLockList(&module->server_list)) {
 				//写入服务器信息
-				cur_buf = LCXLWriteToBuf(cur_buf, &server->info, sizeof(server->info));
+				if ((server->info.status & SS_DELETED) == 0) {
+					cur_buf = LCXLWriteToBuf(cur_buf, &server->info, sizeof(server->info));
+				}
 				server = CONTAINING_RECORD(server->list_entry.Flink, SERVER_INFO_LIST_ENTRY, list_entry);
 			}
 			UnlockLCXLLockList(&module->server_list);

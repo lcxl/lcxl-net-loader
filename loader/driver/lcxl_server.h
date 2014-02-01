@@ -33,6 +33,7 @@ __inline PSERVER_INFO_LIST_ENTRY AllocServer()
 	resu = (PSERVER_INFO_LIST_ENTRY)ExAllocateFromNPagedLookasideList(&g_server_mem_mgr);
 	if (resu != NULL) {
 		RtlZeroMemory(resu, sizeof(SERVER_INFO_LIST_ENTRY));
+		InitializeListHead(&resu->list_entry);
 		KeInitializeSpinLock(&resu->lock);
 		resu->ref_count = 1;
 	}

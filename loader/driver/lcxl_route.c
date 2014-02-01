@@ -5,16 +5,17 @@ NPAGED_LOOKASIDE_LIST  g_route_mem_mgr;
 
 PLCXL_ROUTE_LIST_ENTRY CreateRouteListEntry(IN PLIST_ENTRY route_list)
 {
-	PLCXL_ROUTE_LIST_ENTRY route_info;
+	PLCXL_ROUTE_LIST_ENTRY route_info = NULL;
 
 	ASSERT(route_list != NULL);
-	route_info = ALLOC_ROUTE();
-	route_info->status = RS_NONE;
-	InsertHeadList(route_list, &route_info->list_entry);
+	route_info = AllocRoute();
+	if (route_info != NULL) {
+		InsertHeadList(route_list, &route_info->list_entry);
+	}
 	return route_info;
 }
 
-void InitRouteListEntry(IN OUT PLCXL_ROUTE_LIST_ENTRY route_info, IN INT ipMode, IN PVOID pIPHeader, IN PTCP_HDR pTcpHeader, IN PSERVER_INFO_LIST_ENTRY server_info)
+VOID InitRouteListEntry(IN OUT PLCXL_ROUTE_LIST_ENTRY route_info, IN INT ipMode, IN PVOID pIPHeader, IN PTCP_HDR pTcpHeader, IN PSERVER_INFO_LIST_ENTRY server_info)
 {
 	ASSERT(route_info != NULL);
 	ASSERT(pIPHeader != NULL);
@@ -88,3 +89,4 @@ PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry(IN PLIST_ENTRY route_list, IN INT ipMod
 	}
 	return NULL;
 }
+

@@ -22,9 +22,9 @@ typedef struct _LCXL_MODULE_SETTING_LIST_ENTRY {
 	//网卡本地唯一ID
 	NET_LUID			miniport_net_luid;
 	//重启后删除此设置
-#define ML_DELETE_AFTER_RESTART	0x1
+#define MSF_DELETE_AFTER_RESTART	0x1
 	//此配置处于启用状态
-#define ML_ENABLED				0x2
+#define MSF_ENABLED					0x2
 	//标识
 	INT					flag;
 	//小端口驱动友好名称
@@ -53,6 +53,7 @@ typedef struct _LCXL_SETTING{
 } LCXL_SETTING, *PLCXL_SETTING;
 
 
+
 //删除配置信息回调函数
 VOID DelModuleSettingCallBack(PLIST_ENTRY module_setting);
 
@@ -74,6 +75,34 @@ PLCXL_MODULE_SETTING_LIST_ENTRY LoadModuleSetting(IN PNDIS_FILTER_ATTACH_PARAMET
 ///保存配置文件
 ///</summary>
 VOID SaveSetting();
+
+//减少引用并且检查是否可以释放SERVER结构
+__inline LONG DecRefServerAndCheckIfCanDel(IN PLCXL_LOCK_LIST server_list, IN PSERVER_INFO_LIST_ENTRY server)
+{
+	LONG ref_count;
+
+	ref_count = DecRefServer(server);
+	if (ref_count <= 0) {
+		ASSERT((server->info.status & SS_DELETED) != 0);
+		DelFromLCXLLockList(server_list, &server->list_entry);
+	}
+	return ref_count;
+}
+
+//删除路由信息
+//route_info:路由信息
+//server_list:路由信息所在的服务器
+__inline VOID DeleteRouteListEntry(IN OUT PLCXL_ROUTE_LIST_ENTRY route_info, IN PLCXL_LOCK_LIST server_list)
+{
+	PSERVER_INFO_LIST_ENTRY server;
+
+	server = route_info->dst_server;
+	RemoveEntryList(&route_info->list_entry);
+	FreeRoute(route_info);
+	//将路由所在的服务器的引用减1
+	DecRefServerAndCheckIfCanDel(server_list, server);
+}
+
 
 extern LCXL_SETTING g_setting;
 #endif

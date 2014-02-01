@@ -131,84 +131,84 @@ FilterDeviceIoControl(
     PIRP                  Irp
     )
 {
-    PIO_STACK_LOCATION          IrpSp;
-    NTSTATUS                    Status = STATUS_SUCCESS;
-    PFILTER_DEVICE_EXTENSION    FilterDeviceExtension;
-    PUCHAR                      InputBuffer;
-    PUCHAR                      OutputBuffer;
-    ULONG                       InputBufferLength, OutputBufferLength;
-    PLIST_ENTRY                 Link;
-    PUCHAR                      pInfo;
+    PIO_STACK_LOCATION          irp_sp;
+    NTSTATUS                    status = STATUS_SUCCESS;
+    PFILTER_DEVICE_EXTENSION    filter_device_extension;
+    PUCHAR                      input_buffer;
+    PUCHAR                      output_buffer;
+    ULONG                       input_buffer_length, output_buffer_length;
+    PLIST_ENTRY                 link;
+    PUCHAR                      info;
     ULONG                       InfoLength = 0;
-    PLCXL_FILTER                pFilter = NULL;
+    PLCXL_FILTER                filter = NULL;
     BOOLEAN                     bFalse = FALSE;
 
 
     UNREFERENCED_PARAMETER(DeviceObject);
 
 
-    IrpSp = IoGetCurrentIrpStackLocation(Irp);
+    irp_sp = IoGetCurrentIrpStackLocation(Irp);
 
-    if (IrpSp->FileObject == NULL) {
+    if (irp_sp->FileObject == NULL) {
         return(STATUS_UNSUCCESSFUL);
     }
 
 
-    FilterDeviceExtension = (PFILTER_DEVICE_EXTENSION)NdisGetDeviceReservedExtension(DeviceObject);
+    filter_device_extension = (PFILTER_DEVICE_EXTENSION)NdisGetDeviceReservedExtension(DeviceObject);
 
-    ASSERT(FilterDeviceExtension->Signature == 'FTDR');
+    ASSERT(filter_device_extension->Signature == 'FTDR');
 
     Irp->IoStatus.Information = 0;
 
-	InputBuffer = OutputBuffer = (PUCHAR)Irp->AssociatedIrp.SystemBuffer;
-	InputBufferLength = OutputBufferLength = IrpSp->Parameters.DeviceIoControl.InputBufferLength;
+	input_buffer = output_buffer = (PUCHAR)Irp->AssociatedIrp.SystemBuffer;
+	input_buffer_length = output_buffer_length = irp_sp->Parameters.DeviceIoControl.InputBufferLength;
 
-    switch (IrpSp->Parameters.DeviceIoControl.IoControlCode) {
+    switch (irp_sp->Parameters.DeviceIoControl.IoControlCode) {
 
         case IOCTL_FILTER_RESTART_ALL:
             break;
 
         case IOCTL_FILTER_RESTART_ONE_INSTANCE:
-            pFilter = filterFindFilterModule (InputBuffer, InputBufferLength);
+            filter = filterFindFilterModule (input_buffer, input_buffer_length);
 
-            if (pFilter == NULL) {
+            if (filter == NULL) {
 
                 break;
             }
-            NdisFRestartFilter(pFilter->filter_handle);
+            NdisFRestartFilter(filter->filter_handle);
             break;
 
         case IOCTL_FILTER_ENUERATE_ALL_INSTANCES:
 
-            pInfo = OutputBuffer;
+            info = output_buffer;
 			LockLCXLLockList(&g_filter_list);
             
-            Link = GetListofLCXLLockList(&g_filter_list)->Flink;
+            link = GetListofLCXLLockList(&g_filter_list)->Flink;
 			//遍历列表
-			while (Link != GetListofLCXLLockList(&g_filter_list)) {
-                pFilter = CONTAINING_RECORD(Link, LCXL_FILTER, filter_module_link);
+			while (link != GetListofLCXLLockList(&g_filter_list)) {
+                filter = CONTAINING_RECORD(link, LCXL_FILTER, filter_module_link);
 
-                InfoLength += (pFilter->module_setting->filter_module_name->Length + sizeof(USHORT));
+                InfoLength += (filter->module_setting->filter_module_name->Length + sizeof(USHORT));
 
-                if (InfoLength <= OutputBufferLength) {
-					*(PUSHORT)pInfo = pFilter->module_setting->filter_module_name->Length;
-                    NdisMoveMemory(pInfo + sizeof(USHORT),
-						(PUCHAR)(pFilter->module_setting->filter_module_name->Buffer),
-						pFilter->module_setting->filter_module_name->Length);
+                if (InfoLength <= output_buffer_length) {
+					*(PUSHORT)info = filter->module_setting->filter_module_name->Length;
+                    NdisMoveMemory(info + sizeof(USHORT),
+						(PUCHAR)(filter->module_setting->filter_module_name->Buffer),
+						filter->module_setting->filter_module_name->Length);
 
-					pInfo += (pFilter->module_setting->filter_module_name->Length + sizeof(USHORT));
+					info += (filter->module_setting->filter_module_name->Length + sizeof(USHORT));
                 }
-                Link = Link->Flink;
+                link = link->Flink;
             }
 			UnlockLCXLLockList(&g_filter_list);
-            if (InfoLength <= OutputBufferLength) {
-                Status = NDIS_STATUS_SUCCESS;
+            if (InfoLength <= output_buffer_length) {
+                status = NDIS_STATUS_SUCCESS;
             }
             //
             // Buffer is small
             //
             else {
-                Status = STATUS_BUFFER_TOO_SMALL;
+                status = STATUS_BUFFER_TOO_SMALL;
             }
             break;
 		//添加代码
@@ -217,13 +217,13 @@ FilterDeviceIoControl(
 			PAPP_MODULE_INFO cur_buf;
 			PLCXL_MODULE_SETTING_LIST_ENTRY module;
 
-			cur_buf = (PAPP_MODULE_INFO)OutputBuffer;
+			cur_buf = (PAPP_MODULE_INFO)output_buffer;
 			LockLCXLLockList(&g_setting.module_list);
 			module = CONTAINING_RECORD(GetListofLCXLLockList(&g_setting.module_list)->Flink, LCXL_MODULE_SETTING_LIST_ENTRY, list_entry);
 			while (&module->list_entry != GetListofLCXLLockList(&g_setting.module_list)) {
 				//先判断缓冲区是否足够
-				if (OutputBufferLength - (ULONG)((LONG_PTR)cur_buf - (LONG_PTR)OutputBuffer) < sizeof(APP_MODULE_INFO)) {
-					Status = STATUS_BUFFER_TOO_SMALL;
+				if (output_buffer_length - (ULONG)((LONG_PTR)cur_buf - (LONG_PTR)output_buffer) < sizeof(APP_MODULE_INFO)) {
+					status = STATUS_BUFFER_TOO_SMALL;
 					break;
 				}
 				cur_buf->app_module_status = module->ref_count == 0 ? AMS_NO_FILTER : AMS_NORMAL;
@@ -250,15 +250,15 @@ FilterDeviceIoControl(
 				module = CONTAINING_RECORD(module->list_entry.Flink, LCXL_MODULE_SETTING_LIST_ENTRY, list_entry);
 			}
 			UnlockLCXLLockList(&g_setting.module_list);
-			InfoLength = (ULONG)((ULONG_PTR)cur_buf - (ULONG_PTR)OutputBuffer);
+			InfoLength = (ULONG)((ULONG_PTR)cur_buf - (ULONG_PTR)output_buffer);
 		}
 			break;
 		case IOCTL_LOADER_SET_VIRTUAL_IP:
-			if (InputBufferLength == sizeof(APP_IP)) {
+			if (input_buffer_length == sizeof(APP_IP)) {
 				PAPP_IP ip;
 				PLCXL_FILTER pFilter;
 
-				ip = (PAPP_IP)InputBuffer;
+				ip = (PAPP_IP)input_buffer;
 				LockLCXLLockList(&g_filter_list);
 				pFilter = FindFilter(ip->miniport_net_luid);
 				if (pFilter != NULL) {
@@ -273,7 +273,7 @@ FilterDeviceIoControl(
 						pFilter->module_setting->virtual_ipv6 = ip->ip.addr.ip_6;
 						break;
 					default:
-						Status = STATUS_INVALID_PARAMETER;
+						status = STATUS_INVALID_PARAMETER;
 						break;
 					}
 					NdisReleaseSpinLock(&pFilter->module_setting->lock);
@@ -281,35 +281,35 @@ FilterDeviceIoControl(
 				
 				UnlockLCXLLockList(&g_filter_list);
 			} else {
-				Status = STATUS_INFO_LENGTH_MISMATCH;
+				status = STATUS_INFO_LENGTH_MISMATCH;
 			}
 			break;
 		case IOCTL_LOADER_GET_SERVER_LIST:
-			if (InputBufferLength == sizeof(NET_LUID)) {
+			if (input_buffer_length == sizeof(NET_LUID)) {
 				PLCXL_FILTER pFilter;
 
 				LockLCXLLockList(&g_filter_list); 
-				pFilter = FindFilter(*(PNET_LUID)InputBuffer);
+				pFilter = FindFilter(*(PNET_LUID)input_buffer);
 				if (pFilter != NULL) {
-					if (pFilter->module_setting != NULL && (pFilter->module_setting->flag & ML_DELETE_AFTER_RESTART) == 0) {
+					if (pFilter->module_setting != NULL && (pFilter->module_setting->flag & MSF_DELETE_AFTER_RESTART) == 0) {
 						
 					} else {
-						Status = STATUS_NOT_FOUND;
+						status = STATUS_NOT_FOUND;
 					}
 				} else {
-					Status = STATUS_NOT_FOUND;
+					status = STATUS_NOT_FOUND;
 				}
 				UnlockLCXLLockList(&g_filter_list);
 			} else {
-				Status = STATUS_INFO_LENGTH_MISMATCH;
+				status = STATUS_INFO_LENGTH_MISMATCH;
 			}
 			break;
 		case IOCTL_LOADER_ADD_SERVER:
-			if (sizeof(APP_ADD_SERVER) == InputBufferLength) {
+			if (sizeof(APP_ADD_SERVER) == input_buffer_length) {
 				PAPP_ADD_SERVER app_add_server;
 				PLCXL_FILTER pFilter;
 				
-				app_add_server = (PAPP_ADD_SERVER)InputBuffer;
+				app_add_server = (PAPP_ADD_SERVER)input_buffer;
 				LockLCXLLockList(&g_filter_list);
 				pFilter = FindFilter(app_add_server->miniport_net_luid);
 				if (pFilter != NULL) {
@@ -321,12 +321,12 @@ FilterDeviceIoControl(
 				}
 				UnlockLCXLLockList(&g_filter_list);
 			} else {
-				Status = STATUS_INFO_LENGTH_MISMATCH;
+				status = STATUS_INFO_LENGTH_MISMATCH;
 			}
 			break;
 		case IOCTL_LOADER_DEL_SERVER:
-			if (sizeof(APP_DEL_SERVER) == InputBufferLength) {
-				PAPP_DEL_SERVER app_del_server = (PAPP_DEL_SERVER)InputBuffer;
+			if (sizeof(APP_DEL_SERVER) == input_buffer_length) {
+				PAPP_DEL_SERVER app_del_server = (PAPP_DEL_SERVER)input_buffer;
 				PLCXL_FILTER pFilter;
 
 				LockLCXLLockList(&g_filter_list);
@@ -334,21 +334,21 @@ FilterDeviceIoControl(
 				UnlockLCXLLockList(&g_filter_list);
 				
 			} else {
-				Status = STATUS_INFO_LENGTH_MISMATCH;
+				status = STATUS_INFO_LENGTH_MISMATCH;
 			}
 			break;
 		//!添加代码!
         default:
-			Status = STATUS_INVALID_PARAMETER;
+			status = STATUS_INVALID_PARAMETER;
             break;
     }
 
-    Irp->IoStatus.Status = Status;
+    Irp->IoStatus.Status = status;
     Irp->IoStatus.Information = InfoLength;
 
     IoCompleteRequest(Irp, IO_NO_INCREMENT);
 
-    return Status;
+    return status;
 }
 
 
