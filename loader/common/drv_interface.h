@@ -1,4 +1,4 @@
-#ifndef _DRV_INTERFACE_H_
+ï»¿#ifndef _DRV_INTERFACE_H_
 #define _DRV_INTERFACE_H_
 
 #include "drv_interface_type.h"
@@ -21,24 +21,24 @@
 #define IOCTL_FILTER_READ_INSTANCE_CONFIG   _NDIS_CONTROL_CODE(0x0C, METHOD_BUFFERED)
 #define IOCTL_FILTER_WRITE_INSTANCE_CONFIG  _NDIS_CONTROL_CODE(0x0D, METHOD_BUFFERED)
 
-//Ìí¼Ó´úÂë
-//»ñÈ¡ËùÓÐµÄÍø¿¨½Ó¿ÚÐòºÅ
+//æ·»åŠ ä»£ç 
+//èŽ·å–æ‰€æœ‰çš„ç½‘å¡æŽ¥å£åºå·
 #define IOCTL_LOADER_ALL_APP_MODULE			_NDIS_CONTROL_CODE(0x20, METHOD_BUFFERED)
 //input NET_LUID                     miniport_net_luid;
 //LCXL_IP
-//ÉèÖÃÐéÄâIP
+//è®¾ç½®è™šæ‹ŸIP
 #define IOCTL_LOADER_SET_VIRTUAL_IP			_NDIS_CONTROL_CODE(0x22, METHOD_BUFFERED)
 //LCXL_IP
-//»ñÈ¡·þÎñÆ÷ÁÐ±í
+//èŽ·å–æœåŠ¡å™¨åˆ—è¡¨
 //input APP_IP
 //output APP_SERVER_LIST
 #define IOCTL_LOADER_GET_SERVER_LIST		_NDIS_CONTROL_CODE(0x23, METHOD_BUFFERED)
-//Ìí¼Ó·þÎñÆ÷
+//æ·»åŠ æœåŠ¡å™¨
 //input APP_ADD_SERVER
 #define IOCTL_LOADER_ADD_SERVER				_NDIS_CONTROL_CODE(0x24, METHOD_BUFFERED)
-//É¾³ý·þÎñÆ÷
+//åˆ é™¤æœåŠ¡å™¨
 //input APP_DEL_SERVER
 #define IOCTL_LOADER_DEL_SERVER				_NDIS_CONTROL_CODE(0x25, METHOD_BUFFERED)
-//!Ìí¼Ó´úÂë!
+//!æ·»åŠ ä»£ç !
 
 #endif

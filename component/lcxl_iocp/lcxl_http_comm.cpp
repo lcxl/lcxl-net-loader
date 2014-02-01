@@ -1,4 +1,4 @@
-#include "lcxl_http_comm.h"
+﻿#include "lcxl_http_comm.h"
 #include "lcxl_string.h"
 #include <assert.h>
 URLRec DecodeURL(const std::string &url)

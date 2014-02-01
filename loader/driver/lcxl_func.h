@@ -1,13 +1,13 @@
-#ifndef _LCXL_FUNC_H_
+ï»¿#ifndef _LCXL_FUNC_H_
 #define _LCXL_FUNC_H_
 /*
 author:
 LCX
 abstract:
- Ò»Ğ©»ù±¾µÄº¯Êı
+ ä¸€äº›åŸºæœ¬çš„å‡½æ•°
 */
 #define TAG_FILE_BUFFER				'FISR'
-//Ìí¼Ó´úÂë
+//æ·»åŠ ä»£ç 
 
 PUNICODE_STRING LCXLNewString(IN PUNICODE_STRING sour);
 VOID LCXLFreeString(PUNICODE_STRING dest);
@@ -17,7 +17,7 @@ __inline PUCHAR LCXLReadFromBuf(IN PUCHAR cur_buf, IN OUT PVOID data, IN INT dat
 	RtlCopyMemory(data, cur_buf, datalen);
 	return cur_buf + datalen;
 }
-//´Ó»º³åÇøÖĞ¶ÁÈ¡×Ö·û´®£¬×¢Òâ£¬ÕâÀï»áµ÷ÓÃLCXLNewStringÀ´Éú³Éstr£¬µ±ÓÃÍêÖ®ºóĞèÒªÊ¹ÓÃLCXLFreeStringÊÍ·Åstr
+//ä»ç¼“å†²åŒºä¸­è¯»å–å­—ç¬¦ä¸²ï¼Œæ³¨æ„ï¼Œè¿™é‡Œä¼šè°ƒç”¨LCXLNewStringæ¥ç”Ÿæˆstrï¼Œå½“ç”¨å®Œä¹‹åéœ€è¦ä½¿ç”¨LCXLFreeStringé‡Šæ”¾str
 __inline PUCHAR LCXLReadStringFromBuf(IN PUCHAR cur_buf, OUT PUNICODE_STRING *str)
 {
 	UNICODE_STRING data;
@@ -27,7 +27,7 @@ __inline PUCHAR LCXLReadStringFromBuf(IN PUCHAR cur_buf, OUT PUNICODE_STRING *st
 	*str = LCXLNewString(&data);
 	return cur_buf + data.Length;
 }
-//Ìø¹ı¶ÁÈ¡×Ö·û´®
+//è·³è¿‡è¯»å–å­—ç¬¦ä¸²
 _inline PUCHAR LCXLSkipReadStringFromBuf(IN PUCHAR cur_buf)
 {
 	USHORT str_len;
@@ -35,14 +35,14 @@ _inline PUCHAR LCXLSkipReadStringFromBuf(IN PUCHAR cur_buf)
 	cur_buf = LCXLReadFromBuf(cur_buf, &str_len, sizeof(str_len));
 	return cur_buf + str_len;
 }
-//Ğ´ÈëÊı¾İµ½»º³åÇøÖĞ
+//å†™å…¥æ•°æ®åˆ°ç¼“å†²åŒºä¸­
 __inline PUCHAR LCXLWriteToBuf(IN PUCHAR cur_buf, IN PVOID data, IN INT datalen)
 {
 	RtlCopyMemory(cur_buf, data, datalen);
 	return cur_buf + datalen;
 }
 
-//Ğ´Èë×Ö·û´®µ½»º³åÇøÖĞ
+//å†™å…¥å­—ç¬¦ä¸²åˆ°ç¼“å†²åŒºä¸­
 __inline PUCHAR LCXLWriteStringToBuf(IN PUCHAR cur_buf, IN PUNICODE_STRING data)
 {
 	if (data != NULL) {

@@ -1,38 +1,38 @@
-#ifndef _LCXL_LOCK_LIST_H_
+ï»¿#ifndef _LCXL_LOCK_LIST_H_
 #define _LCXL_LOCK_LIST_H_
 //author:LCXL
-//abstract:Çı¶¯ÖĞËùÊ¹ÓÃµÄÁĞ±í½á¹¹£¬ÓÃÓÚÌá¸ßËø¶¨ÁĞ±íºóµÄĞÔÄÜ
+//abstract:é©±åŠ¨ä¸­æ‰€ä½¿ç”¨çš„åˆ—è¡¨ç»“æ„ï¼Œç”¨äºæé«˜é”å®šåˆ—è¡¨åçš„æ€§èƒ½
 #include <wdm.h>
 #define TAG_TO_BE 'TOBE'
-//É¾³ıÁĞ±íÏî»Øµ÷º¯Êı¡£
-//×¢Òâ£º´Ëº¯ÊıÔËĞĞÔÚDISPATCH_LEVEL ÏÂ
+//åˆ é™¤åˆ—è¡¨é¡¹å›è°ƒå‡½æ•°ã€‚
+//æ³¨æ„ï¼šæ­¤å‡½æ•°è¿è¡Œåœ¨DISPATCH_LEVEL ä¸‹
 typedef VOID (*DEL_LIST_ENTRY_FUNC) (IN PLIST_ENTRY list_entry);
 
-//ÒªÌí¼Ó/É¾³ıµÄÁĞ±íÏî
+//è¦æ·»åŠ /åˆ é™¤çš„åˆ—è¡¨é¡¹
 typedef struct _LCXL_TO_BE_LIST {
 	LIST_ENTRY list_entry;
 
-	//ÒªÌí¼Ó/É¾³ıµÄÁĞ±íÏî
+	//è¦æ·»åŠ /åˆ é™¤çš„åˆ—è¡¨é¡¹
 	PLIST_ENTRY to_be_list_entry;
 } LCXL_TO_BE_LIST, *PLCXL_TO_BE_LIST;
 
 typedef struct _LCXL_LOCK_LIST {
-	//ÁĞ±í£¬Ö»ÓĞµ±Ëø¶¨µÄÊ±ºò²ÅÄÜ·ÃÎÊ£¬Í¨¹ıGetListofLCXLLockList»ñµÃ
+	//åˆ—è¡¨ï¼Œåªæœ‰å½“é”å®šçš„æ—¶å€™æ‰èƒ½è®¿é—®ï¼Œé€šè¿‡GetListofLCXLLockListè·å¾—
 	LIST_ENTRY				list;
-	//ÁĞ±íÏîÊıÁ¿£¬Ö»ÓĞµ±Ëø¶¨µÄÊ±ºò²ÅÄÜ·ÃÎÊ£¬Í¨¹ıGetListCountofLCXLLockList»ñµÃ
+	//åˆ—è¡¨é¡¹æ•°é‡ï¼Œåªæœ‰å½“é”å®šçš„æ—¶å€™æ‰èƒ½è®¿é—®ï¼Œé€šè¿‡GetListCountofLCXLLockListè·å¾—
 	INT						list_count;
-	//´ıÌí¼ÓÁĞ±í
+	//å¾…æ·»åŠ åˆ—è¡¨
 	LIST_ENTRY				to_be_add_list;//LCXL_TO_BE_LIST
-	//´ıÉ¾³ıÁĞ±í
+	//å¾…åˆ é™¤åˆ—è¡¨
 	LIST_ENTRY				to_be_del_list;//LCXL_TO_BE_LIST
-	//ÄÚ´æ¹ÜÀíÆ÷
+	//å†…å­˜ç®¡ç†å™¨
 	NPAGED_LOOKASIDE_LIST	to_be_mem_mgr;
-	//×ÔĞıËø
+	//è‡ªæ—‹é”
 	KSPIN_LOCK				lock;
-	//±»Ëø¶¨µÄ´ÎÊı
+	//è¢«é”å®šçš„æ¬¡æ•°
 	BOOLEAN					lock_count;
-	//É¾³ıÁĞ±íÏî»Øµ÷º¯Êı¡£
-	//×¢Òâ£º´Ëº¯ÊıÔËĞĞÔÚDISPATCH_LEVEL ÏÂ
+	//åˆ é™¤åˆ—è¡¨é¡¹å›è°ƒå‡½æ•°ã€‚
+	//æ³¨æ„ï¼šæ­¤å‡½æ•°è¿è¡Œåœ¨DISPATCH_LEVEL ä¸‹
 	DEL_LIST_ENTRY_FUNC		del_func;
 } LCXL_LOCK_LIST, *PLCXL_LOCK_LIST;
 
@@ -48,65 +48,65 @@ __inline VOID InitLCXLLockList(IN PLCXL_LOCK_LIST lock_list, IN DEL_LIST_ENTRY_F
 	ExInitializeNPagedLookasideList(&lock_list->to_be_mem_mgr, NULL, NULL, 0, sizeof(LCXL_TO_BE_LIST), TAG_TO_BE, 0);
 }
 
-//Ëø¶¨LCXLÁĞ±íÏî£¬Ëø¶¨Ö®ºóÁĞ±íÏîµÄÊıÁ¿²»»á¸ü¸Ä£¬²¢ÇÒ²»»á¸ü¸Äµ±Ç°µÄÖĞ¶ÏÇëÇó¼¶±ğ£¨IRQL£©
+//é”å®šLCXLåˆ—è¡¨é¡¹ï¼Œé”å®šä¹‹ååˆ—è¡¨é¡¹çš„æ•°é‡ä¸ä¼šæ›´æ”¹ï¼Œå¹¶ä¸”ä¸ä¼šæ›´æ”¹å½“å‰çš„ä¸­æ–­è¯·æ±‚çº§åˆ«ï¼ˆIRQLï¼‰
 __inline VOID LockLCXLLockList(IN PLCXL_LOCK_LIST lock_list)
 {
-	//±£´æÖ®Ç°µÄIRQL
+	//ä¿å­˜ä¹‹å‰çš„IRQL
 	KLOCK_QUEUE_HANDLE		queue_handle;
 	KeAcquireInStackQueuedSpinLock(&lock_list->lock, &queue_handle);
 	lock_list->lock_count++;
 	KeReleaseInStackQueuedSpinLock(&queue_handle);
 }
 
-//»ñÈ¡ÁĞ±í£¬±ØĞëÔÚËø¶¨µÄÊ±ºò»ñÈ¡
+//è·å–åˆ—è¡¨ï¼Œå¿…é¡»åœ¨é”å®šçš„æ—¶å€™è·å–
 __inline PLIST_ENTRY GetListofLCXLLockList(IN PLCXL_LOCK_LIST lock_list)
 {
 	ASSERT(lock_list->lock_count > 0);
 	return &lock_list->list;
 }
 
-//»ñÈ¡ÁĞ±íÊıÁ¿£¬±ØĞëÔÚËø¶¨µÄÊ±ºò»ñÈ¡
+//è·å–åˆ—è¡¨æ•°é‡ï¼Œå¿…é¡»åœ¨é”å®šçš„æ—¶å€™è·å–
 __inline INT GetListCountofLCXLLockList(IN PLCXL_LOCK_LIST lock_list)
 {
 	ASSERT(lock_list->lock_count > 0);
 	return lock_list->list_count;
 }
 
-//Ìí¼ÓÁĞ±íÏîµ½LCXLËø¶¨ÁĞ±íÖĞ£¬Èç¹û±»Ëø¶¨£¬Ôò»áÔÚUnlockLCXLLockListº¯ÊıÖ´ĞĞÊ±½øĞĞÌí¼Ó
+//æ·»åŠ åˆ—è¡¨é¡¹åˆ°LCXLé”å®šåˆ—è¡¨ä¸­ï¼Œå¦‚æœè¢«é”å®šï¼Œåˆ™ä¼šåœ¨UnlockLCXLLockListå‡½æ•°æ‰§è¡Œæ—¶è¿›è¡Œæ·»åŠ 
 __inline VOID AddtoLCXLLockList(IN PLCXL_LOCK_LIST lock_list, IN PLIST_ENTRY list_entry)
 {
-	//±£´æÖ®Ç°µÄIRQL
+	//ä¿å­˜ä¹‹å‰çš„IRQL
 	KLOCK_QUEUE_HANDLE		queue_handle;
 	KeAcquireInStackQueuedSpinLock(&lock_list->lock, &queue_handle);
 	
 	if (lock_list->lock_count > 0) {
 		PLCXL_TO_BE_LIST new_list_entry;
-		//Èç¹û±»Ëø¶¨£¬Ôò½«ÁĞ±íÏîÌí¼Óµ½´ıÌí¼ÓÁĞ±íÖĞ
+		//å¦‚æœè¢«é”å®šï¼Œåˆ™å°†åˆ—è¡¨é¡¹æ·»åŠ åˆ°å¾…æ·»åŠ åˆ—è¡¨ä¸­
 		new_list_entry = (PLCXL_TO_BE_LIST)ExAllocateFromNPagedLookasideList(&lock_list->to_be_mem_mgr);
 		new_list_entry->to_be_list_entry = list_entry;
 		InsertTailList(&lock_list->to_be_add_list, &new_list_entry->list_entry);
 	} else {
-		//Ã»Ëø×¡£¬ÔòÖ±½ÓÌí¼Ó
+		//æ²¡é”ä½ï¼Œåˆ™ç›´æ¥æ·»åŠ 
 		lock_list->list_count++;
 		InsertTailList(&lock_list->list, list_entry);
 	}
 	KeReleaseInStackQueuedSpinLock(&queue_handle);
 }
-//´ÓLCXLËø¶¨ÁĞ±íÉ¾³ıÖ¸¶¨µÄÁĞ±íÏî£¬Èç¹û±»Ëø¶¨£¬Ôò»áÔÚUnlockLCXLLockListº¯ÊıÖ´ĞĞÊ±½øĞĞÉ¾³ı
+//ä»LCXLé”å®šåˆ—è¡¨åˆ é™¤æŒ‡å®šçš„åˆ—è¡¨é¡¹ï¼Œå¦‚æœè¢«é”å®šï¼Œåˆ™ä¼šåœ¨UnlockLCXLLockListå‡½æ•°æ‰§è¡Œæ—¶è¿›è¡Œåˆ é™¤
 __inline VOID DelFromLCXLLockList(IN PLCXL_LOCK_LIST lock_list, IN PLIST_ENTRY list_entry)
 {
-	//±£´æÖ®Ç°µÄIRQL
+	//ä¿å­˜ä¹‹å‰çš„IRQL
 	KLOCK_QUEUE_HANDLE		queue_handle;
 	KeAcquireInStackQueuedSpinLock(&lock_list->lock, &queue_handle);
 
 	if (lock_list->lock_count > 0) {
 		PLCXL_TO_BE_LIST del_list_entry;
-		//Èç¹û±»Ëø¶¨£¬Ôò½«ÁĞ±íÏîÌí¼Óµ½´ıÉ¾³ıÁĞ±íÖĞ
+		//å¦‚æœè¢«é”å®šï¼Œåˆ™å°†åˆ—è¡¨é¡¹æ·»åŠ åˆ°å¾…åˆ é™¤åˆ—è¡¨ä¸­
 		del_list_entry = (PLCXL_TO_BE_LIST)ExAllocateFromNPagedLookasideList(&lock_list->to_be_mem_mgr);
 		del_list_entry->to_be_list_entry = list_entry;
 		InsertTailList(&lock_list->to_be_del_list, &del_list_entry->list_entry);
 	} else {
-		//Ã»Ëø×¡£¬ÔòÖ±½ÓÉ¾³ı
+		//æ²¡é”ä½ï¼Œåˆ™ç›´æ¥åˆ é™¤
 		lock_list->list_count--;
 		RemoveEntryList(list_entry);
 		lock_list->del_func(list_entry);
@@ -115,10 +115,10 @@ __inline VOID DelFromLCXLLockList(IN PLCXL_LOCK_LIST lock_list, IN PLIST_ENTRY l
 	KeReleaseInStackQueuedSpinLock(&queue_handle);
 }
 
-//½âËøÁĞ±íÏî£¬Èç¹ûÓĞ´ıÌí¼ÓµÄÁĞ±íÏî»ò´ıÉ¾³ıµÄÁĞ±íÏî£¬Ôò»áÔÚÕâÀï½øĞĞÌí¼Ó/É¾³ı
+//è§£é”åˆ—è¡¨é¡¹ï¼Œå¦‚æœæœ‰å¾…æ·»åŠ çš„åˆ—è¡¨é¡¹æˆ–å¾…åˆ é™¤çš„åˆ—è¡¨é¡¹ï¼Œåˆ™ä¼šåœ¨è¿™é‡Œè¿›è¡Œæ·»åŠ /åˆ é™¤
 __inline VOID UnlockLCXLLockList(IN PLCXL_LOCK_LIST lock_list)
 {
-	//±£´æÖ®Ç°µÄIRQL
+	//ä¿å­˜ä¹‹å‰çš„IRQL
 	KLOCK_QUEUE_HANDLE		queue_handle;
 	KeAcquireInStackQueuedSpinLock(&lock_list->lock, &queue_handle);
 
@@ -128,7 +128,7 @@ __inline VOID UnlockLCXLLockList(IN PLCXL_LOCK_LIST lock_list)
 		
 		while (list_entry = CONTAINING_RECORD(lock_list->to_be_del_list.Flink, LCXL_TO_BE_LIST, list_entry), &list_entry->list_entry != &lock_list->to_be_del_list) {
 			RemoveEntryList(&list_entry->list_entry);
-			//´ÓÁĞ±íÖĞÉ¾³ı´ıÉ¾³ıµÄÏî
+			//ä»åˆ—è¡¨ä¸­åˆ é™¤å¾…åˆ é™¤çš„é¡¹
 			lock_list->list_count--;
 			RemoveEntryList(list_entry->to_be_list_entry);
 			lock_list->del_func(list_entry->to_be_list_entry);
@@ -138,7 +138,7 @@ __inline VOID UnlockLCXLLockList(IN PLCXL_LOCK_LIST lock_list)
 
 		while (list_entry = CONTAINING_RECORD(lock_list->to_be_add_list.Flink, LCXL_TO_BE_LIST, list_entry), &list_entry->list_entry != &lock_list->to_be_add_list) {
 			RemoveEntryList(&list_entry->list_entry);
-			//½«´ıÌí¼ÓµÄÏî²åÈëµ½ÁĞ±íÖĞ
+			//å°†å¾…æ·»åŠ çš„é¡¹æ’å…¥åˆ°åˆ—è¡¨ä¸­
 			lock_list->list_count++;
 			InsertTailList(&lock_list->list, list_entry->to_be_list_entry);
 			
@@ -147,7 +147,7 @@ __inline VOID UnlockLCXLLockList(IN PLCXL_LOCK_LIST lock_list)
 	}
 	KeReleaseInStackQueuedSpinLock(&queue_handle);
 }
-//É¾³ıLCXLËø¶¨ÁĞ±í
+//åˆ é™¤LCXLé”å®šåˆ—è¡¨
 __inline VOID DelLCXLLockList(IN PLCXL_LOCK_LIST lock_list)
 {
 	ASSERT(lock_list != NULL);

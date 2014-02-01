@@ -1,5 +1,5 @@
-#include "lcxl_string.h"
-// Ğè°üº¬locale¡¢stringÍ·ÎÄ¼ş¡¢Ê¹ÓÃsetlocaleº¯Êı¡£
+ï»¿#include "lcxl_string.h"
+// éœ€åŒ…å«localeã€stringå¤´æ–‡ä»¶ã€ä½¿ç”¨setlocaleå‡½æ•°ã€‚
 #include <locale>
 #include <algorithm> 
 #include <functional> 
@@ -7,19 +7,19 @@
 
 std::wstring string_to_wstring(const std::string &str)
 {
-	// string×ªwstring
-	size_t len = str.size() * 2;// Ô¤Áô×Ö½ÚÊı
-	setlocale(LC_CTYPE, "");     //±ØĞëµ÷ÓÃ´Ëº¯Êı
-	wchar_t *p = new wchar_t[len];// ÉêÇëÒ»¶ÎÄÚ´æ´æ·Å×ª»»ºóµÄ×Ö·û´®
-	mbstowcs(p, str.c_str(), len);// ×ª»»
+	// stringè½¬wstring
+	size_t len = str.size() * 2;// é¢„ç•™å­—èŠ‚æ•°
+	setlocale(LC_CTYPE, "");     //å¿…é¡»è°ƒç”¨æ­¤å‡½æ•°
+	wchar_t *p = new wchar_t[len];// ç”³è¯·ä¸€æ®µå†…å­˜å­˜æ”¾è½¬æ¢åçš„å­—ç¬¦ä¸²
+	mbstowcs(p, str.c_str(), len);// è½¬æ¢
 	std::wstring str1(p);
-	delete[] p;// ÊÍ·ÅÉêÇëµÄÄÚ´æ
+	delete[] p;// é‡Šæ”¾ç”³è¯·çš„å†…å­˜
 	return str1;
 }
 
 std::string wstring_to_string(const std::wstring &str)
 {
-	// wstring×ªstring
+	// wstringè½¬string
 	size_t len = str.size() * 4;
 	setlocale(LC_CTYPE, "");
 	char *p = new char[len];

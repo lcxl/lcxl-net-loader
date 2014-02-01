@@ -1,4 +1,4 @@
-#ifndef _LCXL_IOCP_CMD_H_
+ï»¿#ifndef _LCXL_IOCP_CMD_H_
 #define _LCXL_IOCP_CMD_H_
 
 #include "lcxl_iocp_lcxl.h"
@@ -25,7 +25,7 @@ public:
 
 class CCmdSockLst :public CLLSockLst {
 protected:
-	virtual void CreateSockObj(CSocketObj* &SockObj);// ¸²¸Ç
+	virtual void CreateSockObj(CSocketObj* &SockObj);// è¦†ç›–
 public:
 	virtual ~CCmdSockLst() {
 
@@ -33,35 +33,35 @@ public:
 };
 
 ///	<summary>
-///	  »ùÓÚÃüÁîµÄÍ¨Ñ¶Ğ­ÒéSocketÀàÊµÏÖ
+///	  åŸºäºå‘½ä»¤çš„é€šè®¯åè®®Socketç±»å®ç°
 ///	</summary>
 class CCmdSockObj :public CLLSockObj {
 public:
 	///	<remarks>
-	///	  SendDataÖ®Ç°ÒªËø¶¨
+	///	  SendDataä¹‹å‰è¦é”å®š
 	///	</remarks>
 	BOOL SendData(const CMDDataRec ASendDataRec);
 
 	///	<remarks>
-	///	  SendDataÖ®Ç°ÒªËø¶¨
+	///	  SendDataä¹‹å‰è¦é”å®š
 	///	</remarks>
 	BOOL SendData(WORD CMD, PVOID Data, ULONG DataLen);
 
 	///	<remarks>
-	///	  SendDataÖ®Ç°ÒªËø¶¨
+	///	  SendDataä¹‹å‰è¦é”å®š
 	///	</remarks>
 	BOOL SendData(WORD CMD, PVOID Data[], ULONG DataLen[], INT DataCount);
 
 	///	<summary>
-	///	  »ñÈ¡·¢ËÍÊı¾İµÄÖ¸Õë
+	///	  è·å–å‘é€æ•°æ®çš„æŒ‡é’ˆ
 	///	</summary>
 	void GetSendData(ULONG DataLen, CMDDataRec &ASendDataRec);
 
 	///	<summary>
-	///	  Ö»ÓĞÃ»ÓĞµ÷ÓÃSendDataµÄÊ±ºò²Å¿ÉÒÔÊÍ·Å£¬µ÷ÓÃSendDataÖ®ºó½«»á×Ô¶¯ÊÍ·Å¡£
+	///	  åªæœ‰æ²¡æœ‰è°ƒç”¨SendDataçš„æ—¶å€™æ‰å¯ä»¥é‡Šæ”¾ï¼Œè°ƒç”¨SendDataä¹‹åå°†ä¼šè‡ªåŠ¨é‡Šæ”¾ã€‚
 	///	</summary>
 	///	<param name="SendDataRec">
-	///	  ÒªÊÍ·ÅµÄÊı¾İ
+	///	  è¦é‡Šæ”¾çš„æ•°æ®
 	///	</param>
 	void FreeSendData(const CMDDataRec &ASendDataRec);
 	inline static void GetSendDataFromOverlapped(PIOCPOverlapped Overlapped, CMDDataRec &ASendDataRec);
@@ -69,17 +69,17 @@ public:
 
 class CIOCPCMDList;
 
-// IOCPÊÂ¼ş
+// IOCPäº‹ä»¶
 typedef void (CIOCPCMDList::*EOnIOCPCMDEvent)(IocpEventEnum EventType, CCmdSockObj *SockObj, PIOCPOverlapped Overlapped);
-//¶¨ÒåÊÂ¼ş´¥·¢º¯ÊıÀàĞÍ
+//å®šä¹‰äº‹ä»¶è§¦å‘å‡½æ•°ç±»å‹
 typedef _LCXLFunctionDelegate<CIOCPCMDList, EOnIOCPCMDEvent> DOnIOCPCMDEvent;
-// IOCP¼àÌıÊÂ¼ş
+// IOCPç›‘å¬äº‹ä»¶
 typedef void (CIOCPCMDList::*EOnListenCMDEvent)(ListenEventEnum EventType, CCmdSockLst *SockLst);
-//¶¨ÒåÊÂ¼ş´¥·¢º¯ÊıÀàĞÍ
+//å®šä¹‰äº‹ä»¶è§¦å‘å‡½æ•°ç±»å‹
 typedef _LCXLFunctionDelegate<CIOCPCMDList, EOnListenCMDEvent> DOnListenCMDEvent;
 
 ///	<summary>
-///	  »ùÓÚÃüÁîµÄÍ¨Ñ¶Ğ­ÒéSocketÀàÁĞ±íµÄÊµÏÖ
+///	  åŸºäºå‘½ä»¤çš„é€šè®¯åè®®Socketç±»åˆ—è¡¨çš„å®ç°
 ///	</summary>
 class CIOCPCMDList :public CCustomIOCPLCXLList{
 private:
@@ -87,13 +87,13 @@ private:
 	DOnListenCMDEvent mListenEvent;
 protected:
 	/// <summary>
-	/// »ùÀàµÄÊÂ¼ş
+	/// åŸºç±»çš„äº‹ä»¶
 	/// </summary>
 	virtual void OnIOCPEvent(IocpEventEnum EventType, CLLSockObj *SockObj, PIOCPOverlapped Overlapped);
-	// ¼àÌıÊÂ¼ş
+	// ç›‘å¬äº‹ä»¶
 	virtual void OnListenEvent(ListenEventEnum EventType, CSocketLst *SockLst);
 public:
-	// Íâ²¿½Ó¿Ú
+	// å¤–éƒ¨æ¥å£
 	DOnIOCPCMDEvent GetIOCPEvent() {
 		return mIOCPEvent;
 	}

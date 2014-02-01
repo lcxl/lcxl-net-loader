@@ -1,4 +1,4 @@
-#ifndef _DRV_INTERFACE_TYPE_H_
+ï»¿#ifndef _DRV_INTERFACE_TYPE_H_
 #define _DRV_INTERFACE_TYPE_H_
 
 #include "../../common/lcxl_type.h"
@@ -10,7 +10,7 @@ extern "C" {
 
 #define MAX_INSTANCE_NAME_LENGTH     256
 
-	//»ñÈ¡ËùÓĞµÄÍø¿¨½Ó¿ÚĞòºÅ
+	//è·å–æ‰€æœ‰çš„ç½‘å¡æ¥å£åºå·
 	//IOCTL_LOADER_ALL_MODULE
 	//output
 
@@ -18,28 +18,28 @@ extern "C" {
 #define AMS_NONE		0x00
 #define AMS_NORMAL		0x01
 #define AMS_NO_FILTER	0x02
-		//Ä£¿éÄ£Ê½
+		//æ¨¡å—æ¨¡å¼
 		INT					app_module_status;
-		//Ğ¡¶Ë¿ÚÇı¶¯ifindex
+		//å°ç«¯å£é©±åŠ¨ifindex
 		NET_IFINDEX			miniport_if_index;
-		//Íø¿¨±¾µØÎ¨Ò»ID
+		//ç½‘å¡æœ¬åœ°å”¯ä¸€ID
 		NET_LUID			miniport_net_luid;
-		//ÕæÊµµØÖ·
+		//çœŸå®åœ°å€
 		LCXL_SERVER_ADDR	real_addr;
-		//ĞéÄâIPv4
+		//è™šæ‹ŸIPv4
 		IN_ADDR				virtual_ipv4;
-		//ĞéÄâIPv6
+		//è™šæ‹ŸIPv6
 		IN6_ADDR			virtual_ipv6;
-		//Ä£¿éÃû³Æ
+		//æ¨¡å—åç§°
 		USHORT				filter_module_name_len;
 		WCHAR				filter_module_name[MAX_INSTANCE_NAME_LENGTH];
-		//Ğ¡¶Ë¿ÚÇı¶¯ÓÑºÃÃû³Æ
+		//å°ç«¯å£é©±åŠ¨å‹å¥½åç§°
 		USHORT				miniport_friendly_name_len;
 		WCHAR				miniport_friendly_name[MAX_INSTANCE_NAME_LENGTH];
-		//Ğ¡¶Ë¿ÚÇı¶¯Ãû³Æ
+		//å°ç«¯å£é©±åŠ¨åç§°
 		USHORT				miniport_name_len;
 		WCHAR				miniport_name[MAX_INSTANCE_NAME_LENGTH];
-		//·şÎñÆ÷ÊıÁ¿
+		//æœåŠ¡å™¨æ•°é‡
 		INT					server_count;
 
 	} APP_MODULE_INFO, *PAPP_MODULE_INFO;
@@ -49,24 +49,24 @@ extern "C" {
 		NET_LUID	miniport_net_luid;
 		LCXL_IP		ip;
 	} APP_IP, *PAPP_IP;
-	//·şÎñÆ÷ÁĞ±í
+	//æœåŠ¡å™¨åˆ—è¡¨
 	//IOCTL_LOADER_GET_SERVER_LIST
 	//input NET_LUID                     miniport_net_luid;
 	//output
 	typedef struct _APP_SERVER_LIST {
-		int					server_count;//·şÎñÆ÷ÊıÁ¿
-		LCXL_SERVER_ADDR	server_list[0];//·şÎñÆ÷µØÖ·
+		int					server_count;//æœåŠ¡å™¨æ•°é‡
+		LCXL_SERVER_ADDR	server_list[0];//æœåŠ¡å™¨åœ°å€
 	} APP_SERVER_LIST, *PAPP_SERVER_LIST;
 
-	//Ìí¼Ó·şÎñÆ÷
+	//æ·»åŠ æœåŠ¡å™¨
 	typedef struct _APP_ADD_SERVER {
 		NET_LUID			miniport_net_luid;
 		LCXL_SERVER_ADDR	server;
 	} APP_ADD_SERVER, *PAPP_ADD_SERVER;
-	//É¾³ı·şÎñÆ÷
+	//åˆ é™¤æœåŠ¡å™¨
 	typedef struct _APP_DEL_SERVER {
 		NET_LUID			miniport_net_luid;
-		//MACµØÖ·
+		//MACåœ°å€
 		IF_PHYSICAL_ADDRESS	mac_addr;
 	} APP_DEL_SERVER, *PAPP_DEL_SERVER;
 #ifdef __cplusplus

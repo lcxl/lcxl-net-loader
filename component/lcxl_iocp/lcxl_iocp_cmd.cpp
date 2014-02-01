@@ -1,4 +1,4 @@
-#include "lcxl_iocp_cmd.h"
+﻿#include "lcxl_iocp_cmd.h"
 
 WORD _CMDDataRec::GetCMD()
 {

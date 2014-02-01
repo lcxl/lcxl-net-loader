@@ -1,4 +1,4 @@
-#ifndef _LCXL_STRING_H_
+﻿#ifndef _LCXL_STRING_H_
 #define _LCXL_STRING_H_
 
 #include <string>

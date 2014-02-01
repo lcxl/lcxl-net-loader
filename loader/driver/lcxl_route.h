@@ -1,30 +1,30 @@
-#ifndef _LCXL_ROUTE_H_
+О╩©#ifndef _LCXL_ROUTE_H_
 #define _LCXL_ROUTE_H_
 
 /*
 author:
 LCX
 abstract:
-б╥сиоЮ╧ьм╥нд╪Ч
+Х╥╞Г■╠Г⌡╦Е┘ЁЕ╓╢Ф√┤Д╩╤
 */
 
 #include "lcxl_server.h"
 
 #define TAG_ROUTE       'ROUT'
-//б╥сипео╒
+//Х╥╞Г■╠Д©║Ф│╞
 typedef struct _LCXL_ROUTE_LIST_ENTRY
 {
-	LIST_ENTRY		        list_entry;		//ап╠МоН
+	LIST_ENTRY		        list_entry;		//Е┬≈Х║╗И║╧
 #define RS_NONE     0x00
-#define RS_NORMAL   0x01					//уЩЁё
-#define RS_LAST_ACK 0x02					//уЩтз╣х╢ЩвН╨Ср╩╦ЖACK╟Э
-#define RS_CLOSED   0x03					//а╛╫сря╧ь╠у
-	int                     status;         //а╛╫св╢л╛
+#define RS_NORMAL   0x01					//Ф╜ёЕ╦╦
+#define RS_LAST_ACK 0x02					//Ф╜ёЕ°╗Г╜┴Е╬┘Ф°─Е░▌Д╦─Д╦╙ACKЕ▄┘
+#define RS_CLOSED   0x03					//Х©·Ф▌╔Е╥╡Е┘ЁИ≈╜
+	int                     status;         //Х©·Ф▌╔Г┼╤Ф─│
 	LCXL_IP					src_ip;
 	//TCP
-	unsigned short	        src_port;		//т╢╤к©з╨е
-	unsigned short	        dst_port;		//д©╣д╤к©з╨е
-	PSERVER_INFO_LIST_ENTRY dst_server;	    //д©╠Й╥ЧнЯфВ
+	unsigned short	        src_port;		//Ф╨░Г╚╞Е▐ёЕ▐╥
+	unsigned short	        dst_port;		//Г⌡╝Г └Г╚╞Е▐ёЕ▐╥
+	PSERVER_INFO_LIST_ENTRY dst_server;	    //Г⌡╝Ф═┤Ф°█Е┼║Е≥╗
 } LCXL_ROUTE_LIST_ENTRY, *PLCXL_ROUTE_LIST_ENTRY;
 
 extern NPAGED_LOOKASIDE_LIST  g_route_mem_mgr;
@@ -46,16 +46,16 @@ __inline PLCXL_ROUTE_LIST_ENTRY AllocRoute()
 
 
 ///<summary>
-///╢╢╫╗б╥сипео╒╠МоН
+///Е┬⌡Е╩╨Х╥╞Г■╠Д©║Ф│╞Х║╗И║╧
 ///</summary>
 PLCXL_ROUTE_LIST_ENTRY CreateRouteListEntry(IN PLIST_ENTRY route_list);
 ///<summary>
-///й╪╩╞б╥сипео╒╠МоН
+///Е╖▀Е▄√Х╥╞Г■╠Д©║Ф│╞Х║╗И║╧
 ///</summary>
 VOID InitRouteListEntry(IN OUT PLCXL_ROUTE_LIST_ENTRY route_info, IN INT ipMode, IN PVOID pIPHeader, IN PTCP_HDR pTcpHeader, IN PSERVER_INFO_LIST_ENTRY server_info);
 
 ///<summary>
-///╩Ях║б╥сипео╒оН
+///Х▌╥Е▐√Х╥╞Г■╠Д©║Ф│╞И║╧
 ///</summary>
 PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry(IN PLIST_ENTRY route_list, IN INT ipMode, IN PVOID pIPHeader, IN PTCP_HDR pTcpHeader);
 

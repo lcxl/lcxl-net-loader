@@ -1,4 +1,4 @@
-#ifndef _LCXL_IOCP_LCXL_H_
+ï»¿#ifndef _LCXL_IOCP_LCXL_H_
 #define _LCXL_IOCP_LCXL_H_
 
 #include "lcxl_iocp_base.h"
@@ -17,7 +17,7 @@ public:
 		return mDataLen;
 	};
 	/// <summary>
-	/// ½«¸ø¶¨µÄÊı¾İ×ª»¯Îª±¾¼ÇÂ¼µÄÊı¾İ½á¹¹
+	/// å°†ç»™å®šçš„æ•°æ®è½¬åŒ–ä¸ºæœ¬è®°å½•çš„æ•°æ®ç»“æ„
 	/// </summary>
 	BOOL Assign(PVOID _TotalData, ULONG _TotalLen);
 public:
@@ -26,7 +26,7 @@ public:
 
 class CLLSockLst :public CSocketLst {
 protected:
-	virtual void CreateSockObj(CSocketObj* &SockObj);// ¸²¸Ç
+	virtual void CreateSockObj(CSocketObj* &SockObj);// è¦†ç›–
 public:
 	virtual ~CLLSockLst() {
 
@@ -34,7 +34,7 @@ public:
 };
 
 ///	<summary>
-///	  LCXLĞ­ÒéµÄsocketÀà
+///	  LCXLåè®®çš„socketç±»
 ///	</summary>
 class CLLSockObj : public CSocketObj {
 private:
@@ -42,16 +42,16 @@ private:
 	ULONG mCurDataLen;
 	ULONG mBufLen;
 	/// <summary>
-	/// ½ÓÊÕµ½µÄÊı¾İ
+	/// æ¥æ”¶åˆ°çš„æ•°æ®
 	/// </summary>
 	PVOID mRecvData;
 	ULONG mRecvDataLen;
 	/// <summary>
-	/// ÊÇ·ñ½ÓÊÕÒ»¸öÍêÕûµÄÊı¾İ
+	/// æ˜¯å¦æ¥æ”¶ä¸€ä¸ªå®Œæ•´çš„æ•°æ®
 	/// </summary>
 	BOOL mIsRecvAll;
 protected:
-	// ³õÊ¼»¯
+	// åˆå§‹åŒ–
 	virtual BOOL Init();
 public:
 	virtual PVOID GetRecvData();
@@ -61,14 +61,14 @@ protected:
 		return mBuf;
 	};
 public:
-	// Ïú»Ù
+	// é”€æ¯
 	virtual ~CLLSockObj();
-	// SendDataÖ®Ç°Ëø¶¨
+	// SendDataä¹‹å‰é”å®š
 	BOOL SendData(const SendDataRec &ASendDataRec);
 	BOOL SendData(PVOID Data, ULONG DataLen);
-	// »ñÈ¡·¢ËÍÊı¾İµÄÖ¸Õë
+	// è·å–å‘é€æ•°æ®çš„æŒ‡é’ˆ
 	void GetSendData(ULONG DataLen, SendDataRec &ASendDataRec);
-	// Ö»ÓĞÃ»ÓĞµ÷ÓÃSendDataµÄÊ±ºò²Å¿ÉÒÔÊÍ·Å£¬µ÷ÓÃSendDataÖ®ºó½«»á×Ô¶¯ÊÍ·Å¡£
+	// åªæœ‰æ²¡æœ‰è°ƒç”¨SendDataçš„æ—¶å€™æ‰å¯ä»¥é‡Šæ”¾ï¼Œè°ƒç”¨SendDataä¹‹åå°†ä¼šè‡ªåŠ¨é‡Šæ”¾ã€‚
 	void FreeSendData(const SendDataRec &ASendDataRec);
 	BOOL GetIsRecvAll() {
 		return mIsRecvAll;
@@ -86,24 +86,24 @@ protected:
 
 class CIOCPLCXLList;
 
-// IOCPÊÂ¼ş
+// IOCPäº‹ä»¶
 typedef void (CIOCPLCXLList::*EOnIOCPLCXLEvent)(IocpEventEnum EventType, CLLSockObj *SockObj, PIOCPOverlapped Overlapped);
-//¶¨ÒåÊÂ¼ş´¥·¢º¯ÊıÀàĞÍ
+//å®šä¹‰äº‹ä»¶è§¦å‘å‡½æ•°ç±»å‹
 typedef _LCXLFunctionDelegate<CIOCPLCXLList, EOnIOCPLCXLEvent> DOnIOCPLCXLEvent;
-// IOCP¼àÌıÊÂ¼ş
+// IOCPç›‘å¬äº‹ä»¶
 typedef void (CIOCPLCXLList::*EOnListenLCXLEvent)(ListenEventEnum EventType, CLLSockLst *SockLst);
-//¶¨ÒåÊÂ¼ş´¥·¢º¯ÊıÀàĞÍ
+//å®šä¹‰äº‹ä»¶è§¦å‘å‡½æ•°ç±»å‹
 typedef _LCXLFunctionDelegate<CIOCPLCXLList, EOnListenLCXLEvent> DOnListenLCXLEvent;
 
 
-// LCXLĞ­ÒéÊµÏÖÀà
+// LCXLåè®®å®ç°ç±»
 class CIOCPLCXLList : public CCustomIOCPBaseList{
 private:
 	DOnIOCPLCXLEvent mIOCPEvent;
 	DOnListenLCXLEvent mListenEvent;
 protected:
 	virtual void OnIOCPEvent(IocpEventEnum EventType, CLLSockObj *SockObj, PIOCPOverlapped Overlapped);
-	// ¼àÌıÊÂ¼ş
+	// ç›‘å¬äº‹ä»¶
 	virtual void OnListenEvent(ListenEventEnum EventType, CSocketLst *SockLst);
 public:
 	DOnIOCPLCXLEvent GetIOCPEvent() {

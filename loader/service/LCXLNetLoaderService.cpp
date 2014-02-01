@@ -1,4 +1,4 @@
-// LCXLNetLoaderService.cpp : ¶¨ÒåÓ¦ÓÃ³ÌĞòµÄÈë¿Úµã¡£
+ï»¿// LCXLNetLoaderService.cpp : å®šä¹‰åº”ç”¨ç¨‹åºçš„å…¥å£ç‚¹ã€‚
 //
 
 #include "stdafx.h"
@@ -18,15 +18,15 @@ public:
 		return TRUE;
 	}
 };
-//È«¾Ö±äÁ¿  
+//å…¨å±€å˜é‡  
 CTestNetLoaderSer g_NetLoadSer;
 
 int _tmain(int argc, _TCHAR* argv[]) 
 {
 	UNREFERENCED_PARAMETER(argc);
 	UNREFERENCED_PARAMETER(argv);
-	SetErrorMode(SEM_FAILCRITICALERRORS);//Ê¹³ÌĞò³öÏÖÒì³£Ê±²»±¨´í
-	//³õÊ¼»¯Ò»¸ö·ÖÅä±í  
+	SetErrorMode(SEM_FAILCRITICALERRORS);//ä½¿ç¨‹åºå‡ºç°å¼‚å¸¸æ—¶ä¸æŠ¥é”™
+	//åˆå§‹åŒ–ä¸€ä¸ªåˆ†é…è¡¨  
 	g_NetLoadSer.SetServiceName(LCXLSHADOW_SER_NAME);
 	g_NetLoadSer.SetListenPort(9999);
 	g_NetLoadSer.Run();
@@ -34,7 +34,7 @@ int _tmain(int argc, _TCHAR* argv[])
 }
 #else
 
-//È«¾Ö±äÁ¿  
+//å…¨å±€å˜é‡  
 CNetLoaderSer g_NetLoadSer;
 
 int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
@@ -46,10 +46,10 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
 	UNREFERENCED_PARAMETER(nCmdShow);
-	SetErrorMode(SEM_FAILCRITICALERRORS);//Ê¹³ÌĞò³öÏÖÒì³£Ê±²»±¨´í
+	SetErrorMode(SEM_FAILCRITICALERRORS);//ä½¿ç¨‹åºå‡ºç°å¼‚å¸¸æ—¶ä¸æŠ¥é”™
 	g_NetLoadSer.SetServiceName(LCXLSHADOW_SER_NAME);
 	g_NetLoadSer.SetListenPort(9999);
-	//³õÊ¼»¯Ò»¸ö·ÖÅä±í  
+	//åˆå§‹åŒ–ä¸€ä¸ªåˆ†é…è¡¨  
 	g_NetLoadSer.Run();
 	return 0;
 }

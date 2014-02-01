@@ -1,4 +1,4 @@
-#include "lcxl_iocp_base.h"
+ï»¿#include "lcxl_iocp_base.h"
 #include <stdlib.h>
 #include <mstcpip.h>
 
@@ -27,7 +27,7 @@ void OutputDebugStr(const TCHAR fmt[], ...)
 
 
 /************************************************************************/
-/* IOCP¹¤×÷Ïß³Ì                                                         */
+/* IOCPå·¥ä½œçº¿ç¨‹                                                         */
 /************************************************************************/
 static unsigned __stdcall IocpWorkThread(void *CompletionPortID)
 {
@@ -54,15 +54,15 @@ static unsigned __stdcall IocpWorkThread(void *CompletionPortID)
 				SockLst = static_cast<CSocketLst*>(SockBase);
 			}
 		} else {
-			// IOCP Ïß³ÌÍË³öÖ¸Áî
-			// ÍË³ö
-			OutputDebugStr(_T("»ñµÃÍË³öÃüÁî£¬ÍË³ö²¢ÃüÁîÏÂÒ»Ïß³ÌÍË³ö¡£\n"));
-			// Í¨ÖªÏÂÒ»¸ö¹¤×÷Ïß³ÌÍË³ö
+			// IOCP çº¿ç¨‹é€€å‡ºæŒ‡ä»¤
+			// é€€å‡º
+			OutputDebugStr(_T("è·å¾—é€€å‡ºå‘½ä»¤ï¼Œé€€å‡ºå¹¶å‘½ä»¤ä¸‹ä¸€çº¿ç¨‹é€€å‡ºã€‚\n"));
+			// é€šçŸ¥ä¸‹ä¸€ä¸ªå·¥ä½œçº¿ç¨‹é€€å‡º
 			PostQueuedCompletionStatus(CompletionPort, 0, 0, NULL);
 			break;
 		}
 		if (FIsSuc) {
-			// Èç¹ûÊÇÍË³öÏß³ÌÏûÏ¢£¬ÔòÍË³ö
+			// å¦‚æœæ˜¯é€€å‡ºçº¿ç¨‹æ¶ˆæ¯ï¼Œåˆ™é€€å‡º
 			BOOL _NeedContinue = FALSE;
 			SOCKET tmpSock;
 			PCSocketObj _NewSockObj;
@@ -71,47 +71,47 @@ static unsigned __stdcall IocpWorkThread(void *CompletionPortID)
 			case otRecv:case otSend:
 				if (BytesTransferred == 0) {
 					assert(FIocpOverlapped == SockObj->GetAssignedOverlapped());
-					OutputDebugStr(_T("socket(%d)ÒÑ¹Ø±Õ:%d\n"), SockObj->GetSocket(), WSAGetLastError());
-					// ¼õÉÙÒıÓÃ
+					OutputDebugStr(_T("socket(%d)å·²å…³é—­:%d\n"), SockObj->GetSocket(), WSAGetLastError());
+					// å‡å°‘å¼•ç”¨
 					SockObj->InternalDecRefCount();
-					// ¼ÌĞø
+					// ç»§ç»­
 					_NeedContinue = TRUE;
 					break;
 				}
-				// socketÊÂ¼ş
+				// socketäº‹ä»¶
 				switch (FIocpOverlapped->OverlappedType){
 				case otRecv:
 					assert(FIocpOverlapped == SockObj->GetAssignedOverlapped());
-					// ÒÆ¶¯µ±Ç°½ÓÊÜµÄÖ¸Õë
+					// ç§»åŠ¨å½“å‰æ¥å—çš„æŒ‡é’ˆ
 					FIocpOverlapped->RecvDataLen = BytesTransferred;
 					FIocpOverlapped->RecvData = SockObj->GetRecvBuf();
-					// »ñÈ¡ÊÂ¼şÖ¸Õë
-					// ·¢ËÍ½á¹û
-					// ²úÉúÊÂ¼ş
+					// è·å–äº‹ä»¶æŒ‡é’ˆ
+					// å‘é€ç»“æœ
+					// äº§ç”Ÿäº‹ä»¶
 					try{
 						SockObj->GetOwner()->OnIOCPEvent(ieRecvAll, SockObj, FIocpOverlapped);
 					}
 					catch (...) {
 						OutputDebugStr(_T("SockObj->GetOwner()->OnIOCPEvent ieRecvAll throw an exception\n"));
 					}
-					// Í¶µİÏÂÒ»¸öWSARecv
+					// æŠ•é€’ä¸‹ä¸€ä¸ªWSARecv
 					if (!SockObj->WSARecv()) {
-						// Èç¹û³ö´í
-						OutputDebugStr(_T("WSARecvº¯Êı³ö´ísocket=%d:%d\n"), SockObj->GetSocket(), WSAGetLastError());
-						// ¼õÉÙÒıÓÃ
+						// å¦‚æœå‡ºé”™
+						OutputDebugStr(_T("WSARecvå‡½æ•°å‡ºé”™socket=%d:%d\n"), SockObj->GetSocket(), WSAGetLastError());
+						// å‡å°‘å¼•ç”¨
 						SockObj->InternalDecRefCount();
 					}
 					break;
 				case otSend:
-					// »ñÈ¡ÊÂ¼şÖ¸Õë
-					// Êı¾İÖ¸ÕëºóÒÆ
+					// è·å–äº‹ä»¶æŒ‡é’ˆ
+					// æ•°æ®æŒ‡é’ˆåç§»
 					FIocpOverlapped->CurSendData = (PVOID)((PBYTE)FIocpOverlapped->CurSendData + BytesTransferred);
-					// Èç¹ûÒÑÈ«²¿·¢ËÍÍê³É£¬ÊÍ·ÅÄÚ´æ
+					// å¦‚æœå·²å…¨éƒ¨å‘é€å®Œæˆï¼Œé‡Šæ”¾å†…å­˜
 					if ((ULONG_PTR)FIocpOverlapped->CurSendData -
 						(ULONG_PTR)FIocpOverlapped->SendData == (ULONG_PTR)FIocpOverlapped->SendDataLen) {
 						BOOL _NeedDecSockObj;
 
-						// ´¥·¢ÊÂ¼ş
+						// è§¦å‘äº‹ä»¶
 						try{
 							SockObj->GetOwner()->OnIOCPEvent(ieSendAll, SockObj, FIocpOverlapped);
 						}
@@ -119,25 +119,25 @@ static unsigned __stdcall IocpWorkThread(void *CompletionPortID)
 							OutputDebugStr(_T("SockObj->GetOwner()->OnIOCPEvent ieSendAll throw an exception\n"));
 						}
 						SockObj->GetOwner()->GetOwner()->DelOverlapped(FIocpOverlapped);
-						// »ñÈ¡´ı·¢ËÍµÄÊı¾İ
+						// è·å–å¾…å‘é€çš„æ•°æ®
 						FIocpOverlapped = NULL;
 						SockObj->GetOwner()->Lock();
 						assert(SockObj->GetIsSending());
 						if (SockObj->GetSendDataQueue().size() > 0) {
 							FIocpOverlapped = SockObj->GetSendDataQueue().front();
 							SockObj->GetSendDataQueue().pop();
-							OutputDebugStr(_T("Socket(%d)È¡³ö´ı·¢ËÍÊı¾İ\n"), SockObj->GetSocket());
+							OutputDebugStr(_T("Socket(%d)å–å‡ºå¾…å‘é€æ•°æ®\n"), SockObj->GetSocket());
 						} else {
 							SockObj->SetIsSending(FALSE);
 						}
 						SockObj->GetOwner()->Unlock();
-						// Ä¬ÈÏ¼õÉÙSocketÒıÓÃ
+						// é»˜è®¤å‡å°‘Socketå¼•ç”¨
 						_NeedDecSockObj = TRUE;
 						if (FIocpOverlapped != NULL) {
 							if (!SockObj->WSASend(FIocpOverlapped)) {
-								// Èç¹ûÓĞ´íÎó
-								OutputDebugStr(_T("IocpWorkThread:WSASendº¯ÊıÊ§°Ü(socket=%d):%d\n"), SockObj->GetSocket(), WSAGetLastError());
-								// ´¥·¢ÊÂ¼ş
+								// å¦‚æœæœ‰é”™è¯¯
+								OutputDebugStr(_T("IocpWorkThread:WSASendå‡½æ•°å¤±è´¥(socket=%d):%d\n"), SockObj->GetSocket(), WSAGetLastError());
+								// è§¦å‘äº‹ä»¶
 								try{
 									SockObj->GetOwner()->OnIOCPEvent(ieSendFailed, SockObj, FIocpOverlapped);
 								}
@@ -146,16 +146,16 @@ static unsigned __stdcall IocpWorkThread(void *CompletionPortID)
 								}
 								SockObj->GetOwner()->GetOwner()->DelOverlapped(FIocpOverlapped);
 							} else {
-								// ·¢ËÍ³É¹¦£¬²»¼õÉÙÒıÓÃ
+								// å‘é€æˆåŠŸï¼Œä¸å‡å°‘å¼•ç”¨
 								_NeedDecSockObj = FALSE;
 							}
 						}
 						if (_NeedDecSockObj) {
-							// ¼õÉÙÒıÓÃ
+							// å‡å°‘å¼•ç”¨
 							SockObj->InternalDecRefCount();
 						}
 					} else {
-						// Ã»ÓĞÈ«²¿·¢ËÍÍê³É
+						// æ²¡æœ‰å…¨éƒ¨å‘é€å®Œæˆ
 						FIocpOverlapped->DataBuf.len = FIocpOverlapped->SendDataLen +
 							(ULONG)((ULONG_PTR)FIocpOverlapped->SendData -
 							(ULONG_PTR)FIocpOverlapped->CurSendData);
@@ -166,11 +166,11 @@ static unsigned __stdcall IocpWorkThread(void *CompletionPortID)
 						catch (...) {
 							OutputDebugStr(_T("SockObj->GetOwner()->OnIOCPEvent ieSendAll throw an exception\n"));
 						}
-						// ¼ÌĞøÍ¶µİWSASend
+						// ç»§ç»­æŠ•é€’WSASend
 						if (!SockObj->WSASend(FIocpOverlapped)) {
-							// Èç¹ûÓĞ´íÎó
-							OutputDebugStr(_T("IocpWorkThread:WSASendº¯ÊıÊ§°Ü(socket=%d):%d\n"), SockObj->GetSocket(), WSAGetLastError());
-							// ´¥·¢ÊÂ¼ş
+							// å¦‚æœæœ‰é”™è¯¯
+							OutputDebugStr(_T("IocpWorkThread:WSASendå‡½æ•°å¤±è´¥(socket=%d):%d\n"), SockObj->GetSocket(), WSAGetLastError());
+							// è§¦å‘äº‹ä»¶
 							try{
 								SockObj->GetOwner()->OnIOCPEvent(ieSendFailed, SockObj, FIocpOverlapped);
 							}
@@ -178,7 +178,7 @@ static unsigned __stdcall IocpWorkThread(void *CompletionPortID)
 								OutputDebugStr(_T("SockObj->GetOwner()->OnIOCPEvent ieSendFailed throw an exception\n"));
 							}
 							SockObj->GetOwner()->GetOwner()->DelOverlapped(FIocpOverlapped);
-							// ¼õÉÙÒıÓÃ
+							// å‡å°‘å¼•ç”¨
 							SockObj->InternalDecRefCount();
 						}
 					}
@@ -196,27 +196,27 @@ static unsigned __stdcall IocpWorkThread(void *CompletionPortID)
 				sizeof(SOCKADDR_IN) + 16, local, localLen, remote, remoteLen);
 				*/
 				tmpSock = SockLst->GetSocket();
-				// ¸üĞÂÉÏÏÂÎÄ
+				// æ›´æ–°ä¸Šä¸‹æ–‡
 				resuInt = setsockopt(FIocpOverlapped->AcceptSocket, SOL_SOCKET,
 					SO_UPDATE_ACCEPT_CONTEXT, (char *)&tmpSock, sizeof(tmpSock));
 				if (resuInt != 0) {
-					OutputDebugStr(_T("socket(%d)ÉèÖÃsetsockoptÊ§°Ü:%d\n"),
+					OutputDebugStr(_T("socket(%d)è®¾ç½®setsockoptå¤±è´¥:%d\n"),
 						FIocpOverlapped->AcceptSocket, WSAGetLastError());
 				}
-				// ¼àÌı
-				// ²úÉúÊÂ¼ş£¬Ìí¼ÓSockObj£¬Èç¹ûÊ§°Ü£¬ÔòcloseÖ®
+				// ç›‘å¬
+				// äº§ç”Ÿäº‹ä»¶ï¼Œæ·»åŠ SockObjï¼Œå¦‚æœå¤±è´¥ï¼Œåˆ™closeä¹‹
 				_NewSockObj = NULL;
-				// ´´½¨ĞÂµÄSocketObjÀà
+				// åˆ›å»ºæ–°çš„SocketObjç±»
 				SockLst->CreateSockObj(_NewSockObj);
-				// Ìî³äSocket¾ä±ú
+				// å¡«å……Socketå¥æŸ„
 				_NewSockObj->mSock = FIocpOverlapped->AcceptSocket;
-				// ÉèÖÃÎª·şÎñsocket
+				// è®¾ç½®ä¸ºæœåŠ¡socket
 				_NewSockObj->mIsSerSocket = TRUE;
-				// Ìí¼Óµ½SocketÁĞ±íÖĞ
+				// æ·»åŠ åˆ°Socketåˆ—è¡¨ä¸­
 				SockLst->GetOwner()->AddSockBase(_NewSockObj);
-				// Í¶µİÏÂÒ»¸öAccept¶Ë¿Ú
+				// æŠ•é€’ä¸‹ä¸€ä¸ªAcceptç«¯å£
 				if (!SockLst->Accept()){
-					OutputDebugStr(_T("AcceptExº¯ÊıÊ§°Ü: %d\n"), WSAGetLastError());
+					OutputDebugStr(_T("AcceptExå‡½æ•°å¤±è´¥: %d\n"), WSAGetLastError());
 					SockLst->InternalDecRefCount();
 				}
 				break;
@@ -226,18 +226,18 @@ static unsigned __stdcall IocpWorkThread(void *CompletionPortID)
 			}
 		} else {
 			if (FIocpOverlapped != NULL) {
-				OutputDebugStr(_T("GetQueuedCompletionStatusº¯ÊıÊ§°Ü(socket=%d): %d\n"),
+				OutputDebugStr(_T("GetQueuedCompletionStatuså‡½æ•°å¤±è´¥(socket=%d): %d\n"),
 					SockBase->GetSocket(), GetLastError());
-				// ¹Ø±Õ
+				// å…³é—­
 				if (FIocpOverlapped != SockBase->GetAssignedOverlapped()) {
-					// Ö»ÓĞotSendµÄFIocpOverlapped
+					// åªæœ‰otSendçš„FIocpOverlapped
 					assert(FIocpOverlapped->OverlappedType == otSend);
 					SockBase->GetOwner()->GetOwner()->DelOverlapped(FIocpOverlapped);
 				}
-				// ¼õÉÙÒıÓÃ
+				// å‡å°‘å¼•ç”¨
 				SockBase->InternalDecRefCount();
 			} else {
-				OutputDebugStr(_T("GetQueuedCompletionStatusº¯ÊıÊ§°Ü: %d\n"), GetLastError());
+				OutputDebugStr(_T("GetQueuedCompletionStatuså‡½æ•°å¤±è´¥: %d\n"), GetLastError());
 			}
 		}
 	}
@@ -264,7 +264,7 @@ int CSocketBase::InternalIncRefCount(int Count/*=1*/, BOOL UserMode/*=FALSE*/)
 
 int CSocketBase::InternalDecRefCount(int Count/*=1*/, BOOL UserMode/*=FALSE*/)
 {
-	// socketÊÇ·ñ¹Ø±Õ
+	// socketæ˜¯å¦å…³é—­
 	BOOL _IsSocketClosed1;
 	BOOL _IsSocketClosed2;
 	BOOL _CanFree;
@@ -282,9 +282,9 @@ int CSocketBase::InternalDecRefCount(int Count/*=1*/, BOOL UserMode/*=FALSE*/)
 	_IsSocketClosed2 = mRefCount == mUserRefCount;
 	_CanFree = 0 == mRefCount;
 	mOwner->Unlock();
-	// socketÒÑ¾­¹Ø±Õ
+	// socketå·²ç»å…³é—­
 	if (!_IsSocketClosed1 && _IsSocketClosed2) {
-		// ´¥·¢closeÊÂ¼ş
+		// è§¦å‘closeäº‹ä»¶
 		if (this->mSocketType == STObj) {
 			mOwner->OnIOCPEvent(ieCloseSocket, static_cast<CSocketObj*>(this), NULL);
 		} else {
@@ -292,7 +292,7 @@ int CSocketBase::InternalDecRefCount(int Count/*=1*/, BOOL UserMode/*=FALSE*/)
 		}
 	}
 	if (_CanFree){
-		// ÒÆ³ı×ÔÉí£¬²¢ÇÒÊÍ·Å
+		// ç§»é™¤è‡ªèº«ï¼Œå¹¶ä¸”é‡Šæ”¾
 		mOwner->RemoveSockBase(this);
 	}
 	return resu;
@@ -301,9 +301,9 @@ int CSocketBase::InternalDecRefCount(int Count/*=1*/, BOOL UserMode/*=FALSE*/)
 CSocketBase::CSocketBase()
 {
 	mSock = INVALID_SOCKET;
-	// ÒıÓÃ¼ÆÊıÄ¬ÈÏÎª1
+	// å¼•ç”¨è®¡æ•°é»˜è®¤ä¸º1
 	mRefCount = 0;
-	// ÓÃ»§¼ÆÊıÄ¬ÈÏÎª0
+	// ç”¨æˆ·è®¡æ•°é»˜è®¤ä¸º0
 	mUserRefCount = 0;
 
 	mIniteStatus = sisInitializing;
@@ -361,9 +361,9 @@ BOOL CSocketLst::Accept()
 	resu = (g_AcceptEx(mSock, mAssignedOverlapped->AcceptSocket, mLstBuf, 0,
 		sizeof(sockaddr_storage)+16, sizeof(sockaddr_storage)+16, &BytesReceived,
 		&mAssignedOverlapped->lpOverlapped) == TRUE) || (WSAGetLastError() == WSA_IO_PENDING);
-	// Í¶µİAcceptEx
+	// æŠ•é€’AcceptEx
 	if (!resu) {
-		OutputDebugStr(_T("AcceptExº¯ÊıÊ§°Ü: %d\n"), WSAGetLastError());
+		OutputDebugStr(_T("AcceptExå‡½æ•°å¤±è´¥: %d\n"), WSAGetLastError());
 		closesocket(mAssignedOverlapped->AcceptSocket);
 		mAssignedOverlapped->AcceptSocket = INVALID_SOCKET;
 	}
@@ -372,7 +372,7 @@ BOOL CSocketLst::Accept()
 
 BOOL CSocketLst::Init()
 {
-	// ·ÖÅä½ÓÊÜÊı¾İµÄÄÚ´æ
+	// åˆ†é…æ¥å—æ•°æ®çš„å†…å­˜
 	mLstBuf = malloc(mLstBufLen);
 	return TRUE;
 }
@@ -424,37 +424,37 @@ BOOL CSocketLst::StartListen(CCustomIOCPBaseList *IOCPList, int Port, u_long InA
 	mSock = WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, WSA_FLAG_OVERLAPPED);
 	if (mSock == INVALID_SOCKET) {
 		ErrorCode = WSAGetLastError();
-		OutputDebugStr(_T("WSASocket º¯ÊıÊ§°Ü£º%d\n"), ErrorCode);
+		OutputDebugStr(_T("WSASocket å‡½æ•°å¤±è´¥ï¼š%d\n"), ErrorCode);
 		return resu;
 	}
 	InternetAddr.sin_family = AF_INET;
 	InternetAddr.sin_addr.s_addr = htonl(InAddr);
 	InternetAddr.sin_port = htons(Port);
 	sockaddr = (PSOCKADDR)&InternetAddr;
-	// °ó¶¨¶Ë¿ÚºÅ
+	// ç»‘å®šç«¯å£å·
 	if (bind(mSock, sockaddr, sizeof(InternetAddr)) == SOCKET_ERROR) {
 		ErrorCode = WSAGetLastError();
-		OutputDebugStr(_T("bind º¯ÊıÊ§°Ü£º%d\n"), ErrorCode);
+		OutputDebugStr(_T("bind å‡½æ•°å¤±è´¥ï¼š%d\n"), ErrorCode);
 		closesocket(mSock);
 		WSASetLastError(ErrorCode);
 		mSock = INVALID_SOCKET;
 		return resu;
 	}
-	// ¿ªÊ¼¼àÌı
+	// å¼€å§‹ç›‘å¬
 	if (listen(mSock, SOMAXCONN) == SOCKET_ERROR) {
 		ErrorCode = WSAGetLastError();
-		OutputDebugStr(_T("listen º¯ÊıÊ§°Ü£º%d\n"), ErrorCode);
+		OutputDebugStr(_T("listen å‡½æ•°å¤±è´¥ï¼š%d\n"), ErrorCode);
 		closesocket(mSock);
 		WSASetLastError(ErrorCode);
 		mSock = INVALID_SOCKET;
 		return resu;
 	}
 	mOwner = IOCPList;
-	// Ìí¼Óµ½SockLst
+	// æ·»åŠ åˆ°SockLst
 	resu = IOCPList->AddSockBase(this);
 	if (!resu) {
 		ErrorCode = WSAGetLastError();
-		OutputDebugStr(_T("AddSockBase º¯ÊıÊ§°Ü£º%d\n"), ErrorCode);
+		OutputDebugStr(_T("AddSockBase å‡½æ•°å¤±è´¥ï¼š%d\n"), ErrorCode);
 		closesocket(mSock);
 		WSASetLastError(ErrorCode);
 		mSock = INVALID_SOCKET;
@@ -468,9 +468,9 @@ RELEASE_INLINE BOOL CSocketObj::WSARecv()
 {
 	DWORD Flags;
 
-	// Çå¿ÕOverlapped
+	// æ¸…ç©ºOverlapped
 	ZeroMemory(&mAssignedOverlapped->lpOverlapped, sizeof(mAssignedOverlapped->lpOverlapped));
-	// ÉèÖÃOverLap
+	// è®¾ç½®OverLap
 	mAssignedOverlapped->DataBuf.len = mRecvBufLen;
 	mAssignedOverlapped->DataBuf.buf = (CHAR *)mRecvBuf;
 	Flags = 0;
@@ -481,7 +481,7 @@ RELEASE_INLINE BOOL CSocketObj::WSARecv()
 RELEASE_INLINE BOOL CSocketObj::WSASend(PIOCPOverlapped Overlapped)
 {
 	// OutputDebugStr(Format('WSASend:Overlapped=%p,Overlapped=%d\n',[Overlapped, Integer(Overlapped.OverlappedType)]));
-	// Çå¿ÕOverlapped
+	// æ¸…ç©ºOverlapped
 	ZeroMemory(&Overlapped->lpOverlapped, sizeof(Overlapped->lpOverlapped));
 	assert(Overlapped->OverlappedType == otSend);
 	assert((Overlapped->DataBuf.buf != NULL) && (Overlapped->DataBuf.len > 0));
@@ -492,12 +492,12 @@ RELEASE_INLINE BOOL CSocketObj::WSASend(PIOCPOverlapped Overlapped)
 BOOL CSocketObj::Init()
 {
 	assert(mRecvBufLen > 0);
-	// ·ÖÅä½ÓÊÜÊı¾İµÄÄÚ´æ
+	// åˆ†é…æ¥å—æ•°æ®çš„å†…å­˜
 	mRecvBuf = malloc(mRecvBufLen);
 	if (mRecvBuf == NULL) {
 		return FALSE;
 	}
-	// ³õÊ¼»¯
+	// åˆå§‹åŒ–
 	//FSendDataQueue: = TList.Create;
 	return TRUE;
 }
@@ -505,7 +505,7 @@ BOOL CSocketObj::Init()
 CSocketObj::CSocketObj()
 {
 	mSocketType = STObj;
-	// ÉèÖÃ³õÊ¼»º³åÇøÎª4096
+	// è®¾ç½®åˆå§‹ç¼“å†²åŒºä¸º4096
 	mRecvBufLen = 4096;
 
 	mRecvBuf = NULL;
@@ -548,16 +548,16 @@ BOOL CSocketObj::ConnectSer(CCustomIOCPBaseList &IOCPList, LPCTSTR SerAddr, int 
 	}
 	_NextAddInfo = _ResultAddInfo;
 
-	// ÉêÇë»º³åÇø
+	// ç”³è¯·ç¼“å†²åŒº
 	_AddrString = new TCHAR[ADDR_STRING_MAX_LEN];
 
 	while (_NextAddInfo != NULL) {
 		_AddrStringLen = ADDR_STRING_MAX_LEN;
-		// »ñÈ¡
+		// è·å–
 #ifdef _DEBUG
 		if (WSAAddressToString(_NextAddInfo->ai_addr, (DWORD)_NextAddInfo->ai_addrlen, NULL,
 			_AddrString, &_AddrStringLen) == 0) {
-			// ¸ÄÎªÕæÊµ³¤¶È,ÕâÀïµÄ_AddrStringLen°üº¬ÁËÄ©Î²µÄ×Ö·û#0£¬ËùÒÔÒª¼õÈ¥Õâ¸ö#0µÄ³¤¶È
+			// æ”¹ä¸ºçœŸå®é•¿åº¦,è¿™é‡Œçš„_AddrStringLenåŒ…å«äº†æœ«å°¾çš„å­—ç¬¦#0ï¼Œæ‰€ä»¥è¦å‡å»è¿™ä¸ª#0çš„é•¿åº¦
 			_AddrStringLen--;
 			OutputDebugStr(_T("ai_addr:%s,ai_flags:%d,ai_canonname=%s\n"),
 				_AddrString, _NextAddInfo->ai_flags, _NextAddInfo->ai_canonname);
@@ -571,23 +571,23 @@ BOOL CSocketObj::ConnectSer(CCustomIOCPBaseList &IOCPList, LPCTSTR SerAddr, int 
 			if (connect(mSock, _NextAddInfo->ai_addr, (INT)_NextAddInfo->ai_addrlen) == SOCKET_ERROR) {
 				DWORD LastError = WSAGetLastError();
 
-				OutputDebugStr(_T("Á¬½Ó%sÊ§°Ü£º%d\n"), _AddrString, LastError);
+				OutputDebugStr(_T("è¿æ¥%så¤±è´¥ï¼š%d\n"), _AddrString, LastError);
 
 				closesocket(mSock);
 				WSASetLastError(LastError);
 				mSock = INVALID_SOCKET;
 			} else {
 				mOwner = &IOCPList;
-				// Ôö¼ÓÒıÓÃ
+				// å¢åŠ å¼•ç”¨
 				IncRefCount(IncRefNumber);
 				resu = IOCPList.AddSockBase(this);
 				if (!resu) {
 					DWORD LastError = WSAGetLastError();
-					OutputDebugStr(_T("Ìí¼Ó%sµ½ÁĞ±íÖĞÊ§°Ü£º%d\n"), _AddrString, LastError);
+					OutputDebugStr(_T("æ·»åŠ %såˆ°åˆ—è¡¨ä¸­å¤±è´¥ï¼š%d\n"), _AddrString, LastError);
 					closesocket(mSock);
 					WSASetLastError(LastError);
 					mSock = INVALID_SOCKET;
-					// ¼õÉÙÒıÓÃ
+					// å‡å°‘å¼•ç”¨
 					DecRefCount(IncRefNumber);
 				}
 				break;
@@ -660,14 +660,14 @@ BOOL CSocketObj::SendData(LPVOID Data, DWORD DataLen, BOOL UseGetSendDataFunc /*
 	if (DataLen == 0) {
 		return TRUE;
 	}
-	// ÏÈÔö¼ÓÒıÓÃ
+	// å…ˆå¢åŠ å¼•ç”¨
 	InternalIncRefCount();
 	_NewData = NULL;
 	assert(Data != NULL);
 	resu = FALSE;
 	FIocpOverlapped = mOwner->GetOwner()->NewOverlapped(this, otSend);
 	if (FIocpOverlapped != NULL) {
-		// Ìî³ä·¢ËÍÊı¾İÓĞ¹ØµÄĞÅÏ¢
+		// å¡«å……å‘é€æ•°æ®æœ‰å…³çš„ä¿¡æ¯
 		if (UseGetSendDataFunc) {
 			FIocpOverlapped->SendData = Data;
 		} else {
@@ -681,22 +681,22 @@ BOOL CSocketObj::SendData(LPVOID Data, DWORD DataLen, BOOL UseGetSendDataFunc /*
 		FIocpOverlapped->DataBuf.len = FIocpOverlapped->SendDataLen;
 		mOwner->Lock();
 		_PauseSend = mIsSending || (mIniteStatus == sisInitializing);
-		// Èç¹ûÀïÃæÓĞÕıÔÚ·¢ËÍµÄ
+		// å¦‚æœé‡Œé¢æœ‰æ­£åœ¨å‘é€çš„
 		if (_PauseSend) {
 			mSendDataQueue.push(FIocpOverlapped);
-			OutputDebugStr(_T("Socket(%d)ÖĞµÄ·¢ËÍÊı¾İ¼ÓÈëµ½´ı·¢ËÍ¶ÔÁĞ\n"), mSock);
+			OutputDebugStr(_T("Socket(%d)ä¸­çš„å‘é€æ•°æ®åŠ å…¥åˆ°å¾…å‘é€å¯¹åˆ—\n"), mSock);
 		} else {
 			mIsSending = TRUE;
 		}
 		mOwner->Unlock();
 		if (!(_PauseSend)) {
 			// OutputDebugStr(_T("SendData:Overlapped=%p,Overlapped=%d\n"),FIocpOverlapped, Integer(FIocpOverlapped.OverlappedType)));
-			// Í¶µİWSASend
+			// æŠ•é€’WSASend
 			if (!WSASend(FIocpOverlapped)){
-				// Èç¹ûÓĞ´íÎó
-				OutputDebugStr(_T("SendData:WSASendº¯ÊıÊ§°Ü(socket=%d):%d\n"),
+				// å¦‚æœæœ‰é”™è¯¯
+				OutputDebugStr(_T("SendData:WSASendå‡½æ•°å¤±è´¥(socket=%d):%d\n"),
 					mSock, WSAGetLastError());
-				// É¾³ı´ËOverlapped
+				// åˆ é™¤æ­¤Overlapped
 				mOwner->GetOwner()->DelOverlapped(FIocpOverlapped);
 				mOwner->Lock();
 				mIsSending = FALSE;
@@ -705,7 +705,7 @@ BOOL CSocketObj::SendData(LPVOID Data, DWORD DataLen, BOOL UseGetSendDataFunc /*
 				resu = TRUE;
 			}
 		} else {
-			// Ìí¼Óµ½´ı·¢ËÍ¶ÔÁĞµÄÊı¾İ²»»áÔö¼ÓÒıÓÃ£¬Òò´ËĞèÒªÈ¡ÏûÏÈÇ°µÄÔ¤ÒıÓÃ
+			// æ·»åŠ åˆ°å¾…å‘é€å¯¹åˆ—çš„æ•°æ®ä¸ä¼šå¢åŠ å¼•ç”¨ï¼Œå› æ­¤éœ€è¦å–æ¶ˆå…ˆå‰çš„é¢„å¼•ç”¨
 			InternalDecRefCount();
 			resu = TRUE;
 		}
@@ -716,7 +716,7 @@ BOOL CSocketObj::SendData(LPVOID Data, DWORD DataLen, BOOL UseGetSendDataFunc /*
 				free(_NewData);
 			}
 		}
-		// ¼õÉÙÒıÓÃ
+		// å‡å°‘å¼•ç”¨
 		InternalDecRefCount();
 	}
 	return resu;
@@ -738,8 +738,8 @@ BOOL CSocketObj::SetKeepAlive(BOOL IsOn, int KeepAliveTime /*= 50000*/, int Keep
 	struct tcp_keepalive alive_out;
 	DWORD ulBytesReturn;
 
-	alive_in.keepalivetime = KeepAliveTime; // ¿ªÊ¼Ê×´ÎKeepAliveÌ½²âÇ°µÄTCP¿Õ±ÕÊ±¼ä
-	alive_in.keepaliveinterval = KeepAliveInterval; // Á½´ÎKeepAliveÌ½²â¼äµÄÊ±¼ä¼ä¸ô
+	alive_in.keepalivetime = KeepAliveTime; // å¼€å§‹é¦–æ¬¡KeepAliveæ¢æµ‹å‰çš„TCPç©ºé—­æ—¶é—´
+	alive_in.keepaliveinterval = KeepAliveInterval; // ä¸¤æ¬¡KeepAliveæ¢æµ‹é—´çš„æ—¶é—´é—´éš”
 	alive_in.onoff = (ULONG)IsOn;
 	return WSAIoctl(mSock, SIO_KEEPALIVE_VALS, &alive_in, sizeof(alive_in), &alive_out,
 		sizeof(alive_out), &ulBytesReturn, NULL, NULL) == 0;
@@ -764,26 +764,26 @@ BOOL CCustomIOCPBaseList::AddSockBase(CSocketBase *SockBase)
 	assert(SockBase->GetSocket() != INVALID_SOCKET);
 	assert(SockBase->GetRefCount() >= 0);
 	SockBase->mOwner = this;
-	// Ôö¼ÓÒıÓÃ¼ÆÊı+1£¬´ËÒıÓÃ¼ÆÊı´ú±íRecvµÄÒıÓÃ
+	// å¢åŠ å¼•ç”¨è®¡æ•°+1ï¼Œæ­¤å¼•ç”¨è®¡æ•°ä»£è¡¨Recvçš„å¼•ç”¨
 	SockBase->InternalIncRefCount();
-	// ¿ªÊ¼³õÊ¼»¯Socket
+	// å¼€å§‹åˆå§‹åŒ–Socket
 	if (!SockBase->Init()) {
-		// ieCloseSocket£¬ÔÚÃ»ÓĞ¼ÓÈëµ½IOCPÖ®Ç°£¬¶¼µÃ´¥·¢
+		// ieCloseSocketï¼Œåœ¨æ²¡æœ‰åŠ å…¥åˆ°IOCPä¹‹å‰ï¼Œéƒ½å¾—è§¦å‘
 		SockBase->Close();
 		SockBase->InternalDecRefCount();
 		return FALSE;
 	}
 	Lock();
-	// ListÊÇ·ñ±»Ëø×¡
+	// Listæ˜¯å¦è¢«é”ä½
 	_IsLocked = mLockRefNum > 0;
 	if (_IsLocked) {
-		// ±»Ëø×¡£¬²»ÄÜ¶ÔSocketÁĞ±í½øĞĞÌí¼Ó»òÉ¾³ı²Ù×÷£¬ÏÈ¼Óµ½Socket´ıÌí¼ÓListÖĞ¡£
+		// è¢«é”ä½ï¼Œä¸èƒ½å¯¹Socketåˆ—è¡¨è¿›è¡Œæ·»åŠ æˆ–åˆ é™¤æ“ä½œï¼Œå…ˆåŠ åˆ°Socketå¾…æ·»åŠ Listä¸­ã€‚
 		mSockBaseAddList.push(SockBase);
-		OutputDebugStr(_T("ÁĞ±í±»Ëø¶¨£¬Socket(%d)½øÈë´ıÌí¼Ó¶ÓÁĞ\n"), SockBase->GetSocket());
+		OutputDebugStr(_T("åˆ—è¡¨è¢«é”å®šï¼ŒSocket(%d)è¿›å…¥å¾…æ·»åŠ é˜Ÿåˆ—\n"), SockBase->GetSocket());
 	} else {
-		// Ã»ÓĞ±»Ëø×¡£¬Ö±½ÓÌí¼Óµ½SocketÁĞ±íÖĞ
+		// æ²¡æœ‰è¢«é”ä½ï¼Œç›´æ¥æ·»åŠ åˆ°Socketåˆ—è¡¨ä¸­
 		mSockBaseList.push_back(SockBase);
-		// Ìí¼Óµ½Ó°×ÓList
+		// æ·»åŠ åˆ°å½±å­List
 		if (SockBase->mSocketType == STObj) {
 			mSockObjList.push_back(static_cast<CSocketObj*>(SockBase));
 		} else {
@@ -792,16 +792,16 @@ BOOL CCustomIOCPBaseList::AddSockBase(CSocketBase *SockBase)
 	}
 	Unlock();
 	if (!_IsLocked) {
-		// Èç¹ûÃ»ÓĞ±»Ëø×¡£¬Ôò³õÊ¼»¯Socket
+		// å¦‚æœæ²¡æœ‰è¢«é”ä½ï¼Œåˆ™åˆå§‹åŒ–Socket
 		resu = InitSockBase(SockBase);
 		if (resu) {
 
 		} else {
-			// ³õÊ¼»¯³ö´í£¬
+			// åˆå§‹åŒ–å‡ºé”™ï¼Œ
 			assert(SockBase->GetRefCount() > 0);
 		}
 	} else {
-		// Èç¹û±»Ëø×¡£¬ÄÇ·µ»ØÖµÓÀÔ¶ÊÇTrue
+		// å¦‚æœè¢«é”ä½ï¼Œé‚£è¿”å›å€¼æ°¸è¿œæ˜¯True
 		resu = TRUE;
 	}
 	return resu;
@@ -851,7 +851,7 @@ BOOL CCustomIOCPBaseList::RemoveSockBase(CSocketBase *SockBase)
 
 BOOL CCustomIOCPBaseList::InitSockBase(CSocketBase *SockBase)
 {
-	// ½øÈëµ½ÕâÀï£¬¾ÍËµÃ÷ÒÑ¾­Ìí¼Óµ½socketÁĞ±íÖĞÁË£¬ËùÒÔÒª´¥·¢
+	// è¿›å…¥åˆ°è¿™é‡Œï¼Œå°±è¯´æ˜å·²ç»æ·»åŠ åˆ°socketåˆ—è¡¨ä¸­äº†ï¼Œæ‰€ä»¥è¦è§¦å‘
 	BOOL _IsSockObj;
 
 	_IsSockObj = SockBase->mSocketType == STObj;
@@ -865,46 +865,46 @@ BOOL CCustomIOCPBaseList::InitSockBase(CSocketBase *SockBase)
 	catch (...){
 
 	}
-	// Ëø¶¨
+	// é”å®š
 	assert(SockBase->GetRefCount() > 0);
-	// Ìí¼Óµ½Mgr
+	// æ·»åŠ åˆ°Mgr
 	if (!IOCPRegSockBase(SockBase)) {
-		// Ê§°Ü£¿
-		// ieCloseSocket£¬×Ô¼ºÊÖ¶¯·¢¶¯
+		// å¤±è´¥ï¼Ÿ
+		// ieCloseSocketï¼Œè‡ªå·±æ‰‹åŠ¨å‘åŠ¨
 		SockBase->Close();
 		SockBase->InternalDecRefCount();
 		//?
 		return TRUE;
 	}
 	// Result := True;
-	// ×¢²áµ½ÏµÍ³µÄIOCPÖĞ²ÅËã³õÊ¼»¯Íê³É
+	// æ³¨å†Œåˆ°ç³»ç»Ÿçš„IOCPä¸­æ‰ç®—åˆå§‹åŒ–å®Œæˆ
 	Lock();
 	SockBase->mIniteStatus = sisInitialized;
 	Unlock();
 	if (_IsSockObj) {
 		CSocketObj *_SockObj = static_cast<CSocketObj*>(SockBase);
-		// »ñµÃRecvµÄOverlapped
+		// è·å¾—Recvçš„Overlapped
 		_SockObj->mAssignedOverlapped = mOwner->NewOverlapped(_SockObj, otRecv);
-		// Í¶µİWSARecv
+		// æŠ•é€’WSARecv
 		if (!_SockObj->WSARecv()) {
-			// Èç¹û³ö´í
-			OutputDebugStr(_T("InitSockObj:WSARecvº¯Êı³ö´ísocket=%d:%d\n"), _SockObj->GetSocket(), WSAGetLastError());
+			// å¦‚æœå‡ºé”™
+			OutputDebugStr(_T("InitSockObj:WSARecvå‡½æ•°å‡ºé”™socket=%d:%d\n"), _SockObj->GetSocket(), WSAGetLastError());
 			try{
 				OnIOCPEvent(ieRecvFailed, _SockObj, _SockObj->mAssignedOverlapped);
 			}
 			catch (...){
 
 			}
-			// ¼õÉÙÒıÓÃ
+			// å‡å°‘å¼•ç”¨
 			SockBase->InternalDecRefCount();
 		}
 	} else {
 		CSocketLst *_SockLst = static_cast<CSocketLst*>(SockBase);
-		// »ñµÃListenµÄOverlapped
+		// è·å¾—Listençš„Overlapped
 		_SockLst->mAssignedOverlapped = mOwner->NewOverlapped(_SockLst, otListen);
-		// Í¶µİAcceptEx
+		// æŠ•é€’AcceptEx
 		if (!_SockLst->Accept()) {
-			// ¼õÉÙÒıÓÃ
+			// å‡å°‘å¼•ç”¨
 			SockBase->InternalDecRefCount();
 		}
 	}
@@ -942,12 +942,12 @@ BOOL CCustomIOCPBaseList::FreeSockBase(CSocketBase *SockBase)
 RELEASE_INLINE BOOL CCustomIOCPBaseList::IOCPRegSockBase(CSocketBase *SockBase)
 {
 	BOOL resu;
-	// ÔÚIOCPÖĞ×¢²á´ËSocket
+	// åœ¨IOCPä¸­æ³¨å†Œæ­¤Socket
 	SockBase->mIOComp = CreateIoCompletionPort((HANDLE)SockBase->GetSocket(), mOwner->mCompletionPort,
 		(ULONG_PTR)SockBase, 0);
 	resu = SockBase->mIOComp != 0;
 	if (!resu) {
-		OutputDebugStr(_T("Socket(%d)IOCP×¢²áÊ§°Ü£¡Error:%d\n"), SockBase->GetSocket(), WSAGetLastError());
+		OutputDebugStr(_T("Socket(%d)IOCPæ³¨å†Œå¤±è´¥ï¼Error:%d\n"), SockBase->GetSocket(), WSAGetLastError());
 	}
 	return resu;
 }
@@ -960,20 +960,20 @@ void CCustomIOCPBaseList::WaitForDestroyEvent()
 
 	EventArray[0] = mCanDestroyEvent;
 	_IsEnd = FALSE;
-	// µÈ´ıÊÍ·ÅÀàµÄÊÂ¼ş
+	// ç­‰å¾…é‡Šæ”¾ç±»çš„äº‹ä»¶
 	while (!_IsEnd) {
 		switch (MsgWaitForMultipleObjects(EVENT_NUMBER, EventArray, FALSE, INFINITE, QS_ALLINPUT)) {
 		case WAIT_OBJECT_0:
-			// ¿ÉÒÔÊÍ·ÅÁË
+			// å¯ä»¥é‡Šæ”¾äº†
 			_IsEnd = TRUE;
 			break;
 		case WAIT_OBJECT_0 + EVENT_NUMBER:
-			// ÓĞGUIÏûÏ¢£¬ÏÈ´¦ÀíGUIÏûÏ¢
+			// æœ‰GUIæ¶ˆæ¯ï¼Œå…ˆå¤„ç†GUIæ¶ˆæ¯
 			OutputDebugStr(_T("TIOCPBaseList.Destroy:Process GUI Event\n"));
 			ProcessMsgEvent();
 			break;
 		default:
-			//ÆäËûÊÂ¼ş£¿
+			//å…¶ä»–äº‹ä»¶ï¼Ÿ
 			_IsEnd = TRUE;
 		}
 	}
@@ -1011,7 +1011,7 @@ CCustomIOCPBaseList::CCustomIOCPBaseList(CIOCPManager *AIOCPMgr)
 
 	assert(AIOCPMgr != NULL);
 	InitializeCriticalSection(&mSockBaseCS);
-	// Ìí¼Ó×ÔÉí
+	// æ·»åŠ è‡ªèº«
 	mOwner->AddSockList(this);
 }
 
@@ -1045,15 +1045,15 @@ void CCustomIOCPBaseList::UnlockSockList()
 
 		Lock();
 		assert(mLockRefNum >= 1);
-		// ÅĞ¶ÏÊÇ²»ÊÇÖ»ÓĞ±¾Ïß³ÌËø¶¨ÁËÁĞ±í£¬Ö»ÒªÅĞ¶ÏFLockRefNumÊÇ²»ÊÇ´óÓÚ1
+		// åˆ¤æ–­æ˜¯ä¸æ˜¯åªæœ‰æœ¬çº¿ç¨‹é”å®šäº†åˆ—è¡¨ï¼Œåªè¦åˆ¤æ–­FLockRefNumæ˜¯ä¸æ˜¯å¤§äº1
 		_IsEnd = mLockRefNum > 1;
 		if (!_IsEnd) {
-			// Ö»ÓĞ±¾Ïß³ÌËø×¡ÁËsocket£¬È»ºó²é¿´socketÉ¾³ıÁĞ±íÊÇ·ñÎª¿Õ
+			// åªæœ‰æœ¬çº¿ç¨‹é”ä½äº†socketï¼Œç„¶åæŸ¥çœ‹socketåˆ é™¤åˆ—è¡¨æ˜¯å¦ä¸ºç©º
 			if (mSockBaseDelList.size() > 0) {
 				vector<CSocketBase*>::iterator it;
 				BOOL _IsSockObj;
 
-				// ²»Îª¿Õ£¬´ÓµÚÒ»¸ö¿ªÊ¼É¾
+				// ä¸ä¸ºç©ºï¼Œä»ç¬¬ä¸€ä¸ªå¼€å§‹åˆ 
 				_SockBase = mSockBaseDelList.front();
 				mSockBaseDelList.pop();
 
@@ -1083,13 +1083,13 @@ void CCustomIOCPBaseList::UnlockSockList()
 				}
 				isAdd = FALSE;
 			} else {
-				// ²é¿´socketÌí¼ÓÁĞ±íÊÇ·ñÎª¿Õ
+				// æŸ¥çœ‹socketæ·»åŠ åˆ—è¡¨æ˜¯å¦ä¸ºç©º
 				if (mSockBaseAddList.size() > 0) {
 					BOOL _IsSockObj;
 
 
 					isAdd = TRUE;
-					// Èç¹û²»Îª¿Õ£¬ÔòpopÒ»¸ösockobjÌí¼Óµ½ÁĞ±íÖĞ
+					// å¦‚æœä¸ä¸ºç©ºï¼Œåˆ™popä¸€ä¸ªsockobjæ·»åŠ åˆ°åˆ—è¡¨ä¸­
 					_SockBase = mSockBaseAddList.front();
 					mSockBaseAddList.pop();
 					mSockBaseList.push_back(_SockBase);
@@ -1100,23 +1100,23 @@ void CCustomIOCPBaseList::UnlockSockList()
 						mSockLstList.push_back(static_cast<CSocketLst*>(_SockBase));
 					}
 				} else {
-					// ¶¼Îª¿Õ£¬Ôò±íÊ¾ÒÑ¾­½áÊøÁË
+					// éƒ½ä¸ºç©ºï¼Œåˆ™è¡¨ç¤ºå·²ç»ç»“æŸäº†
 					_IsEnd = TRUE;
 				}
 			}
 		}
-		// Èç¹ûÃ»Ê²Ã´ÏëÒª´¦ÀíµÄÁË£¬Ëø¶¨ÁĞ±íÊı¼õ1
+		// å¦‚æœæ²¡ä»€ä¹ˆæƒ³è¦å¤„ç†çš„äº†ï¼Œé”å®šåˆ—è¡¨æ•°å‡1
 		if (_IsEnd) {
 			mLockRefNum--;
 		}
 		Unlock();
-		// ²é¿´sockobjÊÇ·ñÎª¿Õ£¬²»Îª¿ÕÔò±íÊ¾ÔÚËøListÆÚ¼äÓĞÉ¾³ısock»òÕßÌí¼Ósock²Ù×÷
+		// æŸ¥çœ‹sockobjæ˜¯å¦ä¸ºç©ºï¼Œä¸ä¸ºç©ºåˆ™è¡¨ç¤ºåœ¨é”ListæœŸé—´æœ‰åˆ é™¤sockæˆ–è€…æ·»åŠ sockæ“ä½œ
 		if (_SockBase != NULL) {
 			if (isAdd) {
-				// ÓĞÌí¼Ósock²Ù×÷£¬³õÊ¼»¯sockobj£¬Èç¹ûÊ§°Ü£¬»á×Ô¶¯±»Freeµô£¬ÎŞĞè»ñÈ¡·µ»ØÖµ
+				// æœ‰æ·»åŠ sockæ“ä½œï¼Œåˆå§‹åŒ–sockobjï¼Œå¦‚æœå¤±è´¥ï¼Œä¼šè‡ªåŠ¨è¢«Freeæ‰ï¼Œæ— éœ€è·å–è¿”å›å€¼
 				InitSockBase(_SockBase);
 			} else {
-				// ÓĞÉ¾³ısock²Ù×÷£¬É¾³ısockobk
+				// æœ‰åˆ é™¤sockæ“ä½œï¼Œåˆ é™¤sockobk
 				// InitSockBase(_SockBase);
 				// RemoveSockBase(_SockBase);
 				assert(_SockBase->GetRefCount() == 0);
@@ -1215,16 +1215,16 @@ void CCustomIOCPBaseList::GetLocalAddrs(vector<tstring> &Addrs)
 		LPTSTR _AddrString;
 
 		_NextAddInfo = _ResultAddInfo;
-		// ÉêÇë»º³åÇø
+		// ç”³è¯·ç¼“å†²åŒº
 		_AddrString = new TCHAR[ADDR_STRING_MAX_LEN];
 
 		while (_NextAddInfo != NULL) {
 			_AddrStringLen = ADDR_STRING_MAX_LEN;
-			// »ñÈ¡
+			// è·å–
 
 			if (WSAAddressToString(_NextAddInfo->ai_addr, (DWORD)_NextAddInfo->ai_addrlen, NULL,
 				_AddrString, &_AddrStringLen) == 0) {
-				// ¸ÄÎªÕæÊµ³¤¶È,ÕâÀïµÄ_AddrStringLen°üº¬ÁËÄ©Î²µÄ×Ö·û#0£¬ËùÒÔÒª¼õÈ¥Õâ¸ö#0µÄ³¤¶È
+				// æ”¹ä¸ºçœŸå®é•¿åº¦,è¿™é‡Œçš„_AddrStringLenåŒ…å«äº†æœ«å°¾çš„å­—ç¬¦#0ï¼Œæ‰€ä»¥è¦å‡å»è¿™ä¸ª#0çš„é•¿åº¦
 				_AddrStringLen--;
 				Addrs.push_back(tstring(_AddrString));
 				OutputDebugStr(_T("ai_addr:%s,ai_flags:%d,ai_canonname=%s\n"),
@@ -1276,7 +1276,7 @@ void CIOCPManager::FreeOverLappedList()
 void CIOCPManager::DelOverlapped(PIOCPOverlapped UsedOverlapped)
 {
 	assert(UsedOverlapped != NULL);
-	// ÕıÔÚÊ¹ÓÃÉèÖÃÎªFalse
+	// æ­£åœ¨ä½¿ç”¨è®¾ç½®ä¸ºFalse
 	assert(UsedOverlapped->IsUsed == TRUE);
 	switch (UsedOverlapped->OverlappedType) {
 	case otSend:
@@ -1294,7 +1294,7 @@ void CIOCPManager::DelOverlapped(PIOCPOverlapped UsedOverlapped)
 		break;
 	}
 	LockOverLappedList();
-	// ÕıÔÚÊ¹ÓÃÉèÖÃÎªFalse
+	// æ­£åœ¨ä½¿ç”¨è®¾ç½®ä¸ºFalse
 	UsedOverlapped->IsUsed = FALSE;
 	mOverLappedList.push_back(UsedOverlapped);
 	UnlockOverLappedList();
@@ -1315,10 +1315,10 @@ PIOCPOverlapped CIOCPManager::NewOverlapped(CSocketBase *SockObj, OverlappedType
 
 	UnlockOverLappedList();
 
-	// ÒÑ¾­Ê¹ÓÃ
+	// å·²ç»ä½¿ç”¨
 	_NewOverLapped->AssignedSockObj = SockObj;
 	_NewOverLapped->OverlappedType = OverlappedType;
-	// ÇåÁã
+	// æ¸…é›¶
 	switch (OverlappedType) {
 	case otSend:
 		_NewOverLapped->SendData = NULL;
@@ -1337,7 +1337,7 @@ PIOCPOverlapped CIOCPManager::NewOverlapped(CSocketBase *SockObj, OverlappedType
 
 BOOL CIOCPManager::PostExitStatus()
 {
-	OutputDebugStr(_T("·¢ËÍÏß³ÌÍË³öÃüÁî¡£\n"));
+	OutputDebugStr(_T("å‘é€çº¿ç¨‹é€€å‡ºå‘½ä»¤ã€‚\n"));
 	return PostQueuedCompletionStatus(mCompletionPort, 0, 0, NULL);
 }
 
@@ -1350,11 +1350,11 @@ CIOCPManager::CIOCPManager(int IOCPThreadCount /*= 0*/)
 	INT i;
 
 	OutputDebugStr(_T("IOCPManager::IOCPManager\n"));
-	// Ê¹ÓÃ 2.2°æµÄWS2_32.DLL
+	// ä½¿ç”¨ 2.2ç‰ˆçš„WS2_32.DLL
 	if (WSAStartup(0x0202, &mwsaData) != 0) {
 		throw exception("WSAStartup Fails");
 	}
-	// »ñÈ¡AcceptExºÍGetAcceptExSockaddrsµÄº¯ÊıÖ¸Õë
+	// è·å–AcceptExå’ŒGetAcceptExSockaddrsçš„å‡½æ•°æŒ‡é’ˆ
 	TmpSock = WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, WSA_FLAG_OVERLAPPED);
 	if (TmpSock == INVALID_SOCKET) {
 		throw exception("WSASocket Fails");
@@ -1368,10 +1368,10 @@ CIOCPManager::CIOCPManager(int IOCPThreadCount /*= 0*/)
 		throw exception("WSAIoctl WSAID_GETACCEPTEXSOCKADDRS Fails");
 	}
 	closesocket(TmpSock);
-	// ³õÊ¼»¯ÁÙ½çÇø
+	// åˆå§‹åŒ–ä¸´ç•ŒåŒº
 	InitializeCriticalSection(&mSockListCS);
 	InitializeCriticalSection(&mOverLappedListCS);
-	// ³õÊ¼»¯IOCPÍê³É¶Ë¿Ú
+	// åˆå§‹åŒ–IOCPå®Œæˆç«¯å£
 	mCompletionPort = CreateIoCompletionPort(INVALID_HANDLE_VALUE, 0, 0, 0);
 	if (IOCPThreadCount <= 0) {
 		SYSTEM_INFO SysInfo;
@@ -1380,7 +1380,7 @@ CIOCPManager::CIOCPManager(int IOCPThreadCount /*= 0*/)
 	}
 	mIocpWorkThreadCount = IOCPThreadCount;
 	mIocpWorkThreads = new HANDLE[mIocpWorkThreadCount];
-	// ´´½¨IOCP¹¤×÷Ïß³Ì
+	// åˆ›å»ºIOCPå·¥ä½œçº¿ç¨‹
 	for (i = 0; i < mIocpWorkThreadCount; i++) {
 		mIocpWorkThreads[i] = (HANDLE)_beginthreadex(NULL, 0, IocpWorkThread, (PVOID)mCompletionPort, 0, NULL);
 		if (mIocpWorkThreads[i] == NULL) {
@@ -1395,7 +1395,7 @@ CIOCPManager::~CIOCPManager()
 	LockSockList();
 	try {
 		if (mSockList.size() > 0) {
-			throw exception("SockList±ØĞëÈ«²¿ÊÍ·Å");
+			throw exception("SockListå¿…é¡»å…¨éƒ¨é‡Šæ”¾");
 		}
 	}
 	catch (...) {
@@ -1405,21 +1405,21 @@ CIOCPManager::~CIOCPManager()
 	UnlockSockList();
 	Resu = PostExitStatus();
 	assert(Resu == TRUE);
-	OutputDebugStr(_T("µÈ´ıÍê³É¶Ë¿Ú¹¤×÷Ïß³ÌÍË³ö¡£\n"));
-	// µÈ´ı¹¤×÷Ïß³ÌÍË³ö
+	OutputDebugStr(_T("ç­‰å¾…å®Œæˆç«¯å£å·¥ä½œçº¿ç¨‹é€€å‡ºã€‚\n"));
+	// ç­‰å¾…å·¥ä½œçº¿ç¨‹é€€å‡º
 	WaitForMultipleObjects(mIocpWorkThreadCount, mIocpWorkThreads, TRUE, INFINITE);
 	delete[] mIocpWorkThreads;
-	OutputDebugStr(_T("µÈ´ıÍê³É¶Ë¿Ú¾ä±ú¡£\n"));
-	// ¹Ø±ÕIOCP¾ä±ú
+	OutputDebugStr(_T("ç­‰å¾…å®Œæˆç«¯å£å¥æŸ„ã€‚\n"));
+	// å…³é—­IOCPå¥æŸ„
 	CloseHandle(mCompletionPort);
-	// µÈ´ıSockLstÊÍ·Å£¬Õâ¸ö±È½ÏÌØÊâ
+	// ç­‰å¾…SockLsté‡Šæ”¾ï¼Œè¿™ä¸ªæ¯”è¾ƒç‰¹æ®Š
 	// WaitSockLstFree;
-	// ÊÍ·Å
+	// é‡Šæ”¾
 	FreeOverLappedList();
 	DeleteCriticalSection(&mOverLappedListCS);
 	assert(mSockList.size() == 0);
 	DeleteCriticalSection(&mSockListCS);
-	// ¹Ø±ÕSocket
+	// å…³é—­Socket
 	WSACleanup();
 }
 

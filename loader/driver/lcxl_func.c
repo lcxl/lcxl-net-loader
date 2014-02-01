@@ -1,4 +1,4 @@
-#include "precomp.h"
+﻿#include "precomp.h"
 
 PUNICODE_STRING LCXLNewString(IN PUNICODE_STRING sour)
 {

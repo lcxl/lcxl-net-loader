@@ -1,4 +1,4 @@
-#include "lcxl_iocp_lcxl.h"
+ï»¿#include "lcxl_iocp_lcxl.h"
 
 
 BOOL _SendDataRec::Assign(PVOID _TotalData, ULONG _TotalLen)
@@ -22,9 +22,9 @@ void CLLSockLst::CreateSockObj(CSocketObj* &SockObj)
 BOOL CLLSockObj::Init()
 {
 	BOOL resu;
-	// ÏÈµ÷ÓÃ¸¸ÀàµÄInitº¯Êı
+	// å…ˆè°ƒç”¨çˆ¶ç±»çš„Initå‡½æ•°
 	resu = CSocketObj::Init();
-	// ÉèÖÃÎª½ÓÊÕÊı¾İµÄ³¤¶È
+	// è®¾ç½®ä¸ºæ¥æ”¶æ•°æ®çš„é•¿åº¦
 	mIsRecvAll = FALSE;
 	mCurDataLen = 0;
 	mBufLen = 1024;
@@ -97,7 +97,7 @@ void CCustomIOCPLCXLList::OnIOCPEvent(IocpEventEnum EventType, CSocketObj *SockO
 	CLLSockObj *LLSockObj = static_cast<CLLSockObj *>(SockObj);
 	switch (EventType) {
 	case ieRecvAll:
-		// ÖØĞÂÉêÇëÄÚ´æ
+		// é‡æ–°ç”³è¯·å†…å­˜
 		if (LLSockObj->mCurDataLen + Overlapped->GetRecvDataLen() > LLSockObj->mBufLen) {
 			LLSockObj->mBufLen = LLSockObj->mCurDataLen + Overlapped->GetRecvDataLen();
 			LLSockObj->mBuf = realloc(LLSockObj->mBuf, LLSockObj->mBufLen);

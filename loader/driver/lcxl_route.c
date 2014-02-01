@@ -1,4 +1,4 @@
-#include "precomp.h"
+ï»¿#include "precomp.h"
 #include "lcxl_route.h"
 
 NPAGED_LOOKASIDE_LIST  g_route_mem_mgr;
@@ -63,7 +63,7 @@ PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry(IN PLIST_ENTRY route_list, IN INT ipMod
 	}
 
 
-	//±éÀúÁÐ±í
+	//éåŽ†åˆ—è¡¨
 	while (Link != route_list)
 	{
 		route_info = CONTAINING_RECORD(Link, LCXL_ROUTE_LIST_ENTRY, list_entry);
@@ -71,7 +71,7 @@ PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry(IN PLIST_ENTRY route_list, IN INT ipMod
 			switch (ipMode)
 			{
 			case IM_IPV4:
-				//²é¿´ÊÇ·ñÆ¥Åä
+				//æŸ¥çœ‹æ˜¯å¦åŒ¹é…
 				if (RtlCompareMemory(&route_info->src_ip.addr.ip_4, &ip_header.ipv4_header->SourceAddress, sizeof(ip_header.ipv4_header->SourceAddress)) == sizeof(ip_header.ipv4_header->SourceAddress)) {
 					return route_info;
 				}

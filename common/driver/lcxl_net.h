@@ -1,9 +1,9 @@
-#ifndef _LCXL_NET_H_
+ï»¿#ifndef _LCXL_NET_H_
 #define _LCXL_NET_H_
 
 #include <netioddk.h>
 //author:LCXL
-//abstract:Çı¶¯¹²ÓÃµÄ×Ô¶¨ÒåÊı¾İ°üÓĞ¹Ø½á¹¹Êı¾İÍ·ÎÄ¼ş
+//abstract:é©±åŠ¨å…±ç”¨çš„è‡ªå®šä¹‰æ•°æ®åŒ…æœ‰å…³ç»“æ„æ•°æ®å¤´æ–‡ä»¶
 //#include <ws2def.h>
 //#ifndef INCL_WINSOCK_API_PROTOTYPES
 //#define INCL_WINSOCK_API_PROTOTYPES
@@ -33,19 +33,19 @@ __inline VOID LCXLReadARPEthernet(IN PARP_HEADER arp_header, IN OUT PLCXL_ARP_ET
 	lcxl_arp_ethernet->ProtocolAddressSpace = ntohs(arp_header->ProtocolAddressSpace);
 	lcxl_arp_ethernet->Opcode = ntohs(arp_header->Opcode);
 
-	//»ñÈ¡·¢ËÍ¶ËMACµØÖ·
+	//è·å–å‘é€ç«¯MACåœ°å€
 	lcxl_arp_ethernet->SenderHardwareAddress.Length = sizeof(lcxl_arp_ethernet->SenderHardwareAddress.Address) > arp_header->HardwareAddressLength ? arp_header->HardwareAddressLength : sizeof(lcxl_arp_ethernet->SenderHardwareAddress.Address);
 	NdisMoveMemory(lcxl_arp_ethernet->SenderHardwareAddress.Address, arp_header->SenderHardwareAddress, lcxl_arp_ethernet->SenderHardwareAddress.Length);
-	//»ñÈ¡·¢ËÍ¶ËIPµØÖ·
+	//è·å–å‘é€ç«¯IPåœ°å€
 	NdisMoveMemory(
 		&lcxl_arp_ethernet->SenderProtocolAddress,
 		arp_header->SenderHardwareAddress + arp_header->HardwareAddressLength,
 		arp_header->ProtocolAddressLength > sizeof(lcxl_arp_ethernet->SenderProtocolAddress) ? sizeof(lcxl_arp_ethernet->SenderProtocolAddress) : arp_header->ProtocolAddressLength);
 
-	//»ñÈ¡½ÓÊÜ¶ËMACµØÖ·
+	//è·å–æ¥å—ç«¯MACåœ°å€
 	lcxl_arp_ethernet->TargetHardwareAddress.Length = sizeof(lcxl_arp_ethernet->TargetHardwareAddress.Address) > arp_header->HardwareAddressLength ? arp_header->HardwareAddressLength : sizeof(lcxl_arp_ethernet->TargetHardwareAddress.Address);
 	NdisMoveMemory(lcxl_arp_ethernet->TargetHardwareAddress.Address, arp_header->SenderHardwareAddress + arp_header->HardwareAddressLength + arp_header->ProtocolAddressLength, lcxl_arp_ethernet->TargetHardwareAddress.Length);
-	//»ñÈ¡½ÓÊÜ¶ËIPµØÖ·
+	//è·å–æ¥å—ç«¯IPåœ°å€
 	NdisMoveMemory(
 		&lcxl_arp_ethernet->TargetProtocolAddress,
 		arp_header->SenderHardwareAddress + arp_header->HardwareAddressLength + arp_header->ProtocolAddressLength + arp_header->HardwareAddressLength,

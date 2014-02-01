@@ -1,4 +1,4 @@
-#ifndef _LCXL_NET_SERVICE_H_
+ï»¿#ifndef _LCXL_NET_SERVICE_H_
 #define _LCXL_NET_SERVICE_H_
 
 
@@ -7,7 +7,7 @@
 
 class CNetServiceBase : public CServiceBase{
 protected:
-	//ÍË³öÊÂ¼þ
+	//é€€å‡ºäº‹ä»¶
 	HANDLE mExitEvent;
 	CIOCPBaseList *mSerList;
 	CIOCPManager *mIOCPMgr;

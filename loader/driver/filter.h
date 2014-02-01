@@ -1,4 +1,4 @@
-/*++
+ï»¿/*++
 
 Copyright (c) Microsoft Corporation
 
@@ -173,7 +173,7 @@ ULONG_PTR    filterLogSendRef[0x10000];
 
 
 
-//Ìí¼Ó´úÂë
+//æ·»åŠ ä»£ç 
 
 //move from drv_interface
 #define MAX_FILTER_INSTANCE_NAME_LENGTH     256
@@ -267,14 +267,14 @@ typedef struct _LCXL_FILTER
 	PNDIS_FILTER_ATTACH_PARAMETERS	attach_paramters;
 
     NDIS_HANDLE                     filter_handle;
-    //Ğ¡¶Ë¿ÚÇı¶¯ÍøÂç½Ó¿ÚĞòºÅ
+    //å°ç«¯å£é©±åŠ¨ç½‘ç»œæ¥å£åºå·
     NET_IFINDEX                     miniport_if_index;
 
     NDIS_STATUS                     status;
     NDIS_EVENT                      event;
     ULONG                           back_fill_size;
     FILTER_LOCK                     lock;    // Lock for protection of state and outstanding sends and recvs
-	//¹ıÂËÇı¶¯µ±Ç°×´Ì¬
+	//è¿‡æ»¤é©±åŠ¨å½“å‰çŠ¶æ€
     volatile FILTER_STATE           state; 
     ULONG                           outstanding_sends;
     ULONG                           outstanding_request;
@@ -292,18 +292,18 @@ typedef struct _LCXL_FILTER
 #endif
 
     PNDIS_OID_REQUEST               pending_oid_request;
-    //Ìí¼ÓµÄ´úÂë
-	//Íø¿¨±¾µØÎ¨Ò»ID
+    //æ·»åŠ çš„ä»£ç 
+	//ç½‘å¡æœ¬åœ°å”¯ä¸€ID
 	NET_LUID						miniport_net_luid;
-    //´æ´¢Ä£¿éÖ¸Õë
+    //å­˜å‚¨æ¨¡å—æŒ‡é’ˆ
 	PLCXL_MODULE_SETTING_LIST_ENTRY	module_setting;
-	//Â·ÓÉĞÅÏ¢
+	//è·¯ç”±ä¿¡æ¯
 	LIST_ENTRY						route_list;//LCXL_ROUTE_LIST_ENTRY
-    //NBL·¢ËÍ³Ø
+    //NBLå‘é€æ± 
     NDIS_HANDLE                     send_net_buffer_list_pool;
-	//MACµØÖ·
+	//MACåœ°å€
 	IF_PHYSICAL_ADDRESS_LH			mac_addr;
-    //!Ìí¼ÓµÄ´úÂë!
+    //!æ·»åŠ çš„ä»£ç !
 }LCXL_FILTER, *PLCXL_FILTER;
 
 typedef struct _FILTER_DEVICE_EXTENSION
@@ -340,7 +340,7 @@ extern NDIS_HANDLE         g_ndis_filter_device_handle;
 extern PDEVICE_OBJECT      g_device_object;
 
 extern LCXL_LOCK_LIST		g_filter_list;
-//ÅäÖÃĞÅÏ¢
+//é…ç½®ä¿¡æ¯
 extern LCXL_SETTING			g_setting;
 
 
@@ -431,7 +431,7 @@ filterInternalRequestComplete(
     _In_ NDIS_STATUS                  Status
     );
 
-//Çı¶¯³õÊ¼»¯Ê¹ÓÃ
+//é©±åŠ¨åˆå§‹åŒ–ä½¿ç”¨
 VOID DriverReinitialize(
 	_In_      struct _DRIVER_OBJECT *DriverObject,
 	_In_opt_  PVOID Context,
@@ -439,25 +439,25 @@ VOID DriverReinitialize(
 	);
 
 ///<summary>
-///Â·ÓÉTCPÊı¾İ°ü
-///·µ»ØÂ·ÓÉĞÅÏ¢
+///è·¯ç”±TCPæ•°æ®åŒ…
+///è¿”å›è·¯ç”±ä¿¡æ¯
 ///</summary>
 PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER pFilter, IN INT ipMode, IN PVOID pIPHeader);
 
 ///<summary>
-///´¦Àí´ËNBL
-///²ÎÊı£º
-///route:Èç¹ûĞèÒªÂ·ÓÉ´ËNBL£¬·µ»ØÂ·ÓÉĞÅÏ¢£¬·ñÔò·µ»ØNULL¡£×¢Òâ£¬Ö»ÓĞµ±º¯Êı·µ»ØÎªFALSEÊ±´ËÖµºãÎªNULL
-///·µ»ØÖµ£º
-///TRUE:ÒÑ´¦Àí£¬²»Òª½»¸øÉÏ²ãÇı¶¯³ÌĞò£»FALSE:Î´´¦Àí£¬½»¸øÉÏ²ã´¦Àí³ÌĞò
+///å¤„ç†æ­¤NBL
+///å‚æ•°ï¼š
+///route:å¦‚æœéœ€è¦è·¯ç”±æ­¤NBLï¼Œè¿”å›è·¯ç”±ä¿¡æ¯ï¼Œå¦åˆ™è¿”å›NULLã€‚æ³¨æ„ï¼Œåªæœ‰å½“å‡½æ•°è¿”å›ä¸ºFALSEæ—¶æ­¤å€¼æ’ä¸ºNULL
+///è¿”å›å€¼ï¼š
+///TRUE:å·²å¤„ç†ï¼Œä¸è¦äº¤ç»™ä¸Šå±‚é©±åŠ¨ç¨‹åºï¼›FALSE:æœªå¤„ç†ï¼Œäº¤ç»™ä¸Šå±‚å¤„ç†ç¨‹åº
 ///</summary>
 BOOLEAN ProcessNBL(IN PLCXL_FILTER pFilter, IN PETHERNET_HEADER pEthHeader, IN UINT BufferLength, OUT PLCXL_ROUTE_LIST_ENTRY *route);
 
-//Ñ°ÕÒLCXL_FILTER½á¹¹²¢ÇÒËø¶¨ÁĞ±í£¨Ëø¶¨Ö®ºóÁĞ±íÖĞµÄÁĞ±íÏî²»»á±»Ìí¼Ó»òÉ¾³ı£©
+//å¯»æ‰¾LCXL_FILTERç»“æ„å¹¶ä¸”é”å®šåˆ—è¡¨ï¼ˆé”å®šä¹‹ååˆ—è¡¨ä¸­çš„åˆ—è¡¨é¡¹ä¸ä¼šè¢«æ·»åŠ æˆ–åˆ é™¤ï¼‰
 PLCXL_FILTER FindFilter(IN NET_LUID miniport_net_luid);
-//¸üĞÂ¹ıÂËÆ÷ÉèÖÃ
+//æ›´æ–°è¿‡æ»¤å™¨è®¾ç½®
 void UpdateFiltersSetting();
-//!Ìí¼Ó´úÂë!
+//!æ·»åŠ ä»£ç !
 
 void DelLCXLFilterCallBack(PLIST_ENTRY filter);
 #endif  //_FILT_H

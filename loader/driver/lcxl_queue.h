@@ -1,4 +1,4 @@
-#ifndef _LCXL_QUEUE_H_
+﻿#ifndef _LCXL_QUEUE_H_
 #define _LCXL_QUEUE_H_
 
 //

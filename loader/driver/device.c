@@ -1,4 +1,4 @@
-/*++
+ï»¿/*++
  *
  * The file contains the routines to create a device and handle ioctls
  *
@@ -184,7 +184,7 @@ FilterDeviceIoControl(
 			LockLCXLLockList(&g_filter_list);
             
             link = GetListofLCXLLockList(&g_filter_list)->Flink;
-			//±éÀúÁĞ±í
+			//éå†åˆ—è¡¨
 			while (link != GetListofLCXLLockList(&g_filter_list)) {
                 filter = CONTAINING_RECORD(link, LCXL_FILTER, filter_module_link);
 
@@ -211,7 +211,7 @@ FilterDeviceIoControl(
                 status = STATUS_BUFFER_TOO_SMALL;
             }
             break;
-		//Ìí¼Ó´úÂë
+		//æ·»åŠ ä»£ç 
 		case IOCTL_LOADER_ALL_APP_MODULE:
 		{
 			PAPP_MODULE_INFO cur_buf;
@@ -221,7 +221,7 @@ FilterDeviceIoControl(
 			LockLCXLLockList(&g_setting.module_list);
 			module = CONTAINING_RECORD(GetListofLCXLLockList(&g_setting.module_list)->Flink, LCXL_MODULE_SETTING_LIST_ENTRY, list_entry);
 			while (&module->list_entry != GetListofLCXLLockList(&g_setting.module_list)) {
-				//ÏÈÅĞ¶Ï»º³åÇøÊÇ·ñ×ã¹»
+				//å…ˆåˆ¤æ–­ç¼“å†²åŒºæ˜¯å¦è¶³å¤Ÿ
 				if (output_buffer_length - (ULONG)((LONG_PTR)cur_buf - (LONG_PTR)output_buffer) < sizeof(APP_MODULE_INFO)) {
 					status = STATUS_BUFFER_TOO_SMALL;
 					break;
@@ -264,11 +264,11 @@ FilterDeviceIoControl(
 				if (pFilter != NULL) {
 					NdisAcquireSpinLock(&pFilter->module_setting->lock);
 					switch (ip->ip.ip_mode) {
-						//IPv4Ä£Ê½
+						//IPv4æ¨¡å¼
 					case IM_IPV4:
 						pFilter->module_setting->virtual_ipv4 = ip->ip.addr.ip_4;
 						break;
-						//IPv6Ä£Ê½
+						//IPv6æ¨¡å¼
 					case IM_IPV6:
 						pFilter->module_setting->virtual_ipv6 = ip->ip.addr.ip_6;
 						break;
@@ -337,7 +337,7 @@ FilterDeviceIoControl(
 				status = STATUS_INFO_LENGTH_MISMATCH;
 			}
 			break;
-		//!Ìí¼Ó´úÂë!
+		//!æ·»åŠ ä»£ç !
         default:
 			status = STATUS_INVALID_PARAMETER;
             break;

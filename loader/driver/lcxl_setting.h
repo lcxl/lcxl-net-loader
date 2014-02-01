@@ -1,52 +1,52 @@
-#ifndef _LCXL_SETTING_H_
+ï»¿#ifndef _LCXL_SETTING_H_
 #define _LCXL_SETTING_H_
 /*
 author:
 LCX
 abstract:
-ÅäÖÃÏà¹ØÍ·ÎÄ¼ş
+é…ç½®ç›¸å…³å¤´æ–‡ä»¶
 */
 #include "lcxl_route.h"
 #include "../../common/driver/lcxl_lock_list.h"
-//ÅäÖÃÎÄ¼ş
+//é…ç½®æ–‡ä»¶
 #define LOADER_SETTING_FILE_PATH    L"\\SystemRoot\\System32\\drivers\\etc\\lcxl_loader"
 #define TAG_MODULE					'MODU'
-//ÅäÖÃÎÄ¼şÊı¾İ½á¹¹
+//é…ç½®æ–‡ä»¶æ•°æ®ç»“æ„
 typedef struct _LCXL_MODULE_SETTING_LIST_ENTRY {
-	LIST_ENTRY			list_entry;		//ÁĞ±íÏî
-	//ref_count = 0£¬Ã»ÓĞfilterºÍÅäÖÃÎÄ¼ş¹ØÁª
-	//ref_count = 1£¬ÓĞfilterºÍÅäÖÃÎÄ¼ş¹ØÁª
+	LIST_ENTRY			list_entry;		//åˆ—è¡¨é¡¹
+	//ref_count = 0ï¼Œæ²¡æœ‰filterå’Œé…ç½®æ–‡ä»¶å…³è”
+	//ref_count = 1ï¼Œæœ‰filterå’Œé…ç½®æ–‡ä»¶å…³è”
 	LONG				ref_count;
 
 	
-	//Íø¿¨±¾µØÎ¨Ò»ID
+	//ç½‘å¡æœ¬åœ°å”¯ä¸€ID
 	NET_LUID			miniport_net_luid;
-	//ÖØÆôºóÉ¾³ı´ËÉèÖÃ
+	//é‡å¯ååˆ é™¤æ­¤è®¾ç½®
 #define MSF_DELETE_AFTER_RESTART	0x1
-	//´ËÅäÖÃ´¦ÓÚÆôÓÃ×´Ì¬
+	//æ­¤é…ç½®å¤„äºå¯ç”¨çŠ¶æ€
 #define MSF_ENABLED					0x2
-	//±êÊ¶
+	//æ ‡è¯†
 	INT					flag;
-	//Ğ¡¶Ë¿ÚÇı¶¯ÓÑºÃÃû³Æ
+	//å°ç«¯å£é©±åŠ¨å‹å¥½åç§°
 	PNDIS_STRING		miniport_friendly_name;
-	//Ğ¡¶Ë¿ÚÇı¶¯Ãû³Æ
+	//å°ç«¯å£é©±åŠ¨åç§°
 	PNDIS_STRING		miniport_name;
-	//Ä£¿éÃû³Æ
+	//æ¨¡å—åç§°
 	PNDIS_STRING		filter_module_name;
-	//ÕæÊµµØÖ·
+	//çœŸå®åœ°å€
 	LCXL_SERVER_ADDR	real_addr;
-	//ĞéÄâIPv4
+	//è™šæ‹ŸIPv4
 	IN_ADDR				virtual_ipv4;
-	//ĞéÄâIPv6
+	//è™šæ‹ŸIPv6
 	IN6_ADDR			virtual_ipv6;
-	//·şÎñÆ÷ÁĞ±í
+	//æœåŠ¡å™¨åˆ—è¡¨
 	LCXL_LOCK_LIST		server_list;//SERVER_INFO_LIST_ENTRY
-	// ·şÎñÆ÷ÁĞ±íËø
+	// æœåŠ¡å™¨åˆ—è¡¨é”
 	FILTER_LOCK			lock;
 } LCXL_MODULE_SETTING_LIST_ENTRY, *PLCXL_MODULE_SETTING_LIST_ENTRY;
 
 typedef struct _LCXL_SETTING{
-	//Ä£¿éÁĞ±íËø
+	//æ¨¡å—åˆ—è¡¨é”
 	FILTER_LOCK			lock;
 
 	LCXL_LOCK_LIST		module_list;//LCXL_MODULE_SETTING_LIST_ENTRY
@@ -54,29 +54,29 @@ typedef struct _LCXL_SETTING{
 
 
 
-//É¾³ıÅäÖÃĞÅÏ¢»Øµ÷º¯Êı
+//åˆ é™¤é…ç½®ä¿¡æ¯å›è°ƒå‡½æ•°
 VOID DelModuleSettingCallBack(PLIST_ENTRY module_setting);
 
 ///<summary>
-///¼ÓÔØÅäÖÃÎÄ¼ş
+///åŠ è½½é…ç½®æ–‡ä»¶
 ///</summary>
 VOID LoadSetting();
-//ÉêÇëÒ»¸öÅäÖÃĞÅÏ¢ÄÚ´æ
+//ç”³è¯·ä¸€ä¸ªé…ç½®ä¿¡æ¯å†…å­˜
 PLCXL_MODULE_SETTING_LIST_ENTRY NewModuleSetting();
-//ÊÍ·ÅÅäÖÃĞÅÏ¢ÄÚ´æ
+//é‡Šæ”¾é…ç½®ä¿¡æ¯å†…å­˜
 VOID DelModuleSetting(IN PLCXL_MODULE_SETTING_LIST_ENTRY module_setting);
 
 PLCXL_MODULE_SETTING_LIST_ENTRY FindModuleSettingByLUID(IN NET_LUID miniport_net_luid);
 
-//´ÓÉèÖÃÄ£¿éÖĞ¼ÓÔØÉèÖÃ
+//ä»è®¾ç½®æ¨¡å—ä¸­åŠ è½½è®¾ç½®
 PLCXL_MODULE_SETTING_LIST_ENTRY LoadModuleSetting(IN PNDIS_FILTER_ATTACH_PARAMETERS	attach_paramters);
 
 ///<summary>
-///±£´æÅäÖÃÎÄ¼ş
+///ä¿å­˜é…ç½®æ–‡ä»¶
 ///</summary>
 VOID SaveSetting();
 
-//¼õÉÙÒıÓÃ²¢ÇÒ¼ì²éÊÇ·ñ¿ÉÒÔÊÍ·ÅSERVER½á¹¹
+//å‡å°‘å¼•ç”¨å¹¶ä¸”æ£€æŸ¥æ˜¯å¦å¯ä»¥é‡Šæ”¾SERVERç»“æ„
 __inline LONG DecRefServerAndCheckIfCanDel(IN PLCXL_LOCK_LIST server_list, IN PSERVER_INFO_LIST_ENTRY server)
 {
 	LONG ref_count;
@@ -89,9 +89,9 @@ __inline LONG DecRefServerAndCheckIfCanDel(IN PLCXL_LOCK_LIST server_list, IN PS
 	return ref_count;
 }
 
-//É¾³ıÂ·ÓÉĞÅÏ¢
-//route_info:Â·ÓÉĞÅÏ¢
-//server_list:Â·ÓÉĞÅÏ¢ËùÔÚµÄ·şÎñÆ÷
+//åˆ é™¤è·¯ç”±ä¿¡æ¯
+//route_info:è·¯ç”±ä¿¡æ¯
+//server_list:è·¯ç”±ä¿¡æ¯æ‰€åœ¨çš„æœåŠ¡å™¨
 __inline VOID DeleteRouteListEntry(IN OUT PLCXL_ROUTE_LIST_ENTRY route_info, IN PLCXL_LOCK_LIST server_list)
 {
 	PSERVER_INFO_LIST_ENTRY server;
@@ -99,7 +99,7 @@ __inline VOID DeleteRouteListEntry(IN OUT PLCXL_ROUTE_LIST_ENTRY route_info, IN 
 	server = route_info->dst_server;
 	RemoveEntryList(&route_info->list_entry);
 	FreeRoute(route_info);
-	//½«Â·ÓÉËùÔÚµÄ·şÎñÆ÷µÄÒıÓÃ¼õ1
+	//å°†è·¯ç”±æ‰€åœ¨çš„æœåŠ¡å™¨çš„å¼•ç”¨å‡1
 	DecRefServerAndCheckIfCanDel(server_list, server);
 }
 

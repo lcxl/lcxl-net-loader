@@ -1,4 +1,4 @@
-/*++
+ï»¿/*++
 
 Copyright (c) Microsoft Corporation
 
@@ -30,12 +30,12 @@ NDIS_HANDLE         g_filter_driver_handle; // NDIS handle for filter driver
 NDIS_HANDLE         g_filter_driver_object;
 NDIS_HANDLE         g_ndis_filter_device_handle = NULL;
 PDEVICE_OBJECT      g_device_object = NULL;
-//¹ıÂËÄ£¿éÁĞ±í
+//è¿‡æ»¤æ¨¡å—åˆ—è¡¨
 LCXL_LOCK_LIST		g_filter_list;
 
-//×ª·¢µÄNBLµÄÄÚ´æTAG
+//è½¬å‘çš„NBLçš„å†…å­˜TAG
 #define TAG_SEND_NBL 'SEND'
-//!Ìí¼Ó´úÂë!
+//!æ·»åŠ ä»£ç !
 
 NDIS_FILTER_PARTIAL_CHARACTERISTICS DefaultChars = {
 { 0, 0, 0},
@@ -91,10 +91,10 @@ Return Value:
 
     do
     {
-        //Ìí¼Ó´úÂë
+        //æ·»åŠ ä»£ç 
 		InitServerMemMgr();
 		InitRouteMemMgr();
-        //!Ìí¼Ó´úÂë!
+        //!æ·»åŠ ä»£ç !
 
         NdisZeroMemory(&FChars, sizeof(NDIS_FILTER_DRIVER_CHARACTERISTICS));
         FChars.Header.Type = NDIS_OBJECT_TYPE_FILTER_DRIVER_CHARACTERISTICS;
@@ -179,7 +179,7 @@ Return Value:
 
     }
     while(bFalse);
-	//×¢²áÏµÍ³³õÊ¼»¯Íê³ÉÊÂ¼ş
+	//æ³¨å†Œç³»ç»Ÿåˆå§‹åŒ–å®Œæˆäº‹ä»¶
 	IoRegisterDriverReinitialization(DriverObject, DriverReinitialize, NULL);
 
     DEBUGP(DL_TRACE, "<===DriverEntry, Status = %8x\n", Status);
@@ -275,9 +275,9 @@ N.B.:  FILTER can use NdisRegisterDeviceEx to create a device, so the upper
     NDIS_FILTER_ATTRIBUTES	FilterAttributes;
     ULONG					Size;
     BOOLEAN					bFalse = FALSE;
-    //Ìí¼Ó´úÂë
+    //æ·»åŠ ä»£ç 
     NET_BUFFER_LIST_POOL_PARAMETERS PoolParameters;
-    //!Ìí¼Ó´úÂë!
+    //!æ·»åŠ ä»£ç !
     DEBUGP(DL_TRACE, "===>FilterAttach: NdisFilterHandle %p\n", NdisFilterHandle);
 	KdPrint(("SYS:FilterAttach:miniport:%I64u %wZ %wZ %wZ\n", AttachParameters->BaseMiniportNetLuid, AttachParameters->FilterModuleGuidName, AttachParameters->BaseMiniportInstanceName, AttachParameters->BaseMiniportName));
     do
@@ -321,17 +321,17 @@ N.B.:  FILTER can use NdisRegisterDeviceEx to create a device, so the upper
 		pFilter->attach_paramters = AttachParameters;
         
         pFilter->miniport_if_index = AttachParameters->BaseMiniportIfIndex;
-        //Ìí¼Ó´úÂë
+        //æ·»åŠ ä»£ç 
 		pFilter->miniport_net_luid = AttachParameters->BaseMiniportNetLuid;
-        //±£´æMACµØÖ·£¨Ò»¸öÎÊÌâ£¬µ±ÓÃ»§ÊÖ¶¯ĞŞ¸ÄÁËMACµØÖ·£¬»áÔõÑù- -£©
+        //ä¿å­˜MACåœ°å€ï¼ˆä¸€ä¸ªé—®é¢˜ï¼Œå½“ç”¨æˆ·æ‰‹åŠ¨ä¿®æ”¹äº†MACåœ°å€ï¼Œä¼šæ€æ ·- -ï¼‰
 		pFilter->mac_addr.Length = sizeof(pFilter->mac_addr.Address)<AttachParameters->MacAddressLength ? sizeof(pFilter->mac_addr.Address) : AttachParameters->MacAddressLength;
 
 		NdisMoveMemory(pFilter->mac_addr.Address, AttachParameters->CurrentMacAddress, pFilter->mac_addr.Length);
-		//³õÊ¼»¯·şÎñÆ÷ÁĞ±í
+		//åˆå§‹åŒ–æœåŠ¡å™¨åˆ—è¡¨
 		//InitializeListHead(&pFilter->server_list.list_entry);
-		//³õÊ¼»¯Â·ÓÉÁĞ±í
+		//åˆå§‹åŒ–è·¯ç”±åˆ—è¡¨
 		InitializeListHead(&pFilter->route_list);
-        //³õÊ¼»¯NBL·¢ËÍ³Ø
+        //åˆå§‹åŒ–NBLå‘é€æ± 
         PoolParameters.Header.Type = NDIS_OBJECT_TYPE_DEFAULT;
         PoolParameters.Header.Revision = NET_BUFFER_LIST_POOL_PARAMETERS_REVISION_1;
 		PoolParameters.Header.Size = NDIS_SIZEOF_NET_BUFFER_LIST_POOL_PARAMETERS_REVISION_1;
@@ -341,7 +341,7 @@ N.B.:  FILTER can use NdisRegisterDeviceEx to create a device, so the upper
         PoolParameters.PoolTag = TAG_SEND_NBL;
         pFilter->send_net_buffer_list_pool = NdisAllocateNetBufferListPool( NdisFilterHandle, &PoolParameters); 
 
-		//!Ìí¼Ó´úÂë!
+		//!æ·»åŠ ä»£ç !
         //
         // The filter should initialize TrackReceives and TrackSends properly. For this
         // driver, since its default characteristic has both a send and a receive handler,
@@ -370,7 +370,7 @@ N.B.:  FILTER can use NdisRegisterDeviceEx to create a device, so the upper
 
 
         pFilter->state = FilterPaused;
-		//¼ÓÔØÅäÖÃÎÄ¼ş
+		//åŠ è½½é…ç½®æ–‡ä»¶
 		pFilter->module_setting = LoadModuleSetting(AttachParameters);
 		AddtoLCXLLockList(&g_filter_list, &pFilter->filter_module_link);
     }
@@ -666,13 +666,13 @@ NOTE: Called at PASSIVE_LEVEL and the filter is in paused state
 
 	pFilter->module_setting->ref_count--;
 
-    //Ìí¼Ó´úÂë
+    //æ·»åŠ ä»£ç 
     if (pFilter->send_net_buffer_list_pool!=NULL) {
         NdisFreeNetBufferListPool(pFilter->send_net_buffer_list_pool);
 	}
 	
-    //!Ìí¼Ó´úÂë!
-	//É¾³ı
+    //!æ·»åŠ ä»£ç !
+	//åˆ é™¤
 	DelFromLCXLLockList(&g_filter_list, &pFilter->filter_module_link);
 
     DEBUGP(DL_TRACE, "<===FilterDetach Successfully\n");
@@ -721,14 +721,14 @@ Return Value:
 	UnlockLCXLLockList(&g_filter_list);
 
 #endif
-	//É¾³ıÁĞ±í
+	//åˆ é™¤åˆ—è¡¨
 	DelLCXLLockList(&g_filter_list);
 
     DEBUGP(DL_TRACE, "<===FilterUnload\n");
-    //Ìí¼Ó´úÂë
+    //æ·»åŠ ä»£ç 
 	DelRouteMemMgr();
 	DelServerMemMgr();
-    //!Ìí¼Ó´úÂë!
+    //!æ·»åŠ ä»£ç !
     return;
 
 }
@@ -1208,10 +1208,10 @@ Return Value:
     ULONG              NumOfSendCompletes = 0;
     BOOLEAN            DispatchLevel;
     PNET_BUFFER_LIST   CurrNbl;
-    //Ìí¼Ó´úÂë
-    //Ç°Ò»¸öNBL
+    //æ·»åŠ ä»£ç 
+    //å‰ä¸€ä¸ªNBL
     PNET_BUFFER_LIST   PrepNbl;
-    //!Ìí¼Ó´úÂë!
+    //!æ·»åŠ ä»£ç !
     DEBUGP(DL_TRACE, "===>SendNBLComplete, NetBufferList: %p.\n", NetBufferLists);
 
 
@@ -1244,38 +1244,38 @@ Return Value:
         FILTER_LOG_SEND_REF(2, pFilter, PrevNbl, pFilter->outstanding_sends);
         FILTER_RELEASE_LOCK(&pFilter->lock, DispatchLevel);
     }
-    //Ìí¼Ó´úÂë
+    //æ·»åŠ ä»£ç 
     //Note  A filter driver should keep track of send requests that 
     //it originates and make sure that it does NOT call the NdisFSendNetBufferListsComplete function 
     //when such requests are complete.
     CurrNbl = NetBufferLists;
     PrepNbl = NULL;
     while (CurrNbl != NULL) {
-        //Èç¹ûÊÇ±¾Çı¶¯·¢³öÀ´µÄNBL£¬½«´ËNBLÍÑÀëµ±Ç°µÄNBLÁ´
+        //å¦‚æœæ˜¯æœ¬é©±åŠ¨å‘å‡ºæ¥çš„NBLï¼Œå°†æ­¤NBLè„±ç¦»å½“å‰çš„NBLé“¾
         if (CurrNbl->SourceHandle == pFilter->filter_handle) {
             PNET_BUFFER_LIST pOwnerNBL;
 
             pOwnerNBL = CurrNbl;
-            //ÅĞ¶ÏÊÇ·ñÊÇÁ´±íÍ·
+            //åˆ¤æ–­æ˜¯å¦æ˜¯é“¾è¡¨å¤´
             if (CurrNbl != NetBufferLists) {
-                //²»ÊÇÁ´±íÍ·
+                //ä¸æ˜¯é“¾è¡¨å¤´
                 CurrNbl = NET_BUFFER_LIST_NEXT_NBL(CurrNbl);
                 ASSERT(PrepNbl!=NULL);
                 NET_BUFFER_LIST_NEXT_NBL(PrepNbl) = CurrNbl;
             } else {
-                //ÊÇÁ´±íÍ·
+                //æ˜¯é“¾è¡¨å¤´
                 NetBufferLists = NET_BUFFER_LIST_NEXT_NBL(CurrNbl);
             }
-            //¶Ï¿ªºÍÔ­Ê¼Á´µÄ¹ØÁª
+            //æ–­å¼€å’ŒåŸå§‹é“¾çš„å…³è”
             NET_BUFFER_LIST_NEXT_NBL(pOwnerNBL) = NULL;
-            //ÊÍ·ÅNBL
+            //é‡Šæ”¾NBL
             NdisFreeNetBufferList(pOwnerNBL);
         } else {
             PrepNbl = CurrNbl;
             CurrNbl = NET_BUFFER_LIST_NEXT_NBL(CurrNbl);
         }
     }
-    //!Ìí¼Ó´úÂë!
+    //!æ·»åŠ ä»£ç !
 
     // Send complete the NBLs.  If you removed any NBLs from the chain, make
     // sure the chain isn't empty (i.e., NetBufferLists!=NULL).
@@ -1511,27 +1511,27 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
     PLCXL_FILTER        filter = (PLCXL_FILTER)FilterModuleContext;
     BOOLEAN             DispatchLevel;
     ULONG               Ref;
-    //ĞŞ¸Ä´úÂë£¬È¥µôDBGÅĞ¶¨
+    //ä¿®æ”¹ä»£ç ï¼Œå»æ‰DBGåˆ¤å®š
 //#if DBG
     ULONG               return_flags = 0;
 //#endif
-    //!ĞŞ¸Ä´úÂë!
+    //!ä¿®æ”¹ä»£ç !
 	PNET_BUFFER_LIST    next_nbl;
-    //Ìí¼Ó´úÂë
+    //æ·»åŠ ä»£ç 
 
     ULONG               send_flags = 0;
 
-    //¿ÉÒÔÍ¨¹ıµÄNBL
+    //å¯ä»¥é€šè¿‡çš„NBL
     PNET_BUFFER_LIST    pass_nbl_head = NULL;
-    //Ä©Î²µÄNBL
+    //æœ«å°¾çš„NBL
     PNET_BUFFER_LIST    pass_nbl_tail = NULL;
     ULONG               number_of_pass_nbl = 0;
-    //ĞèÒª¶ªµôµÄNBL
+    //éœ€è¦ä¸¢æ‰çš„NBL
     PNET_BUFFER_LIST    drop_nbl_head = NULL;
     PNET_BUFFER_LIST    drop_nbl_tail = NULL;
-    //Òª×ª·¢µÄNBLÁĞ±í
+    //è¦è½¬å‘çš„NBLåˆ—è¡¨
     PNET_BUFFER_LIST    send_nbl_list = NULL;
-    //!Ìí¼Ó´úÂë!
+    //!æ·»åŠ ä»£ç !
 
 
     DEBUGP(DL_TRACE, "===>ReceiveNetBufferList: NetBufferLists = %p.\n", NetBufferLists);
@@ -1542,7 +1542,7 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
     }
 
 	FILTER_ACQUIRE_LOCK(&filter->lock, DispatchLevel);
-	//Èç¹ûÃ»ÓĞÔÚÔËĞĞ»òÕßÄ£¿éĞÅÏ¢Ã»ÓĞ¼ÓÔØ
+	//å¦‚æœæ²¡æœ‰åœ¨è¿è¡Œæˆ–è€…æ¨¡å—ä¿¡æ¯æ²¡æœ‰åŠ è½½
 	if (filter->state != FilterRunning) {
 		FILTER_RELEASE_LOCK(&filter->lock, DispatchLevel);
 
@@ -1553,7 +1553,7 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 	}
 	FILTER_RELEASE_LOCK(&filter->lock, DispatchLevel);
 	ASSERT(filter->module_setting != NULL);
-	//Èç¹ûÃ»ÓĞ¼ÓÔØÅäÖÃĞÅÏ¢£¬Ôò·Å¹ıËùÓĞµÄNBL
+	//å¦‚æœæ²¡æœ‰åŠ è½½é…ç½®ä¿¡æ¯ï¼Œåˆ™æ”¾è¿‡æ‰€æœ‰çš„NBL
 	if ((filter->module_setting->flag & MSF_ENABLED) == 0) {
 		NdisFIndicateReceiveNetBufferLists(filter->filter_handle, NetBufferLists, PortNumber, NumberOfNetBufferLists, ReceiveFlags);
 		return;
@@ -1599,7 +1599,7 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
     // deep copy, and return the original NBL.
 	//
 
-	//Ìí¼Ó´úÂë
+	//æ·»åŠ ä»£ç 
 	next_nbl = NetBufferLists;
 	while (next_nbl != NULL) {
 		PMDL                current_mdl = NULL;
@@ -1607,7 +1607,7 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 		ULONG               total_length;
 		ULONG               offset;
 		PETHERNET_HEADER    ethernet_header = NULL;
-		//ÊÇ·ñ´ËÊı¾İ°üÒÑ´¦Àí
+		//æ˜¯å¦æ­¤æ•°æ®åŒ…å·²å¤„ç†
 		BOOLEAN				is_processed_nbl = FALSE;
 
 		current_mdl = NET_BUFFER_CURRENT_MDL(NET_BUFFER_LIST_FIRST_NB(next_nbl));
@@ -1620,30 +1620,30 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 			&ethernet_header,
 			&buffer_length,
 			NormalPagePriority);
-		//¸÷ÖÖÓĞĞ§ĞÔÅĞ¶Ï
+		//å„ç§æœ‰æ•ˆæ€§åˆ¤æ–­
 		if (ethernet_header != NULL && buffer_length != 0) {
 			PLCXL_ROUTE_LIST_ENTRY route = NULL;
 
 			ASSERT(buffer_length > offset);
-			//»ñÈ¡ÕæÕıµÄµÄ°üÊı¾İ
+			//è·å–çœŸæ­£çš„çš„åŒ…æ•°æ®
 			buffer_length -= offset;
-			//»ñÈ¡Ö¡Êı¾İÍ·
+			//è·å–å¸§æ•°æ®å¤´
 			ethernet_header = (PETHERNET_HEADER)((PUCHAR)ethernet_header + offset);
 
 			is_processed_nbl = ProcessNBL(filter, ethernet_header, buffer_length, &route);
-			//Èç¹û´ËÊı¾İ°üÒÑ´¦Àí£¬Ôò²»ĞèÒªÌá½»µ½ÉÏ²ãÇı¶¯ÖĞ
+			//å¦‚æœæ­¤æ•°æ®åŒ…å·²å¤„ç†ï¼Œåˆ™ä¸éœ€è¦æäº¤åˆ°ä¸Šå±‚é©±åŠ¨ä¸­
 			if (is_processed_nbl) {
 				PETHERNET_HEADER    send_buffer;
 				PMDL                send_mdl = NULL;
 				PNET_BUFFER_LIST    send_nbl;
 				ULONG               bytes_copied;
 				
-				//ÊÇ·ñ¿ÉÒÔPend
+				//æ˜¯å¦å¯ä»¥Pend
 				if (NDIS_TEST_RECEIVE_CANNOT_PEND(ReceiveFlags)) {
-					//²»×÷´¦Àí
+					//ä¸ä½œå¤„ç†
 
 				} else {
-					//ĞéÄâIPµÄÊı¾İ°ü²»ÄÜ´«µ½ÉÏ²ãÇı¶¯£¬ĞèÒª¶ªÆú
+					//è™šæ‹ŸIPçš„æ•°æ®åŒ…ä¸èƒ½ä¼ åˆ°ä¸Šå±‚é©±åŠ¨ï¼Œéœ€è¦ä¸¢å¼ƒ
 					if (drop_nbl_head == NULL) {
 						drop_nbl_head = next_nbl;
 						drop_nbl_tail = next_nbl;
@@ -1651,9 +1651,9 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 						NET_BUFFER_LIST_NEXT_NBL(drop_nbl_tail) = next_nbl;
 					}
 				}
-				//Èç¹ûĞèÒªÂ·ÓÉ´ËÊı¾İ°ü
+				//å¦‚æœéœ€è¦è·¯ç”±æ­¤æ•°æ®åŒ…
 				if (route != NULL) {
-					//´´½¨Ò»¸öNBL
+					//åˆ›å»ºä¸€ä¸ªNBL
 					send_buffer = (PETHERNET_HEADER)FILTER_ALLOC_MEM(filter->filter_handle, buffer_length);
 					send_mdl = NdisAllocateMdl(filter->filter_handle, send_buffer, buffer_length);
 					send_nbl = NdisAllocateNetBufferAndNetBufferList(
@@ -1670,17 +1670,17 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 						NET_BUFFER_LIST_FIRST_NB(next_nbl),
 						0,
 						&bytes_copied);
-					//ÉèÖÃSourceHandle
+					//è®¾ç½®SourceHandle
 					//A filter driver must set the SourceHandle member of each NET_BUFFER_LIST structure that it originates to the same value that it passes to the NdisFilterHandle parameter
 
 					send_nbl->SourceHandle = filter->filter_handle;
-					//ĞŞ¸ÄÄ¿±êMACµØÖ·
+					//ä¿®æ”¹ç›®æ ‡MACåœ°å€
 					RtlCopyMemory(&send_buffer->Destination, route->dst_server->info.addr.mac_addr.Address, sizeof(ethernet_header->Destination));
 					//
 					// The other members of NET_BUFFER_DATA structure are already initialized properly during allocation.
 					//
 					NET_BUFFER_DATA_LENGTH(NET_BUFFER_LIST_FIRST_NB(send_nbl)) = bytes_copied;
-					//²åÈëµ½×ª·¢¶ÓÁĞÖĞ
+					//æ’å…¥åˆ°è½¬å‘é˜Ÿåˆ—ä¸­
 					if (send_nbl_list == NULL) {
 						send_nbl_list = send_nbl;
 					} else {
@@ -1695,10 +1695,10 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 			}
 
 		} else {
-			//Èç¹ûÎŞ·¨»ñÈ¡µ½Êı¾İ°üĞÅÏ¢£¬Ôò
+			//å¦‚æœæ— æ³•è·å–åˆ°æ•°æ®åŒ…ä¿¡æ¯ï¼Œåˆ™
 
 		}
-		//Èç¹ûÊı¾İ°üÎ´±»´¦Àí£¬Ôò·¢ËÍ¸øÉÏ²ãÇı¶¯
+		//å¦‚æœæ•°æ®åŒ…æœªè¢«å¤„ç†ï¼Œåˆ™å‘é€ç»™ä¸Šå±‚é©±åŠ¨
 		if (!is_processed_nbl) {
 
 			if (NDIS_TEST_RECEIVE_CANNOT_PEND(ReceiveFlags)) {
@@ -1706,7 +1706,7 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 
 				tmpNBL = NET_BUFFER_LIST_NEXT_NBL(next_nbl);
 				NET_BUFFER_LIST_NEXT_NBL(next_nbl) = NULL;
-				//½ÓÊÜ²»¶ªÆúµÄÊı¾İ°ü
+				//æ¥å—ä¸ä¸¢å¼ƒçš„æ•°æ®åŒ…
 				NdisFIndicateReceiveNetBufferLists(filter->filter_handle, next_nbl, PortNumber, 1, ReceiveFlags | NDIS_RECEIVE_FLAGS_RESOURCES);
 				NET_BUFFER_LIST_NEXT_NBL(next_nbl) = tmpNBL;
 			} else {
@@ -1719,28 +1719,28 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 				number_of_pass_nbl++;
 			}
 		}
-		//»ñÈ¡ÏÂÒ»¸öNBL
+		//è·å–ä¸‹ä¸€ä¸ªNBL
 		next_nbl = NET_BUFFER_LIST_NEXT_NBL(next_nbl);
 	}
 	if (NDIS_TEST_RECEIVE_CANNOT_PEND(ReceiveFlags)) {
-		//²»½ÓÊÜµÄÊı¾İ°ü
-		//NDIS_TEST_RECEIVE_CANNOT_PENDÎªTRUEÊ±£¬²»Òª×öÈÎºÎ²Ù×÷£¬Ö±½Ó·µ»Ø
+		//ä¸æ¥å—çš„æ•°æ®åŒ…
+		//NDIS_TEST_RECEIVE_CANNOT_PENDä¸ºTRUEæ—¶ï¼Œä¸è¦åšä»»ä½•æ“ä½œï¼Œç›´æ¥è¿”å›
 	} else {
 		ASSERT(pass_nbl_tail != NULL || drop_nbl_tail != NULL);
-		//½«Á½¸öÁ´±íµÄ×îºóÒ»ÏîµÄNextÓòÇå¿Õ
+		//å°†ä¸¤ä¸ªé“¾è¡¨çš„æœ€åä¸€é¡¹çš„NextåŸŸæ¸…ç©º
 		if (pass_nbl_tail != NULL) {
 			NET_BUFFER_LIST_NEXT_NBL(pass_nbl_tail) = NULL;
-			//½ÓÊÜPassHeadNBL
+			//æ¥å—PassHeadNBL
 			NdisFIndicateReceiveNetBufferLists(filter->filter_handle, pass_nbl_head, PortNumber, number_of_pass_nbl, ReceiveFlags);
 		}
 		if (drop_nbl_tail != NULL) {
 			NET_BUFFER_LIST_NEXT_NBL(drop_nbl_tail) = NULL;
-			//¶ªÆúDropHeadNBL
+			//ä¸¢å¼ƒDropHeadNBL
 			NdisFReturnNetBufferLists(filter->filter_handle, drop_nbl_head, return_flags);
 		}
 
 	}
-	//×ª·¢Êı¾İ°ü¸øÕæÊµµÄ·şÎñÆ÷
+	//è½¬å‘æ•°æ®åŒ…ç»™çœŸå®çš„æœåŠ¡å™¨
 	if (NULL != send_nbl_list) {
 		NdisFSendNetBufferLists(filter->filter_handle, send_nbl_list, PortNumber, send_flags);
 	}
@@ -2124,12 +2124,12 @@ PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER pFilter, IN INT ipMode, IN PV
 		break;
 	}
 	route_info = GetRouteListEntry(&pFilter->route_list, ipMode, pIPHeader, ptcp_header);
-	//½¨Á¢Á¬½ÓµÄ½×¶Î
-	//ÓĞTH_SYNµÄ½×¶ÎÊÇ½¨Á¢Á¬½ÓµÄ½×¶Î£¬Õâ¸öÊ±ºò¾ÍµÃÑ¡ÔñÂ·ÓÉĞÅÏ¢
+	//å»ºç«‹è¿æ¥çš„é˜¶æ®µ
+	//æœ‰TH_SYNçš„é˜¶æ®µæ˜¯å»ºç«‹è¿æ¥çš„é˜¶æ®µï¼Œè¿™ä¸ªæ—¶å€™å°±å¾—é€‰æ‹©è·¯ç”±ä¿¡æ¯
 	if ((ptcp_header->th_flags & TH_SYN) != 0) {
 		PSERVER_INFO_LIST_ENTRY server;
 
-		//Ñ¡ÔñÒ»¸ö·şÎñÆ÷
+		//é€‰æ‹©ä¸€ä¸ªæœåŠ¡å™¨
 		server = SelectBestServer(&pFilter->module_setting->server_list, ipMode, pIPHeader, ptcp_header);
 		if (server == NULL) {
 			return NULL;
@@ -2139,22 +2139,22 @@ PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER pFilter, IN INT ipMode, IN PV
 		} else {
 			DecRefServerAndCheckIfCanDel(&pFilter->module_setting->server_list, route_info->dst_server);
 		}
-		//³õÊ¼»¯Â·ÓÉĞÅÏ¢
+		//åˆå§‹åŒ–è·¯ç”±ä¿¡æ¯
 		InitRouteListEntry(route_info, ipMode, pIPHeader, ptcp_header, server);
 	}
 	else {
 		if (route_info != NULL) {
-			//Èç¹û¿Í»§¶Ë·¢³öACK°ü²¢ÇÒÁ¬½Ó´¦ÓÚLAST_ACK×´Ì¬£¬Ôò¸ü¸Ä×´Ì¬ÎªCLOSE
+			//å¦‚æœå®¢æˆ·ç«¯å‘å‡ºACKåŒ…å¹¶ä¸”è¿æ¥å¤„äºLAST_ACKçŠ¶æ€ï¼Œåˆ™æ›´æ”¹çŠ¶æ€ä¸ºCLOSE
 			if ((ptcp_header->th_flags & TH_ACK) != 0 && (route_info->status == RS_LAST_ACK)) {
 				route_info->status = RS_CLOSED;
 			}
 			else if ((ptcp_header->th_flags & TH_FIN) != 0) {
-				//Èç¹û¿Í»§¶ËÍ¨ÖªÁ¬½ÓÒª¹Ø±Õ
-				//¸ü¸ÄÂ·ÓÉ×´Ì¬ÎªLAST_ACK
+				//å¦‚æœå®¢æˆ·ç«¯é€šçŸ¥è¿æ¥è¦å…³é—­
+				//æ›´æ”¹è·¯ç”±çŠ¶æ€ä¸ºLAST_ACK
 				route_info->status = RS_LAST_ACK;
 			}
 			else if ((ptcp_header->th_flags & TH_RST) != 0) {
-				//Èç¹ûÁ¬½ÓÖØÖÃ£¬Ö±½Ó¹Ø±ÕÁ¬½Ó
+				//å¦‚æœè¿æ¥é‡ç½®ï¼Œç›´æ¥å…³é—­è¿æ¥
 				route_info->status = RS_CLOSED;
 			}
 		}
@@ -2175,13 +2175,13 @@ BOOLEAN ProcessNBL(IN PLCXL_FILTER pFilter, IN PETHERNET_HEADER pEthHeader, IN U
         return FALSE;
     }
     ethernet_type = ntohs(pEthHeader->Type);
-    //ÅĞ¶ÏÖ¡ÀàĞÍÊÇ²»ÊÇ8021P_TAG
+    //åˆ¤æ–­å¸§ç±»å‹æ˜¯ä¸æ˜¯8021P_TAG
     if (ethernet_type == ETHERNET_TYPE_802_1Q) {
         if (BufferLength >= sizeof(ETHERNET_HEADER)+4) {
             ethernet_type_ptr = (USHORT UNALIGNED *)((PUCHAR)&pEthHeader->Type + 4);
             BufferLength -= sizeof(ETHERNET_HEADER)+4;
          } else {
-            //È±´úÂë
+            //ç¼ºä»£ç 
 			 return FALSE;
          }
     } else {
@@ -2245,12 +2245,12 @@ BOOLEAN ProcessNBL(IN PLCXL_FILTER pFilter, IN PETHERNET_HEADER pEthHeader, IN U
 			}
 		}
 		break;
-	case ETHERNET_TYPE_IPV4://IPv4Ğ­Òé
+	case ETHERNET_TYPE_IPV4://IPv4åè®®
 		if (BufferLength >= sizeof(IPV4_HEADER)){
 			PIPV4_HEADER ip_header;
 
 			ip_header = (PIPV4_HEADER)((PUCHAR)ethernet_type_ptr + sizeof(USHORT));
-			//²é¿´Êı¾İ°üµÄÄ¿±êIPÊÇ·ñÊÇĞéÄâIP
+			//æŸ¥çœ‹æ•°æ®åŒ…çš„ç›®æ ‡IPæ˜¯å¦æ˜¯è™šæ‹ŸIP
 			if (RtlCompareMemory(&ip_header->DestinationAddress, &pFilter->module_setting->virtual_ipv4, sizeof(ip_header->DestinationAddress)) == sizeof(ip_header->DestinationAddress)) {
 				//pIPHeader->iaDst
 
@@ -2259,7 +2259,7 @@ BOOLEAN ProcessNBL(IN PLCXL_FILTER pFilter, IN PETHERNET_HEADER pEthHeader, IN U
 
 					break;
 				case 0x06://TCP
-					//Ä¿Ç°½öÖ§³ÖTCP
+					//ç›®å‰ä»…æ”¯æŒTCP
 					*route = RouteTCPNBL(pFilter, IM_IPV4, ip_header);
 					is_processed = *route != NULL;
 					break;
@@ -2272,12 +2272,12 @@ BOOLEAN ProcessNBL(IN PLCXL_FILTER pFilter, IN PETHERNET_HEADER pEthHeader, IN U
 		}
 		break;
 
-	case ETHERNET_TYPE_IPV6://IPv6Ğ­Òé
+	case ETHERNET_TYPE_IPV6://IPv6åè®®
 		if (BufferLength >= sizeof(IPV6_HEADER)){
 			PIPV6_HEADER ip_header;
 
 			ip_header = (PIPV6_HEADER)((PUCHAR)ethernet_type_ptr + sizeof(USHORT));
-			//²é¿´Êı¾İ°üµÄÄ¿±êIPÊÇ·ñÊÇĞéÄâIP
+			//æŸ¥çœ‹æ•°æ®åŒ…çš„ç›®æ ‡IPæ˜¯å¦æ˜¯è™šæ‹ŸIP
 			if (RtlCompareMemory(&ip_header->DestinationAddress, &pFilter->module_setting->virtual_ipv6, sizeof(ip_header->DestinationAddress)) == sizeof(ip_header->DestinationAddress)) {
 				switch (ip_header->NextHeader) {
 				case 0x3A://ICMPv6
@@ -2287,7 +2287,7 @@ BOOLEAN ProcessNBL(IN PLCXL_FILTER pFilter, IN PETHERNET_HEADER pEthHeader, IN U
 				}
 					break;
 				case 0x06://TCP
-					//Ä¿Ç°½öÖ§³ÖTCP
+					//ç›®å‰ä»…æ”¯æŒTCP
 					*route = RouteTCPNBL(pFilter, IM_IPV6, ip_header);
 					is_processed = *route != NULL;
 					break;

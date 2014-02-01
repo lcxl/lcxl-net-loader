@@ -1,18 +1,18 @@
-#ifndef _LCXL_SERVICE_H_
+ï»¿#ifndef _LCXL_SERVICE_H_
 #define _LCXL_SERVICE_H_
 #include <Windows.h>
 #include "../../component/lcxl_iocp/lcxl_string.h"
 /// <summary>
-/// ·şÎñ¹ÜÀí»ùÀà
+/// æœåŠ¡ç®¡ç†åŸºç±»
 /// </summary>
 class CServiceBase {
 private:
 	SERVICE_TABLE_ENTRY m_ServiceTableEntry[2];
-	// ·şÎñ¾ä±ú
+	// æœåŠ¡å¥æŸ„
 	SERVICE_STATUS_HANDLE m_ServiceStatusHandle;
-	//·şÎñÃû³Æ
+	//æœåŠ¡åç§°
 	std::tstring m_SerivceName;
-	//ÊÇ·ñµ÷ÓÃÁËRunº¯Êı
+	//æ˜¯å¦è°ƒç”¨äº†Runå‡½æ•°
 	BOOL m_IsCallRunFunc;
 private:
 	static CServiceBase* m_GlobalService;
@@ -22,16 +22,16 @@ protected:
 	SERVICE_STATUS m_SerStatus;
 	void SerMain(DWORD dwNumServicesArgs, LPTSTR lpServiceArgVectors[]);
 	virtual DWORD SerHandler(DWORD dwControl, DWORD dwEventType, LPVOID lpEventData) = 0;
-	//Èç¹û·şÎñÔËĞĞ³É¹¦£¬ÔòĞèÒªÖ´ĞĞSetCurrentState(SERVICE_RUNNING);
+	//å¦‚æœæœåŠ¡è¿è¡ŒæˆåŠŸï¼Œåˆ™éœ€è¦æ‰§è¡ŒSetCurrentState(SERVICE_RUNNING);
 	virtual void SerRun() = 0;
 public:
 	CServiceBase();
 	virtual ~CServiceBase();
 	/// <summary>
-	/// ³õÊ¼»¯·şÎñ
+	/// åˆå§‹åŒ–æœåŠ¡
 	/// </summary>
 	/// <returns>
-	/// ÊÇ·ñ³É¹¦
+	/// æ˜¯å¦æˆåŠŸ
 	/// </returns>
 	virtual BOOL Run();
 public:
@@ -39,7 +39,7 @@ public:
 	void SetServiceName(std::tstring szServiceName);
 
 	DWORD GetCurrentState();
-	//ÉèÖÃµ±Ç°·şÎñ×´Ì¬²¢±¨¸æ¸ø·şÎñ¹ÜÀíÆ÷
+	//è®¾ç½®å½“å‰æœåŠ¡çŠ¶æ€å¹¶æŠ¥å‘Šç»™æœåŠ¡ç®¡ç†å™¨
 	void SetCurrentState(DWORD dwCurrentState);
 
 	DWORD GetServiceType();

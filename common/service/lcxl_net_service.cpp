@@ -1,4 +1,4 @@
-#include "lcxl_net_service.h"
+ï»¿#include "lcxl_net_service.h"
 
 DWORD CNetServiceBase::SerHandler(DWORD dwControl, DWORD dwEventType, LPVOID lpEventData)
 {
@@ -6,8 +6,8 @@ DWORD CNetServiceBase::SerHandler(DWORD dwControl, DWORD dwEventType, LPVOID lpE
 	switch (dwControl){
 	case SERVICE_CONTROL_STOP:
 	case SERVICE_CONTROL_SHUTDOWN:
-		// ¹Ø±Õ·şÎñ
-		OutputDebugStr(_T("·şÎñ¶Ë½ÓÊÕµ½¹Ø±ÕÃüÁî\n"));
+		// å…³é—­æœåŠ¡
+		OutputDebugStr(_T("æœåŠ¡ç«¯æ¥æ”¶åˆ°å…³é—­å‘½ä»¤\n"));
 		SetExitEvent();
 		break;
 	case SERVICE_CONTROL_INTERROGATE:
@@ -40,15 +40,15 @@ void CNetServiceBase::SerRun()
 	mExitEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 
 	mSockLst = new CSocketLst();
-	// Æô¶¯¼àÌı
+	// å¯åŠ¨ç›‘å¬
 	if (mSockLst->StartListen(mSerList, m_ListenPort)) {
 		//
 		SetCurrentState(SERVICE_RUNNING);
-		// µÈ´ıÍË³ö
+		// ç­‰å¾…é€€å‡º
 		WaitForSingleObject(mExitEvent, INFINITE);
 		mSockLst->Close();
 	} else {
-		OutputDebugStr(_T("Æô¶¯¼àÌıÊ§°Ü£¡\n"));
+		OutputDebugStr(_T("å¯åŠ¨ç›‘å¬å¤±è´¥ï¼\n"));
 		delete mSockLst;
 		mSockLst = NULL;
 	}

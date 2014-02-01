@@ -1,26 +1,26 @@
-#ifndef _LCXL_SERVER_H_
+ï»¿#ifndef _LCXL_SERVER_H_
 #define _LCXL_SERVER_H_
 /*
 author:
 LCX
 abstract:
-·şÎñÆ÷Ïà¹ØÍ·ÎÄ¼ş
+æœåŠ¡å™¨ç›¸å…³å¤´æ–‡ä»¶
 */
 #include "../../common/driver/lcxl_lock_list.h"
 #define TAG_SERVER      'SERV'
 
-//·şÎñÆ÷ĞÅÏ¢ÁĞ±íÏî
+//æœåŠ¡å™¨ä¿¡æ¯åˆ—è¡¨é¡¹
 typedef struct _SERVER_INFO_LIST_ENTRY
 {
-	//ÁĞ±íÏî
+	//åˆ—è¡¨é¡¹
 	LIST_ENTRY				list_entry;
-	//ÒıÓÃ¼ÆÊı
+	//å¼•ç”¨è®¡æ•°
 	volatile LONG  			ref_count;
-	//Ëø
+	//é”
 	KSPIN_LOCK				lock;
-	//·şÎñÆ÷×´Ì¬
+	//æœåŠ¡å™¨çŠ¶æ€
 	LCXL_SERVER_INFO		info;
-	//·şÎñÆ÷ĞÔÄÜ×´Ì¬
+	//æœåŠ¡å™¨æ€§èƒ½çŠ¶æ€
 	LCXL_SERVER_PERFORMANCE	performance;
 } SERVER_INFO_LIST_ENTRY, *PSERVER_INFO_LIST_ENTRY;
 
@@ -39,31 +39,31 @@ __inline PSERVER_INFO_LIST_ENTRY AllocServer()
 	}
 	return resu;
 }
-//Ëø¶¨·şÎñÆ÷
-//²ÎÊı:
-//__SER:PSERVER_INFO_LIST_ENTRY£¬·şÎñÆ÷Êı¾İ½á¹¹
-//__LockHandleInStack:PKLOCK_QUEUE_HANDLE£¬Ëø½á¹¹£¬´Ë½á¹¹±ØĞë´¦ÓÚÕ»ÖĞ 
+//é”å®šæœåŠ¡å™¨
+//å‚æ•°:
+//__SER:PSERVER_INFO_LIST_ENTRYï¼ŒæœåŠ¡å™¨æ•°æ®ç»“æ„
+//__LockHandleInStack:PKLOCK_QUEUE_HANDLEï¼Œé”ç»“æ„ï¼Œæ­¤ç»“æ„å¿…é¡»å¤„äºæ ˆä¸­ 
 __inline VOID LockServer(IN PSERVER_INFO_LIST_ENTRY __SER, OUT PKLOCK_QUEUE_HANDLE __LockHandleInStack)
 {
 	ASSERT(__SER != NULL && __LockHandleInStack != NULL); 
 	KeAcquireInStackQueuedSpinLock(&__SER->lock, __LockHandleInStack);
 }
-//Ôö¼Ó·şÎñÆ÷ÒıÓÃ
+//å¢åŠ æœåŠ¡å™¨å¼•ç”¨
 __inline LONG IncRefServer(IN PSERVER_INFO_LIST_ENTRY server)
 {
 	ASSERT(server != NULL);
 	return InterlockedIncrement(&server->ref_count);
 }
-//¼õÉÙ·şÎñÆ÷ÒıÓÃ
+//å‡å°‘æœåŠ¡å™¨å¼•ç”¨
 __inline LONG DecRefServer(IN PSERVER_INFO_LIST_ENTRY server)
 {
 	ASSERT(server != NULL);
 	return InterlockedDecrement(&server->ref_count);
 }
 
-//½âËø·şÎñÆ÷
-//²ÎÊı:
-//__LockHandleInStack:PKLOCK_QUEUE_HANDLE £¬Ëø½á¹¹£¬´Ë½á¹¹±ØĞë´¦ÓÚÕ»ÖĞ 
+//è§£é”æœåŠ¡å™¨
+//å‚æ•°:
+//__LockHandleInStack:PKLOCK_QUEUE_HANDLE ï¼Œé”ç»“æ„ï¼Œæ­¤ç»“æ„å¿…é¡»å¤„äºæ ˆä¸­ 
 __inline VOID  UnLockServer(IN PKLOCK_QUEUE_HANDLE __LockHandleInStack)
 {	
 	ASSERT(__LockHandleInStack != NULL); 
@@ -77,10 +77,10 @@ __inline VOID FreeServer(PSERVER_INFO_LIST_ENTRY server)
 }
 #define DelServerMemMgr() ExDeleteNPagedLookasideList(&g_server_mem_mgr)
 
-//É¾³ıÅäÖÃĞÅÏ¢»Øµ÷º¯Êı
+//åˆ é™¤é…ç½®ä¿¡æ¯å›è°ƒå‡½æ•°
 VOID DelServerCallBack(PLIST_ENTRY server);
 ///<summary>
-//Ñ¡Ôñ·şÎñÆ÷
+//é€‰æ‹©æœåŠ¡å™¨
 ///</summary>
 PSERVER_INFO_LIST_ENTRY SelectBestServer(IN PLCXL_LOCK_LIST server_list, IN INT ipMode, IN PVOID pIPHeader, IN PTCP_HDR pTcpHeader);
 

@@ -1,10 +1,10 @@
-#include "lcxl_service.h"
+ï»¿#include "lcxl_service.h"
 #include <assert.h>
 
 BOOL CServiceBase::Run()
 {
 	if (m_ServiceTableEntry[0].lpServiceName == NULL) {
-		throw std::exception("·şÎñÃûÎ´Ö¸¶¨");
+		throw std::exception("æœåŠ¡åæœªæŒ‡å®š");
 	}
 	m_IsCallRunFunc = TRUE;
 	return StartServiceCtrlDispatcher(m_ServiceTableEntry);
@@ -12,7 +12,7 @@ BOOL CServiceBase::Run()
 
 void CServiceBase::SerMain(DWORD dwNumServicesArgs, LPTSTR lpServiceArgVectors[])
 {
-	// ×¢²á¿ØÖÆ
+	// æ³¨å†Œæ§åˆ¶
 	m_ServiceStatusHandle = RegisterServiceCtrlHandlerEx(m_SerivceName.c_str(), &CServiceBase::HandlerEx, this);
 	if (m_ServiceStatusHandle == NULL) {
 #ifdef _DEBUG
@@ -20,13 +20,13 @@ void CServiceBase::SerMain(DWORD dwNumServicesArgs, LPTSTR lpServiceArgVectors[]
 #endif
 		return;
 	}
-	// ±¨¸æÕıÔÚÆô¶¯
+	// æŠ¥å‘Šæ­£åœ¨å¯åŠ¨
 	SetCurrentState(SERVICE_START_PENDING);
-	// ±¨¸æÆô¶¯³É¹¦
+	// æŠ¥å‘Šå¯åŠ¨æˆåŠŸ
 	//SetCurrentState(SERVICE_RUNNING);
 
 	SerRun();
-	// ±¨¸æ·şÎñµ±Ç°µÄ×´Ì¬¸ø·şÎñ¿ØÖÆ¹ÜÀíÆ÷
+	// æŠ¥å‘ŠæœåŠ¡å½“å‰çš„çŠ¶æ€ç»™æœåŠ¡æ§åˆ¶ç®¡ç†å™¨
 	SetCurrentState(SERVICE_STOP_PENDING);
 	SetCurrentState(SERVICE_STOPPED);
 }
@@ -47,7 +47,7 @@ CServiceBase::CServiceBase() :m_IsCallRunFunc(FALSE)
 	if (m_GlobalService != NULL) {
 		m_GlobalService = this;
 	} else {
-		throw std::exception("·şÎñÀàÖ»ÄÜÊµÀı»¯Ò»¸ö");
+		throw std::exception("æœåŠ¡ç±»åªèƒ½å®ä¾‹åŒ–ä¸€ä¸ª");
 	}
 }
 

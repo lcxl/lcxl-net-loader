@@ -1,9 +1,9 @@
-#ifndef _LCXL_TYPE_H_
+ï»¿#ifndef _LCXL_TYPE_H_
 #define _LCXL_TYPE_H_
 //author:LCXL
-//abstract:Çý¶¯ºÍÓ¦ÓÃ³ÌÐò¹²ÓÃµÄ×Ô¶¨ÒåÊý¾Ý°üÓÐ¹Ø½á¹¹Êý¾ÝÍ·ÎÄ¼þ
-//Èç¹ûÊÇÇý¶¯³ÌÐò£¬ÐèÒªÇ°Ãæ¼ÓÍ·ÎÄ¼þlcxl_net.h
-//Èç¹ûÊÇWin32³ÌÐò£¬ÐèÒªÇ°Ãæ¼ÓWinSock2.h
+//abstract:é©±åŠ¨å’Œåº”ç”¨ç¨‹åºå…±ç”¨çš„è‡ªå®šä¹‰æ•°æ®åŒ…æœ‰å…³ç»“æž„æ•°æ®å¤´æ–‡ä»¶
+//å¦‚æžœæ˜¯é©±åŠ¨ç¨‹åºï¼Œéœ€è¦å‰é¢åŠ å¤´æ–‡ä»¶lcxl_net.h
+//å¦‚æžœæ˜¯Win32ç¨‹åºï¼Œéœ€è¦å‰é¢åŠ WinSock2.h
 //#include "driver/lcxl_net.h"
 #include <ifdef.h>
 
@@ -15,48 +15,48 @@ extern "C" {
 #define IM_UNKNOWN 0
 #define IM_IPV4	1
 #define IM_IPV6 2
-		int						ip_mode;		//IPÄ£Ê½£¬IPv4»¹ÊÇIPv6£¬ IM_IPV4, IM_IPV6
+		int						ip_mode;		//IPæ¨¡å¼ï¼ŒIPv4è¿˜æ˜¯IPv6ï¼Œ IM_IPV4, IM_IPV6
 		union {
 			//IP
-			IN_ADDR			    ip_4;			//Ô´IPv4µØÖ·
-			IN6_ADDR			ip_6;			//Ô´IPv6µØÖ·
+			IN_ADDR			    ip_4;			//æºIPv4åœ°å€
+			IN6_ADDR			ip_6;			//æºIPv6åœ°å€
 		} addr;
 	} LCXL_IP, *PLCXL_IP;
 
 	typedef struct _LCXL_SERVER_ADDR {
-#define SA_ENABLE_IPV4 0x01//·þÎñÆ÷ÆôÓÃÁËIPV4Ð­Òé
-#define SA_ENABLE_IPV6 0x02//·þÎñÆ÷ÆôÓÃÁËIPV6Ð­Òé
+#define SA_ENABLE_IPV4 0x01//æœåŠ¡å™¨å¯ç”¨äº†IPV4åè®®
+#define SA_ENABLE_IPV6 0x02//æœåŠ¡å™¨å¯ç”¨äº†IPV6åè®®
 		UCHAR			status;
-		//ÕæÊµµÄIPµØÖ·
+		//çœŸå®žçš„IPåœ°å€
 		IN_ADDR			ipv4;
 		IN6_ADDR		ipv6;
-		//MACµØÖ·
+		//MACåœ°å€
 		IF_PHYSICAL_ADDRESS mac_addr;
-	} LCXL_SERVER_ADDR, *PLCXL_SERVER_ADDR;//·þÎñÆ÷µØÖ·
+	} LCXL_SERVER_ADDR, *PLCXL_SERVER_ADDR;//æœåŠ¡å™¨åœ°å€
 
-	//·þÎñÆ÷ÐÔÄÜ
+	//æœåŠ¡å™¨æ€§èƒ½
 	typedef struct _LCXL_SERVER_PERFORMANCE
 	{
-		//µ¥¸öÈÎÎñµÄÆ½¾ù´¦ÀíÊ±¼ä£¬Ê±¼äµ¥Î»ÎªÎ¢Ãî£¨us£©
-		//WindowsÏÂÊ¹ÓÃKeQueryPerformanceCounter
+		//å•ä¸ªä»»åŠ¡çš„å¹³å‡å¤„ç†æ—¶é—´ï¼Œæ—¶é—´å•ä½ä¸ºå¾®å¦™ï¼ˆusï¼‰
+		//Windowsä¸‹ä½¿ç”¨KeQueryPerformanceCounter
 		unsigned long       process_time;
-		//×ÜÄÚ´æÊý
+		//æ€»å†…å­˜æ•°
 		unsigned long long  total_memory;
-		//µ±Ç°Ê¹ÓÃÄÚ´æ
+		//å½“å‰ä½¿ç”¨å†…å­˜
 		unsigned long long  cur_memory;
-		//CPUÊ¹ÓÃÂÊ£¬×î¸ßÎª1
+		//CPUä½¿ç”¨çŽ‡ï¼Œæœ€é«˜ä¸º1
 		double              cpu_usage;
 	} LCXL_SERVER_PERFORMANCE, *PLCXL_SERVER_PERFORMANCE;
-	//·þÎñÆ÷ÐÅÏ¢
+	//æœåŠ¡å™¨ä¿¡æ¯
 	typedef struct _LCXL_SERVER_INFO {
-#define SS_ENABLED	0x01//·þÎñÆ÷´¦ÓÚÆôÓÃ×´Ì¬
-#define SS_ONLINE	0x02//·þÎñÆ÷ÔÚÏß
-#define SS_DELETED	0x80//·þÎñÆ÷ÒÑ±»É¾³ý
-		//·þÎñÆ÷×´Ì¬
+#define SS_ENABLED	0x01//æœåŠ¡å™¨å¤„äºŽå¯ç”¨çŠ¶æ€
+#define SS_ONLINE	0x02//æœåŠ¡å™¨åœ¨çº¿
+#define SS_DELETED	0x80//æœåŠ¡å™¨å·²è¢«åˆ é™¤
+		//æœåŠ¡å™¨çŠ¶æ€
 		UCHAR				status;
-		//¼ÆËã»úÃû
+		//è®¡ç®—æœºå
 		CHAR				comment[256];
-		//·þÎñÆ÷ÕæÊµIPµØÖ·
+		//æœåŠ¡å™¨çœŸå®žIPåœ°å€
 		LCXL_SERVER_ADDR	addr;
 	} LCXL_SERVER_INFO, *PLCXL_SERVER_INFO;
 

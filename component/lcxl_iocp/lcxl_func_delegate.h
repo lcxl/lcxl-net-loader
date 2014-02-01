@@ -1,18 +1,18 @@
-#ifndef _LCXL_FUNC_DELEGATE_H_
+ï»¿#ifndef _LCXL_FUNC_DELEGATE_H_
 #define _LCXL_FUNC_DELEGATE_H_
 //////////////////////////////////////////////////////////////////////////
-//±¾Í·ÎÄ¼şÊµÏÖÁËÀà³ÉÔ±º¯ÊıµÄÎ¯ÍĞ¹¦ÄÜ
+//æœ¬å¤´æ–‡ä»¶å®ç°äº†ç±»æˆå‘˜å‡½æ•°çš„å§”æ‰˜åŠŸèƒ½
 //Author: LCXL
 //////////////////////////////////////////////////////////////////////////
 
 ///<summary>
-///ÊÂ¼şÄ£°æ£¬º¯ÊıÎ¯ÍĞ
-///T:±»Î¯ÍĞÕßµÄclass£¬¿ÉÒÔÈÃÎ¯ÍĞÕßµÄ¶ÔÏóÃ°³ä±»Î¯ÍĞÕß
-///E:Î¯ÍĞµÄº¯ÊıÀàĞÍ
-///ÓÃ·¨£º
-///1.¶¨ÒåÊÂ¼şÀà
+///äº‹ä»¶æ¨¡ç‰ˆï¼Œå‡½æ•°å§”æ‰˜
+///T:è¢«å§”æ‰˜è€…çš„classï¼Œå¯ä»¥è®©å§”æ‰˜è€…çš„å¯¹è±¡å†’å……è¢«å§”æ‰˜è€…
+///E:å§”æ‰˜çš„å‡½æ•°ç±»å‹
+///ç”¨æ³•ï¼š
+///1.å®šä¹‰äº‹ä»¶ç±»
 ///     typedef void (A::*EEventCallBack)(XX XX, int x, int y);
-///     class A;//Ç°ÖÃÉêÃ÷
+///     class A;//å‰ç½®ç”³æ˜
 ///     
 ///     typedef _LCXLFunctionDelegate<A, EEventCallBack> EMessageEvent;
 ///		class A {
@@ -22,16 +22,16 @@
 ///         void SetEMessageEvent(AMessageEvent &a_event) {
 ///               this->m_a_message_event = a_event;
 ///         }
-///         //´¥·¢AÊÂ¼ş
+///         //è§¦å‘Aäº‹ä»¶
 ///         void DelegateAEvent() {
 ///				(m_a_message_event.GetInvoker()->*m_a_message_event.Delegate())(0, 0);
-///             //»òÕßÎª£ºTRIGGER_DELEGATE(m_a_message_event)(0, 0);
+///             //æˆ–è€…ä¸ºï¼šTRIGGER_DELEGATE(m_a_message_event)(0, 0);
 ///         }  
 ///     private:
 ///         AMessageEvent m_e_message_event;
 ///     }
 ///
-///2.Ê¹ÓÃ
+///2.ä½¿ç”¨
 ///     class Host{
 ///		private:
 ///			A a;
@@ -39,9 +39,9 @@
 ///		public:
 ///			Host() {
 ///				A::EMessageEvent event(this, (EEventCallBack)&Host::HostAEvent);
-///             //ÉèÖÃÊÂ¼ş
+///             //è®¾ç½®äº‹ä»¶
 ///				a.SetAMessageEvent(event);
-///				//´¥·¢ÊÂ¼ş
+///				//è§¦å‘äº‹ä»¶
 ///             a.DelegateAEvent();
 ///			}
 ///		}
@@ -49,9 +49,9 @@
 ///</summary>
 template <typename T, typename E>
 struct _LCXLFunctionDelegate {
-	//µ÷ÓÃÕß
+	//è°ƒç”¨è€…
 	void * invoker;
-	//Àà³ÉÔ±»Øµ÷º¯Êı
+	//ç±»æˆå‘˜å›è°ƒå‡½æ•°
 	E delegate_func;
 	_LCXLFunctionDelegate():invoker(NULL), delegate_func(NULL) {
 
@@ -62,7 +62,7 @@ struct _LCXLFunctionDelegate {
 	T *GetInvoker() {
 		return (T *)invoker;
 	}
-	//Î¯ÍĞº¯Êı
+	//å§”æ‰˜å‡½æ•°
 	E Delegate() {
 		return delegate_func;
 	}
@@ -72,12 +72,12 @@ struct _LCXLFunctionDelegate {
 };
 
 ///<summary>
-///´¥·¢Î¯ÍĞÕßº¯ÊıµÄºê£¬ÓÃ·¨ÎªDELEGATE(_LCXLFunctionDelegateÀàĞÍµÄ±äÁ¿)(Î¯ÍĞº¯ÊıµÄ²ÎÊı)
+///è§¦å‘å§”æ‰˜è€…å‡½æ•°çš„å®ï¼Œç”¨æ³•ä¸ºDELEGATE(_LCXLFunctionDelegateç±»å‹çš„å˜é‡)(å§”æ‰˜å‡½æ•°çš„å‚æ•°)
 ///</summary>
 #define TRIGGER_DELEGATE(__A) ((__A).GetInvoker()->*(__A).Delegate())
 
 ///<summary>
-///´¥·¢Î¯ÍĞÕßº¯ÊıµÄºê£¬ÓÃ·¨ÎªDELEGATE(_LCXLFunctionDelegateÀàĞÍµÄ±äÁ¿Ö¸Õë)(Î¯ÍĞº¯ÊıµÄ²ÎÊı)
+///è§¦å‘å§”æ‰˜è€…å‡½æ•°çš„å®ï¼Œç”¨æ³•ä¸ºDELEGATE(_LCXLFunctionDelegateç±»å‹çš„å˜é‡æŒ‡é’ˆ)(å§”æ‰˜å‡½æ•°çš„å‚æ•°)
 ///</summary>
 #define TRIGGER_DELEGATE_P(__A) ((__A)->GetInvoker()->*(__A)->Delegate())
 

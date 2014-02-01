@@ -1,4 +1,4 @@
-#ifndef _LCXL_HTTP_COMM_H_
+ï»¿#ifndef _LCXL_HTTP_COMM_H_
 #define _LCXL_HTTP_COMM_H_
 #include <string>
 #include <list>
@@ -9,15 +9,15 @@ URLRec DecodeURL(const std::string &url);
 std::string EncodeURL(const URLRec &url_rec, bool IsPostMethod);
 
 struct _URLRec {
-	// Ğ­ÒéÃû³Æ£¬±¾ÀàÖ»Ö§³ÖHTTP
+	// åè®®åç§°ï¼Œæœ¬ç±»åªæ”¯æŒHTTP
 	std::string Scheme;
-	// Èçwww.baidu.com
+	// å¦‚www.baidu.com
 	std::string Host;
-	// ¶Ë¿ÚºÅ£¬Ä¬ÈÏÎª80
+	// ç«¯å£å·ï¼Œé»˜è®¤ä¸º80
 	int Port;
-	// ²éÑ¯Â·¾¶£¬Èç/sss/sss/ssd.asp
+	// æŸ¥è¯¢è·¯å¾„ï¼Œå¦‚/sss/sss/ssd.asp
 	std::string Query;
-	// ²ÎÊı£¬Èçsss=ssd&sdfs=sdr£¬ÔÚPOST·½·¨ÖĞ£¬´ËÎª¿Õ
+	// å‚æ•°ï¼Œå¦‚sss=ssd&sdfs=sdrï¼Œåœ¨POSTæ–¹æ³•ä¸­ï¼Œæ­¤ä¸ºç©º
 	std::string Fragment;
 public:
 	_URLRec();
@@ -43,31 +43,31 @@ class CHeadList :public std::list<HeadRec> {
 
 
 	///	<summary>
-	///	  ±£´æµ½×Ö·û´®ÖĞ
+	///	  ä¿å­˜åˆ°å­—ç¬¦ä¸²ä¸­
 	///	</summary>
 	///	<param name="Separator">
-	///	  ·Ö¸ô·û£¬Ä¬ÈÏÎª": "£¨Ã°ºÅ¼Ó¿Õ¸ñ£©
+	///	  åˆ†éš”ç¬¦ï¼Œé»˜è®¤ä¸º": "ï¼ˆå†’å·åŠ ç©ºæ ¼ï¼‰
 	///	</param>
 	///	<param name="LineBreak">
-	///	  »»ĞĞ·û£¬Ä¬ÈÏÎª#13#10
+	///	  æ¢è¡Œç¬¦ï¼Œé»˜è®¤ä¸º#13#10
 	///	</param>
 	///	<returns>
-	///	  ¸ñÊ½»¯ºÃµÄÇëÇó/ÏìÓ¦×Ö·û´®ÁĞ±í£¬×Ö·û´®Ä©Î²ÒÔ»»ĞĞ·û½áÎ²
+	///	  æ ¼å¼åŒ–å¥½çš„è¯·æ±‚/å“åº”å­—ç¬¦ä¸²åˆ—è¡¨ï¼Œå­—ç¬¦ä¸²æœ«å°¾ä»¥æ¢è¡Œç¬¦ç»“å°¾
 	///	</returns>
 	std::string SaveToString(const std::string Separator, const std::string LineBreak);
 
 
 	///	<summary>
-	///	  ´Ó×Ö·û´®¼ÓÔØÇëÇó/ÏìÓ¦Í·
+	///	  ä»å­—ç¬¦ä¸²åŠ è½½è¯·æ±‚/å“åº”å¤´
 	///	</summary>
 	///	<param name="AStr">
-	///	  ×Ö·û´®£¬Ä©Î²ĞèÒªÒÔLinkBreak½áÎ²
+	///	  å­—ç¬¦ä¸²ï¼Œæœ«å°¾éœ€è¦ä»¥LinkBreakç»“å°¾
 	///	</param>
 	///	<param name="Separator">
-	///	  ·Ö¸ô·û£¬ÎªÁË±£Ö¤×î´ó¼æÈİĞÔ£¬´Ë´¦Ó¦¸ÃÖ»ÄÜÊÇ":"
+	///	  åˆ†éš”ç¬¦ï¼Œä¸ºäº†ä¿è¯æœ€å¤§å…¼å®¹æ€§ï¼Œæ­¤å¤„åº”è¯¥åªèƒ½æ˜¯":"
 	///	</param>
 	///	<param name="LineBreak">
-	///	  »»ĞĞ·û£¬Ò»°ãÊÇ#13#10
+	///	  æ¢è¡Œç¬¦ï¼Œä¸€èˆ¬æ˜¯#13#10
 	///	</param>
 	bool LoadFromString(const std::string AStr, const std::string Separator, const std::string LineBreak);
 

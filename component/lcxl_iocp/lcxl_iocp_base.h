@@ -1,4 +1,4 @@
-#ifndef _LCXL_IOCP_BASE_H_
+ï»¿#ifndef _LCXL_IOCP_BASE_H_
 #define _LCXL_IOCP_BASE_H_
 
 #include <WinSock2.h>
@@ -11,7 +11,7 @@
 #include "lcxl_func_delegate.h"
 
 using namespace std;
-//¶¨ÒåIPµØÖ·×Ö·û´®×î´ó³¤¶È
+//å®šä¹‰IPåœ°å€å­—ç¬¦ä¸²æœ€å¤§é•¿åº¦
 #define ADDR_STRING_MAX_LEN 1024
 
 #ifdef _DEBUG
@@ -31,20 +31,20 @@ void OutputDebugStr(const TCHAR fmt[], ...);
 typedef enum _IocpEventEnum {ieAddSocket,
 
 	/// <summary>
-	/// socket´ÓIOCP¹ÜÀíÆ÷ÒÆ³ıÊÂ¼ş
+	/// socketä»IOCPç®¡ç†å™¨ç§»é™¤äº‹ä»¶
 	/// </summary>
 	ieDelSocket,
 
 	/// <summary>
-	/// socket±»ÏµÍ³¹Ø±ÕÊÂ¼ş£¬µ±´¥·¢ÕâÊÂ¼şÊ±£¬ÓÃ»§±ØĞëÊÍ·Å´ËsocketµÄÒıÓÃ£¬ÒÔ±ãiocp¹ÜÀíÆ÷Çå³ı´Ësocket£¬µ±ÓÃ»§ÒıÓÃÊÍ·ÅÖ®ºó£¬»á´¥·¢ieD
-	/// elSocketÊÂ¼ş
+	/// socketè¢«ç³»ç»Ÿå…³é—­äº‹ä»¶ï¼Œå½“è§¦å‘è¿™äº‹ä»¶æ—¶ï¼Œç”¨æˆ·å¿…é¡»é‡Šæ”¾æ­¤socketçš„å¼•ç”¨ï¼Œä»¥ä¾¿iocpç®¡ç†å™¨æ¸…é™¤æ­¤socketï¼Œå½“ç”¨æˆ·å¼•ç”¨é‡Šæ”¾ä¹‹åï¼Œä¼šè§¦å‘ieD
+	/// elSocketäº‹ä»¶
 	/// </summary>
 	ieCloseSocket,
 
 	ieError,
 
 	/// <summary>
-	/// ieRecvPart ÔÚ±¾µ¥ÔªÖĞÃ»ÓĞÊµÏÖ£¬À©Õ¹ÓÃ
+	/// ieRecvPart åœ¨æœ¬å•å…ƒä¸­æ²¡æœ‰å®ç°ï¼Œæ‰©å±•ç”¨
 	/// </summary>
 	ieRecvPart,
 
@@ -58,10 +58,10 @@ typedef enum _IocpEventEnum {ieAddSocket,
 
 	ieSendFailed} IocpEventEnum, *PIocpEventEnum;
 typedef enum _ListenEventEnum {leAddSockLst, leDelSockLst, leCloseSockLst, leListenFailed} ListenEventEnum, *PListenEventEnum;
-//Ç°ÖÃÉêÃ÷
-//SocketÀà
+//å‰ç½®ç”³æ˜
+//Socketç±»
 class CSocketBase;
-// ¼àÌısocketÀà£¬ÒªÊµÏÖ²»Í¬µÄ¹¦ÄÜ£¬ĞèÒª¼Ì³Ğ²¢ÊµÏÖÆä×ÓÀà
+// ç›‘å¬socketç±»ï¼Œè¦å®ç°ä¸åŒçš„åŠŸèƒ½ï¼Œéœ€è¦ç»§æ‰¿å¹¶å®ç°å…¶å­ç±»
 class CSocketLst;
 //typedef IOCPOverlapped *PIOCPOverlapped;
 class CSocketObj;
@@ -73,21 +73,21 @@ typedef CSocketObj *PCSocketObj;
 
 typedef enum _OverlappedTypeEnum {otRecv, otSend, otListen} OverlappedTypeEnum;
 /// <summary>
-/// socketÀàµÄ×´Ì¬
+/// socketç±»çš„çŠ¶æ€
 /// </summary>
 typedef enum _SocketInitStatus {
 	/// <summary>
-	/// socketÀàÕıÔÚ³õÊ¼»¯
+	/// socketç±»æ­£åœ¨åˆå§‹åŒ–
 	/// </summary>
 	sisInitializing,
 
 	/// <summary>
-	/// socketÀà³õÊ¼»¯Íê³É
+	/// socketç±»åˆå§‹åŒ–å®Œæˆ
 	/// </summary>
 	sisInitialized,
 
 	/// <summary>
-	/// socketÀàÕıÔÚÎö¹¹
+	/// socketç±»æ­£åœ¨ææ„
 	/// </summary>
 	sisDestroying} SocketInitStatus;
 
@@ -137,7 +137,7 @@ typedef struct _IOCPOverlapped {
 } IOCPOverlapped, *PIOCPOverlapped;
 
 /// <summary>
-/// SocketÀàĞÍ
+/// Socketç±»å‹
 /// </summary>
 typedef enum _SocketType{ STObj, STLst } SocketType;
 
@@ -181,7 +181,7 @@ public:
 	int IncRefCount(int Count=1);
 	int DecRefCount(int Count=1);
 	/// <summary>
-	/// ÒıÓÃ¼ÆÊı
+	/// å¼•ç”¨è®¡æ•°
 	/// </summary>
 	int GetRefCount(){
 		return mRefCount;
@@ -217,7 +217,7 @@ public:
 };
 
 /// <summary>
-/// SocketÀà£¬Ò»¸öÀà¹ÜÒ»¸öÌ×½Ó×Ö
+/// Socketç±»ï¼Œä¸€ä¸ªç±»ç®¡ä¸€ä¸ªå¥—æ¥å­—
 /// </summary>
 class CSocketObj: public CSocketBase {
 private:
@@ -237,23 +237,23 @@ public:
 	CSocketObj();
 	virtual ~CSocketObj();
 	/// <summary>
-	/// Á¬½ÓÖ¸¶¨µÄÍøÂçµØÖ·£¬Ö§³ÖIPv6
+	/// è¿æ¥æŒ‡å®šçš„ç½‘ç»œåœ°å€ï¼Œæ”¯æŒIPv6
 	/// </summary>
 	/// <param name="IOCPList">
-	/// SocketÁĞ±í
+	/// Socketåˆ—è¡¨
 	/// </param>
 	/// <param name="SerAddr">
-	/// ÒªÁ¬½ÓµÄµØÖ·
+	/// è¦è¿æ¥çš„åœ°å€
 	/// </param>
 	/// <param name="Port">
-	/// ÒªÁ¬½ÓµÄ¶Ë¿ÚºÅ
+	/// è¦è¿æ¥çš„ç«¯å£å·
 	/// </param>
-	/// <param name="IncRefNumber">Èç¹û³É¹¦£¬ÔòÔö¼Ó¶àÉÙÒıÓÃ¼ÆÊı£¬ÒıÓÃ¼ÆÊıĞèÒª³ÌĞòÔ±×Ô¼ºÊÍ·Å£¬²»È»»áÒ»Ö±Õ¼ÓÃ</param>
+	/// <param name="IncRefNumber">å¦‚æœæˆåŠŸï¼Œåˆ™å¢åŠ å¤šå°‘å¼•ç”¨è®¡æ•°ï¼Œå¼•ç”¨è®¡æ•°éœ€è¦ç¨‹åºå‘˜è‡ªå·±é‡Šæ”¾ï¼Œä¸ç„¶ä¼šä¸€ç›´å ç”¨</param>
 	/// <returns>
-	/// ·µ»ØÊÇ·ñÁ¬½Ó³É¹¦
+	/// è¿”å›æ˜¯å¦è¿æ¥æˆåŠŸ
 	/// </returns>
 	BOOL ConnectSer(CCustomIOCPBaseList &IOCPList, LPCTSTR SerAddr, int Port, int IncRefNumber);
-	//WindowsÆ½Ì¨ÏÂÊ¹ÓÃWSAAddressToString 
+	//Windowså¹³å°ä¸‹ä½¿ç”¨WSAAddressToString 
 	tstring GetRemoteIP() {
 		tstring Address;
 		WORD Port;
@@ -304,7 +304,7 @@ public:
 };
 
 /// <summary>
-/// ´æ´¢SocketÁĞ±íµÄÀà£¬Ç°ÉíÎªµÄTSocketMgrÀà
+/// å­˜å‚¨Socketåˆ—è¡¨çš„ç±»ï¼Œå‰èº«ä¸ºçš„TSocketMgrç±»
 /// </summary>
 class CCustomIOCPBaseList{
 private:
@@ -321,40 +321,40 @@ private:
 	
 protected:
 	/// <summary>
-	/// Õâ¸öÖ»ÊÇµ¥´¿µÄÁÙ½çÇøËø£¬Òª¸ü¼ÓÓĞĞ§µÄËø¶¨ÁĞ±í£¬Ê¹ÓÃ LockSockList
+	/// è¿™ä¸ªåªæ˜¯å•çº¯çš„ä¸´ç•ŒåŒºé”ï¼Œè¦æ›´åŠ æœ‰æ•ˆçš„é”å®šåˆ—è¡¨ï¼Œä½¿ç”¨ LockSockList
 	/// </summary>
 	RELEASE_INLINE void Lock();
 	/// <summary>
-	/// Ìí¼Ósockobjµ½ÁĞ±íÖĞ£¬·µ»ØTrue±íÊ¾³É¹¦£¬·µ»ØFalse±íÊ¾Ê§°Ü£¬×¢ÒâÕâÀïÒª´¦ÀíIsFreeingÎªTrueµÄÇé¿ö
+	/// æ·»åŠ sockobjåˆ°åˆ—è¡¨ä¸­ï¼Œè¿”å›Trueè¡¨ç¤ºæˆåŠŸï¼Œè¿”å›Falseè¡¨ç¤ºå¤±è´¥ï¼Œæ³¨æ„è¿™é‡Œè¦å¤„ç†IsFreeingä¸ºTrueçš„æƒ…å†µ
 	/// </summary>
 	RELEASE_INLINE void Unlock();
 	/// <summary>
-	/// Ìí¼Ósockobjµ½ÁĞ±íÖĞ£¬·µ»ØTrue±íÊ¾³É¹¦£¬·µ»ØFalse±íÊ¾Ê§°Ü£¬×¢ÒâÕâÀïÒª´¦ÀíIsFreeingÎªTrueµÄÇé¿ö
+	/// æ·»åŠ sockobjåˆ°åˆ—è¡¨ä¸­ï¼Œè¿”å›Trueè¡¨ç¤ºæˆåŠŸï¼Œè¿”å›Falseè¡¨ç¤ºå¤±è´¥ï¼Œæ³¨æ„è¿™é‡Œè¦å¤„ç†IsFreeingä¸ºTrueçš„æƒ…å†µ
 	/// </summary>
 	BOOL AddSockBase(CSocketBase *SockBase);
 	/// <summary>
-	/// ÒÆ³ısockbase£¬Èç¹û ÁĞ±í±»Ëø¶¨£¬Ôò½«socketÀà·ÅÈë´ıÉ¾³ı¶ÓÁĞÖĞ
+	/// ç§»é™¤sockbaseï¼Œå¦‚æœ åˆ—è¡¨è¢«é”å®šï¼Œåˆ™å°†socketç±»æ”¾å…¥å¾…åˆ é™¤é˜Ÿåˆ—ä¸­
 	/// </summary>
 	BOOL RemoveSockBase(CSocketBase *SockBase);
 	/// <summary>
-	/// ³õÊ¼»¯SockBase
+	/// åˆå§‹åŒ–SockBase
 	/// </summary>
 	BOOL InitSockBase(CSocketBase *SockBase);
 	/// <summary>
-	/// ÊÍ·Åsockbase£¬²¢´¥·¢ÊÂ¼ş£¬´ËÊ±sockbase±ØĞëÒÑ¾­´ÓÁĞ±íÖĞÒÆ³ı
+	/// é‡Šæ”¾sockbaseï¼Œå¹¶è§¦å‘äº‹ä»¶ï¼Œæ­¤æ—¶sockbaseå¿…é¡»å·²ç»ä»åˆ—è¡¨ä¸­ç§»é™¤
 	/// </summary>
 	BOOL FreeSockBase(CSocketBase *SockBase);
 	/// <summary>
-	/// ÔÚIOCP¹ÜÀíÆ÷ÖĞ×¢²áSockBase
+	/// åœ¨IOCPç®¡ç†å™¨ä¸­æ³¨å†ŒSockBase
 	/// </summary>
 	RELEASE_INLINE BOOL IOCPRegSockBase(CSocketBase *SockBase);
 	void WaitForDestroyEvent();
 	/// <summary>
-	/// ¼ì²éÊÇ·ñ¿ÉÒÔÊÍ·Å
+	/// æ£€æŸ¥æ˜¯å¦å¯ä»¥é‡Šæ”¾
 	/// </summary>
 	void CheckCanDestroy();
 	/// <summary>
-	/// IOCPÊÂ¼ş
+	/// IOCPäº‹ä»¶
 	/// </summary>
 	virtual void OnIOCPEvent(IocpEventEnum EventType, CSocketObj *SockObj, PIOCPOverlapped Overlapped);
 	virtual void OnListenEvent(ListenEventEnum EventType, CSocketLst *SockLst);
@@ -362,29 +362,29 @@ public:
 	CCustomIOCPBaseList(CIOCPManager *AIOCPMgr);
 	virtual ~CCustomIOCPBaseList();
 	/// <summary>
-	/// Ëø¶¨ÁĞ±í£¬×¢ÒâµÄËø¶¨ºó²»ÄÜ¶ÔÁĞ±í½øĞĞÔö¼Ó£¬É¾³ı²Ù×÷£¬Ò»ÇĞ¶¼ÓÉSocketMgrÀàÎ¬»¤
+	/// é”å®šåˆ—è¡¨ï¼Œæ³¨æ„çš„é”å®šåä¸èƒ½å¯¹åˆ—è¡¨è¿›è¡Œå¢åŠ ï¼Œåˆ é™¤æ“ä½œï¼Œä¸€åˆ‡éƒ½ç”±SocketMgrç±»ç»´æŠ¤
 	/// </summary>
 	void LockSockList();
 
 	void UnlockSockList();
 	/// <summary>
-	/// ´¦ÀíÏûÏ¢º¯Êı£¬ÔÚÓĞ´°¿ÚµÄ³ÌĞòÏÂÊ¹ÓÃ
+	/// å¤„ç†æ¶ˆæ¯å‡½æ•°ï¼Œåœ¨æœ‰çª—å£çš„ç¨‹åºä¸‹ä½¿ç”¨
 	/// </summary>
 	void ProcessMsgEvent();
 	/// <summary>
-	/// ¹Ø±ÕËùÓĞµÄSocket
+	/// å…³é—­æ‰€æœ‰çš„Socket
 	/// </summary>
 	void CloseAllSockObj();
 	/// <summary>
-	/// ¹Ø±ÕËùÓĞµÄSocklst
+	/// å…³é—­æ‰€æœ‰çš„Socklst
 	/// </summary>
 	void CloseAllSockLst();
 	/// <summary>
-	/// ¹Ø±ÕËùÓĞµÄSocket£¬°üÀ¨¼àÌısocketºÍ·Ç¼àÌısocket
+	/// å…³é—­æ‰€æœ‰çš„Socketï¼ŒåŒ…æ‹¬ç›‘å¬socketå’Œéç›‘å¬socket
 	/// </summary>
 	void CloseAllSockBase();
 	/// <summary>
-	/// ´ËÀàµÄÓµÓĞÕß
+	/// æ­¤ç±»çš„æ‹¥æœ‰è€…
 	/// </summary>
 	CIOCPManager *GetOwner() {
 		return mOwner;
@@ -399,13 +399,13 @@ public:
 		return &mSockObjList;
 	}
 	/// <summary>
-	/// »ñÈ¡±¾»úIPµØÖ·ÁĞ±í
+	/// è·å–æœ¬æœºIPåœ°å€åˆ—è¡¨
 	/// </summary>
 	/// <param name="Addrs">
-	/// »ñÈ¡ºóµÄipµØÖ·´æÈë´ËÁĞ±íÖĞ
+	/// è·å–åçš„ipåœ°å€å­˜å…¥æ­¤åˆ—è¡¨ä¸­
 	/// </param>
 	static void GetLocalAddrs(vector<tstring> &Addrs);
-	//ÓÑÀàµÄÉùÃ÷
+	//å‹ç±»çš„å£°æ˜
 	friend class CSocketBase;       
 	friend class CSocketLst;
 	friend class CSocketObj;
@@ -443,22 +443,22 @@ public:
 		return mOverLappedList;
 	}
 	RELEASE_INLINE void UnlockOverLappedList();
-	//ÓÑÀà
+	//å‹ç±»
 	friend class CSocketBase;
-	//ÓÑÀà
+	//å‹ç±»
 	friend class CSocketObj;
 
 	friend class CCustomIOCPBaseList;
 	friend unsigned __stdcall IocpWorkThread(void *CompletionPortID);
 };
-//Ç°ÖÃÉêÃ÷
+//å‰ç½®ç”³æ˜
 class CIOCPBaseList;
-// IOCPÊÂ¼ş
+// IOCPäº‹ä»¶
 typedef void (CIOCPBaseList::*EOnIOCPBaseEvent)(IocpEventEnum EventType, CSocketObj *SockObj, PIOCPOverlapped Overlapped);
-// ¼àÌıÊÂ¼ş
+// ç›‘å¬äº‹ä»¶
 typedef void (CIOCPBaseList::*EOnListenBaseEvent)(ListenEventEnum EventType, CSocketLst *SockLst);
 
-//¶¨ÒåÊÂ¼ş´¥·¢º¯ÊıÀàĞÍ
+//å®šä¹‰äº‹ä»¶è§¦å‘å‡½æ•°ç±»å‹
 typedef _LCXLFunctionDelegate<CIOCPBaseList, EOnIOCPBaseEvent> DOnIOCPBaseEvent;
 typedef _LCXLFunctionDelegate<CIOCPBaseList, EOnListenBaseEvent> DOnListenBaseEvent;
 
@@ -468,13 +468,13 @@ private:
 	DOnListenBaseEvent mListenEvent;
 protected:
 	/// <summary>
-	/// IOCPÊÂ¼ş
+	/// IOCPäº‹ä»¶
 	/// </summary>
 	virtual void OnIOCPEvent(IocpEventEnum EventType, CSocketObj *SockObj, PIOCPOverlapped Overlapped);
 	virtual void OnListenEvent(ListenEventEnum EventType, CSocketLst *SockLst);
 public:
 	CIOCPBaseList(CIOCPManager *AIOCPMgr);
-	// Íâ²¿½Ó¿Ú
+	// å¤–éƒ¨æ¥å£
 	const DOnIOCPBaseEvent &GetIOCPEvent() {
 		return mIOCPEvent;
 	}
