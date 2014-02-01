@@ -1,7 +1,7 @@
-#include "precomp.h"
+ï»¿#include "precomp.h"
 #include "lcxl_setting.h"
 
-//ÅäÖÃĞÅÏ¢
+//é…ç½®ä¿¡æ¯
 LCXL_SETTING		g_setting;
 
 VOID DelModuleSettingCallBack(PLIST_ENTRY module_setting)
@@ -26,11 +26,11 @@ VOID LoadSetting()
 		KdPrint(("SYS:LoadSetting:ZwCreateFile Failed:0x%08x, iosb.Info=0x%p\n", status, iosb.Information));
 		return;
 	}
-	//²éÑ¯ÎÄ¼şĞÅÏ¢
+	//æŸ¥è¯¢æ–‡ä»¶ä¿¡æ¯
 	status = ZwQueryInformationFile(file_handle, &iosb, &file_info, sizeof(file_info), FileStandardInformation);
 	if (NT_SUCCESS(status)) {
 
-		//ÎÄ¼ş´óĞ¡²»ÄÜ³¬¹ı65535
+		//æ–‡ä»¶å¤§å°ä¸èƒ½è¶…è¿‡65535
 		if (file_info.EndOfFile.QuadPart < 0xFFFF) {
 			PUCHAR buf;
 			PUCHAR cur_buf;
@@ -45,12 +45,12 @@ VOID LoadSetting()
 					INT module_count;
 
 					LockLCXLLockList(&g_setting.module_list);
-					//¶ÁÈ¡Ä£¿éÊıÁ¿
+					//è¯»å–æ¨¡å—æ•°é‡
 					cur_buf = LCXLReadFromBuf(cur_buf, &module_count, sizeof(module_count));
 					for (i = 0; i < module_count; i++) {
 						PLCXL_MODULE_SETTING_LIST_ENTRY module_setting = NULL;
 						NET_LUID miniport_net_luid;
-						//¶ÁÈ¡Luid
+						//è¯»å–Luid
 						cur_buf = LCXLReadFromBuf(cur_buf, &miniport_net_luid.Value, sizeof(miniport_net_luid.Value));
 						module_setting = FindModuleSettingByLUID(miniport_net_luid);
 						
@@ -59,26 +59,26 @@ VOID LoadSetting()
 							INT server_count;
 
 							module_setting = NewModuleSetting();
-							//¶ÁÈ¡Luid
+							//è¯»å–Luid
 							module_setting->miniport_net_luid.Value = miniport_net_luid.Value;
-							//Ğ´ÈëÄ£¿é±êÖ¾ĞÅÏ¢
+							//å†™å…¥æ¨¡å—æ ‡å¿—ä¿¡æ¯
 							cur_buf = LCXLReadFromBuf(cur_buf, &module_setting->flag, sizeof(module_setting->flag));
-							//¶ÁÈ¡Ğ¡¶Ë¿ÚÇı¶¯ÓÑºÃÃû³Æ
+							//è¯»å–å°ç«¯å£é©±åŠ¨å‹å¥½åç§°
 							cur_buf = LCXLReadStringFromBuf(cur_buf, &module_setting->miniport_friendly_name);
-							//¶ÁÈ¡Ğ¡¶Ë¿ÚÇı¶¯Ãû³Æ
+							//è¯»å–å°ç«¯å£é©±åŠ¨åç§°
 							cur_buf = LCXLReadStringFromBuf(cur_buf, &module_setting->miniport_name);
-							//¶ÁÈ¡Ä£¿éÃû³Æ
+							//è¯»å–æ¨¡å—åç§°
 							cur_buf = LCXLReadStringFromBuf(cur_buf, &module_setting->filter_module_name);
-							//¶ÁÈ¡¾ùºâÆ÷µØÖ·
+							//è¯»å–å‡è¡¡å™¨åœ°å€
 							cur_buf = LCXLReadFromBuf(cur_buf, &module_setting->real_addr, sizeof(module_setting->real_addr));
-							//¶ÁÈ¡ĞéÄâIPv4µØÖ·
+							//è¯»å–è™šæ‹ŸIPv4åœ°å€
 							cur_buf = LCXLReadFromBuf(cur_buf, &module_setting->virtual_ipv4, sizeof(module_setting->virtual_ipv4));
-							//¶ÁÈ¡ĞéÄâIPv6µØÖ·
+							//è¯»å–è™šæ‹ŸIPv6åœ°å€
 							cur_buf = LCXLReadFromBuf(cur_buf, &module_setting->virtual_ipv6, sizeof(module_setting->virtual_ipv6));
 
-							//¶ÁÈ¡·şÎñÆ÷ÊıÁ¿
+							//è¯»å–æœåŠ¡å™¨æ•°é‡
 							cur_buf = LCXLReadFromBuf(cur_buf, &server_count, sizeof(server_count));
-							//³õÊ¼»¯·şÎñÆ÷ÁĞ±í
+							//åˆå§‹åŒ–æœåŠ¡å™¨åˆ—è¡¨
 							InitLCXLLockList(&module_setting->server_list, DelServerCallBack);
 							
 							for (j = 0; j < server_count; j++) {
@@ -134,7 +134,7 @@ PLCXL_MODULE_SETTING_LIST_ENTRY LoadModuleSetting(IN PNDIS_FILTER_ATTACH_PARAMET
 	module = FindModuleSettingByLUID(attach_paramters->BaseMiniportNetLuid);
 	
 	is_new_module = module == NULL;
-	//Èç¹ûÃ»ÓĞÕÒµ½
+	//å¦‚æœæ²¡æœ‰æ‰¾åˆ°
 	if (is_new_module) {
 		module = NewModuleSetting();
 		if (module != NULL) {
@@ -142,12 +142,12 @@ PLCXL_MODULE_SETTING_LIST_ENTRY LoadModuleSetting(IN PNDIS_FILTER_ATTACH_PARAMET
 		}
 	}
 	if (module != NULL) {
-		//¸üĞÂmoduleÖĞµÄĞÅÏ¢
-		//¸üĞÂMACĞÅÏ¢
-		//±£´æMACµØÖ·£¨Ò»¸öÎÊÌâ£¬µ±ÓÃ»§ÊÖ¶¯ĞŞ¸ÄÁËMACµØÖ·£¬»áÔõÑù- -£©
+		//æ›´æ–°moduleä¸­çš„ä¿¡æ¯
+		//æ›´æ–°MACä¿¡æ¯
+		//ä¿å­˜MACåœ°å€ï¼ˆä¸€ä¸ªé—®é¢˜ï¼Œå½“ç”¨æˆ·æ‰‹åŠ¨ä¿®æ”¹äº†MACåœ°å€ï¼Œä¼šæ€æ ·- -ï¼‰
 		module->real_addr.mac_addr.Length = sizeof(module->real_addr.mac_addr.Address) < attach_paramters->MacAddressLength ? sizeof(module->real_addr.mac_addr.Address) : attach_paramters->MacAddressLength;
 		NdisMoveMemory(module->real_addr.mac_addr.Address, attach_paramters->CurrentMacAddress, module->real_addr.mac_addr.Length);
-		//¸üĞÂĞ¡¶Ë¿ÚÇı¶¯Ïà¹ØĞÅÏ¢
+		//æ›´æ–°å°ç«¯å£é©±åŠ¨ç›¸å…³ä¿¡æ¯
 		LCXLFreeString(module->miniport_friendly_name);
 		module->miniport_friendly_name = LCXLNewString(attach_paramters->BaseMiniportInstanceName);
 		LCXLFreeString(module->miniport_name);
@@ -155,7 +155,7 @@ PLCXL_MODULE_SETTING_LIST_ENTRY LoadModuleSetting(IN PNDIS_FILTER_ATTACH_PARAMET
 		LCXLFreeString(module->filter_module_name);
 		module->filter_module_name = LCXLNewString(attach_paramters->FilterModuleGuidName);
 
-		//ÒıÓÃ¼ÆÊı¼Ó1
+		//å¼•ç”¨è®¡æ•°åŠ 1
 		InterlockedIncrement(&module->ref_count);
 		if (is_new_module) {
 			AddtoLCXLLockList(&g_setting.module_list, &module->list_entry);
@@ -176,7 +176,7 @@ VOID SaveSetting()
 	INT buf_len;
 	PUCHAR buf;
 	PUCHAR cur_buf;
-	//´ò¿ªÎÄ¼ş
+	//æ‰“å¼€æ–‡ä»¶
 	RtlInitUnicodeString(&file_path, LOADER_SETTING_FILE_PATH);
 	InitializeObjectAttributes(&oa, &file_path, OBJ_CASE_INSENSITIVE || OBJ_KERNEL_HANDLE, NULL, NULL);
 	status = ZwCreateFile(
@@ -198,12 +198,12 @@ VOID SaveSetting()
 	}
 	buf_len = 0;
 	LockLCXLLockList(&g_setting.module_list);
-	//»ñÈ¡Ä£¿éÊıÁ¿
+	//è·å–æ¨¡å—æ•°é‡
 	buf_len +=  sizeof(g_setting.module_list.list_count);
-	//ÏÈ¼ÆËãĞèÒªĞ´ÈëÅäÖÃÎÄ¼şµÄ³¤¶È
+	//å…ˆè®¡ç®—éœ€è¦å†™å…¥é…ç½®æ–‡ä»¶çš„é•¿åº¦
 	module = CONTAINING_RECORD(GetListofLCXLLockList(&g_setting.module_list)->Flink, LCXL_MODULE_SETTING_LIST_ENTRY, list_entry);
 	while (&module->list_entry != GetListofLCXLLockList(&g_setting.module_list)) {
-		//Èç¹ûÊÇÖØÆôºóÉ¾³ıµÄ£¬Ôò²»±£´æµ½ÅäÖÃÎÄ¼şÖĞ
+		//å¦‚æœæ˜¯é‡å¯ååˆ é™¤çš„ï¼Œåˆ™ä¸ä¿å­˜åˆ°é…ç½®æ–‡ä»¶ä¸­
 		if ((module->flag & MSF_DELETE_AFTER_RESTART) == 0) {
 			PSERVER_INFO_LIST_ENTRY server;
 
@@ -234,38 +234,38 @@ VOID SaveSetting()
 	}
 
 	buf = cur_buf = ExAllocatePoolWithTag(NonPagedPool, buf_len, TAG_FILE_BUFFER);
-	//»ñÈ¡Ä£¿éÊıÁ¿
+	//è·å–æ¨¡å—æ•°é‡
 	cur_buf = LCXLWriteToBuf(cur_buf, &g_setting.module_list.list_count, sizeof(g_setting.module_list.list_count));
 
 	module = CONTAINING_RECORD(GetListofLCXLLockList(&g_setting.module_list)->Flink, LCXL_MODULE_SETTING_LIST_ENTRY, list_entry);
 	while (&module->list_entry != GetListofLCXLLockList(&g_setting.module_list)) {
-		//Èç¹ûÊÇÖØÆôºóÉ¾³ıµÄ£¬Ôò²»±£´æµ½ÅäÖÃÎÄ¼şÖĞ
+		//å¦‚æœæ˜¯é‡å¯ååˆ é™¤çš„ï¼Œåˆ™ä¸ä¿å­˜åˆ°é…ç½®æ–‡ä»¶ä¸­
 		if ((module->flag & MSF_DELETE_AFTER_RESTART) == 0) {
 			PSERVER_INFO_LIST_ENTRY server;
 			
-			//Ğ´ÈëLuid
+			//å†™å…¥Luid
 			cur_buf = LCXLWriteToBuf(cur_buf, &module->miniport_net_luid.Value, sizeof(module->miniport_net_luid.Value));
-			//Ğ´ÈëÄ£¿é±êÖ¾ĞÅÏ¢
+			//å†™å…¥æ¨¡å—æ ‡å¿—ä¿¡æ¯
 			cur_buf = LCXLWriteToBuf(cur_buf, &module->flag, sizeof(module->flag));
-			//Ğ´ÈëĞ¡¶Ë¿ÚÇı¶¯ÓÑºÃÃû³Æ
+			//å†™å…¥å°ç«¯å£é©±åŠ¨å‹å¥½åç§°
 			cur_buf = LCXLWriteStringToBuf(cur_buf, module->miniport_friendly_name);
-			//Ğ´ÈëĞ¡¶Ë¿ÚÇı¶¯Ãû³Æ
+			//å†™å…¥å°ç«¯å£é©±åŠ¨åç§°
 			cur_buf = LCXLWriteStringToBuf(cur_buf, module->miniport_name);
-			//Ğ´ÈëÄ£¿éÃû³Æ
+			//å†™å…¥æ¨¡å—åç§°
 			cur_buf = LCXLWriteStringToBuf(cur_buf, module->filter_module_name);
-			//Ğ´Èë¾ùºâÆ÷µØÖ·
+			//å†™å…¥å‡è¡¡å™¨åœ°å€
 			cur_buf = LCXLWriteToBuf(cur_buf, &module->real_addr, sizeof(module->real_addr));
-			//Ğ´ÈëĞéÄâIPv4µØÖ·
+			//å†™å…¥è™šæ‹ŸIPv4åœ°å€
 			cur_buf = LCXLWriteToBuf(cur_buf, &module->virtual_ipv4, sizeof(module->virtual_ipv4));
-			//Ğ´ÈëĞéÄâIPv6µØÖ·
+			//å†™å…¥è™šæ‹ŸIPv6åœ°å€
 			cur_buf = LCXLWriteToBuf(cur_buf, &module->virtual_ipv6, sizeof(module->virtual_ipv6));
 			LockLCXLLockList(&module->server_list);
-			//Ğ´Èë·şÎñÆ÷ÊıÁ¿
+			//å†™å…¥æœåŠ¡å™¨æ•°é‡
 			cur_buf = LCXLWriteToBuf(cur_buf, &module->server_list.list_count, sizeof(module->server_list.list_count));
-			//±éÀúĞ´Èë·şÎñÆ÷ĞÅÏ¢
+			//éå†å†™å…¥æœåŠ¡å™¨ä¿¡æ¯
 			server = CONTAINING_RECORD(GetListofLCXLLockList(&module->server_list)->Flink, SERVER_INFO_LIST_ENTRY, list_entry);
 			while (&server->list_entry != GetListofLCXLLockList(&module->server_list)) {
-				//Ğ´Èë·şÎñÆ÷ĞÅÏ¢
+				//å†™å…¥æœåŠ¡å™¨ä¿¡æ¯
 				if ((server->info.status & SS_DELETED) == 0) {
 					cur_buf = LCXLWriteToBuf(cur_buf, &server->info, sizeof(server->info));
 				}
