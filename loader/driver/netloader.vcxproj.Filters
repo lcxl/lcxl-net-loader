@@ -75,9 +75,6 @@
     <ClInclude Include="..\..\common\driver\lcxl_net.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="filteruser.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="flt_dbg.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -134,6 +131,9 @@
     </ClInclude>
     <ClInclude Include="flt_dbg.h" />
     <ClInclude Include="precomp.h" />
+    <ClInclude Include="..\..\common\driver\lcxl_lock_list.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="filter.rc">

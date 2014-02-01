@@ -175,17 +175,18 @@ FilterDeviceIoControl(
 
                 break;
             }
-            NdisFRestartFilter(pFilter->FilterHandle);
+            NdisFRestartFilter(pFilter->filter_handle);
             break;
 
         case IOCTL_FILTER_ENUERATE_ALL_INSTANCES:
 
             pInfo = OutputBuffer;
-            FILTER_ACQUIRE_LOCK(&g_filter_list_lock, bFalse);
-            Link = g_filter_list.Flink;
+			LockLCXLLockList(&g_filter_list);
+            
+            Link = GetListofLCXLLockList(&g_filter_list)->Flink;
 			//遍历列表
-            while (Link != &g_filter_list) {
-                pFilter = CONTAINING_RECORD(Link, LCXL_FILTER, FilterModuleLink);
+			while (Link != GetListofLCXLLockList(&g_filter_list)) {
+                pFilter = CONTAINING_RECORD(Link, LCXL_FILTER, filter_module_link);
 
                 InfoLength += (pFilter->module_setting->filter_module_name->Length + sizeof(USHORT));
 
@@ -199,8 +200,7 @@ FilterDeviceIoControl(
                 }
                 Link = Link->Flink;
             }
-
-            FILTER_RELEASE_LOCK(&g_filter_list_lock, bFalse);
+			UnlockLCXLLockList(&g_filter_list);
             if (InfoLength <= OutputBufferLength) {
                 Status = NDIS_STATUS_SUCCESS;
             }
@@ -215,26 +215,26 @@ FilterDeviceIoControl(
 		case IOCTL_LOADER_ALL_APP_MODULE:
 		{
 			PAPP_MODULE_INFO cur_buf;
-
-			cur_buf = (PAPP_MODULE_INFO)OutputBuffer;
-
 			PLCXL_MODULE_SETTING_LIST_ENTRY module;
 
-			FILTER_ACQUIRE_LOCK(&g_Setting.module_list_lock, bFalse);
-			module = &g_Setting.module_list;
-			while (module = CONTAINING_RECORD(module->list_entry.Flink, LCXL_MODULE_SETTING_LIST_ENTRY, list_entry), module != &g_Setting.module_list) {
+			cur_buf = (PAPP_MODULE_INFO)OutputBuffer;
+			LockLCXLLockList(&g_setting.module_list);
+			module = CONTAINING_RECORD(GetListofLCXLLockList(&g_setting.module_list)->Flink, LCXL_MODULE_SETTING_LIST_ENTRY, list_entry);
+			while (&module->list_entry != GetListofLCXLLockList(&g_setting.module_list)) {
 				//先判断缓冲区是否足够
 				if (OutputBufferLength - (ULONG)((LONG_PTR)cur_buf - (LONG_PTR)OutputBuffer) < sizeof(APP_MODULE_INFO)) {
 					Status = STATUS_BUFFER_TOO_SMALL;
 					break;
 				}
 				cur_buf->app_module_status = module->ref_count == 0 ? AMS_NO_FILTER : AMS_NORMAL;
-				FILTER_ACQUIRE_LOCK(&module->module_setting_lock, bFalse);
+				FILTER_ACQUIRE_LOCK(&module->lock, bFalse);
 				cur_buf->real_addr = module->real_addr;
 				cur_buf->virtual_ipv4 = module->virtual_ipv4;
 				cur_buf->virtual_ipv6 = module->virtual_ipv6;
-				cur_buf->server_count = module->server_count;
-				FILTER_RELEASE_LOCK(&module->module_setting_lock, bFalse);
+				LockLCXLLockList(&module->server_list);
+				cur_buf->server_count = GetListCountofLCXLLockList(&module->server_list);
+				UnlockLCXLLockList(&module->server_list);
+				FILTER_RELEASE_LOCK(&module->lock, bFalse);
 				cur_buf->miniport_net_luid = module->miniport_net_luid;
 
 				cur_buf->filter_module_name_len = (sizeof(cur_buf->filter_module_name) < module->filter_module_name->Length) ? sizeof(cur_buf->filter_module_name) : module->filter_module_name->Length;
@@ -247,42 +247,79 @@ FilterDeviceIoControl(
 				RtlCopyMemory(cur_buf->miniport_name, module->miniport_name->Buffer, cur_buf->miniport_name_len);
 
 				cur_buf++;
+				module = CONTAINING_RECORD(module->list_entry.Flink, LCXL_MODULE_SETTING_LIST_ENTRY, list_entry);
 			}
-			FILTER_RELEASE_LOCK(&g_Setting.module_list_lock, bFalse);
+			UnlockLCXLLockList(&g_setting.module_list);
 			InfoLength = (ULONG)((ULONG_PTR)cur_buf - (ULONG_PTR)OutputBuffer);
 		}
 			break;
-		case IOCTL_LOADER_GET_VIRTUAL_IP:
-			
-			break;
 		case IOCTL_LOADER_SET_VIRTUAL_IP:
+			if (InputBufferLength == sizeof(APP_IP)) {
+				PAPP_IP ip;
+				PLCXL_FILTER pFilter;
+
+				ip = (PAPP_IP)InputBuffer;
+				LockLCXLLockList(&g_filter_list);
+				pFilter = FindFilter(ip->miniport_net_luid);
+				if (pFilter != NULL) {
+					NdisAcquireSpinLock(&pFilter->module_setting->lock);
+					switch (ip->ip.ip_mode) {
+						//IPv4模式
+					case IM_IPV4:
+						pFilter->module_setting->virtual_ipv4 = ip->ip.addr.ip_4;
+						break;
+						//IPv6模式
+					case IM_IPV6:
+						pFilter->module_setting->virtual_ipv6 = ip->ip.addr.ip_6;
+						break;
+					default:
+						Status = STATUS_INVALID_PARAMETER;
+						break;
+					}
+					NdisReleaseSpinLock(&pFilter->module_setting->lock);
+				}
+				
+				UnlockLCXLLockList(&g_filter_list);
+			} else {
+				Status = STATUS_INFO_LENGTH_MISMATCH;
+			}
 			break;
 		case IOCTL_LOADER_GET_SERVER_LIST:
 			if (InputBufferLength == sizeof(NET_LUID)) {
-				PLCXL_FILTER pFilter = FindAndLockFilter(*(PNET_LUID)InputBuffer);
+				PLCXL_FILTER pFilter;
+
+				LockLCXLLockList(&g_filter_list); 
+				pFilter = FindFilter(*(PNET_LUID)InputBuffer);
 				if (pFilter != NULL) {
 					if (pFilter->module_setting != NULL && (pFilter->module_setting->flag & ML_DELETE_AFTER_RESTART) == 0) {
 						
 					} else {
 						Status = STATUS_NOT_FOUND;
 					}
-					UnlockFilter(pFilter);
 				} else {
 					Status = STATUS_NOT_FOUND;
 				}
+				UnlockLCXLLockList(&g_filter_list);
 			} else {
 				Status = STATUS_INFO_LENGTH_MISMATCH;
 			}
 			break;
 		case IOCTL_LOADER_ADD_SERVER:
 			if (sizeof(APP_ADD_SERVER) == InputBufferLength) {
-				PAPP_ADD_SERVER app_add_server = (PAPP_ADD_SERVER)InputBuffer;
+				PAPP_ADD_SERVER app_add_server;
+				PLCXL_FILTER pFilter;
 				
-				PLCXL_FILTER pFilter = FindAndLockFilter(app_add_server->miniport_net_luid);
+				app_add_server = (PAPP_ADD_SERVER)InputBuffer;
+				LockLCXLLockList(&g_filter_list);
+				pFilter = FindFilter(app_add_server->miniport_net_luid);
 				if (pFilter != NULL) {
-
-					UnlockFilter(pFilter);
+					
+					LockLCXLLockList(&pFilter->module_setting->server_list);
+					
+					
+					UnlockLCXLLockList(&pFilter->module_setting->server_list);
 				}
+				UnlockLCXLLockList(&g_filter_list);
 			} else {
 				Status = STATUS_INFO_LENGTH_MISMATCH;
 			}
@@ -290,12 +327,12 @@ FilterDeviceIoControl(
 		case IOCTL_LOADER_DEL_SERVER:
 			if (sizeof(APP_DEL_SERVER) == InputBufferLength) {
 				PAPP_DEL_SERVER app_del_server = (PAPP_DEL_SERVER)InputBuffer;
+				PLCXL_FILTER pFilter;
 
-				PLCXL_FILTER pFilter = FindAndLockFilter(app_del_server->miniport_net_luid);
-				if (pFilter != NULL) {
-
-					UnlockFilter(pFilter);
-				}
+				LockLCXLLockList(&g_filter_list);
+				pFilter = FindFilter(app_del_server->miniport_net_luid);
+				UnlockLCXLLockList(&g_filter_list);
+				
 			} else {
 				Status = STATUS_INFO_LENGTH_MISMATCH;
 			}
@@ -324,20 +361,19 @@ filterFindFilterModule(
     )
 {
 
-   PLCXL_FILTER              pFilter;
+   PLCXL_FILTER            pFilter;
    PLIST_ENTRY             Link;
-   BOOLEAN                  bFalse = FALSE;
 
-   FILTER_ACQUIRE_LOCK(&g_filter_list_lock, bFalse);
 
-   Link = g_filter_list.Flink;
+   LockLCXLLockList(&g_filter_list);
+   Link = GetListofLCXLLockList(&g_filter_list)->Flink;
 
-   while (Link != &g_filter_list) {
-       pFilter = CONTAINING_RECORD(Link, LCXL_FILTER, FilterModuleLink);
+   while (Link != GetListofLCXLLockList(&g_filter_list)) {
+	   pFilter = CONTAINING_RECORD(Link, LCXL_FILTER, filter_module_link);
 
 	   if (BufferLength >= pFilter->module_setting->filter_module_name->Length) {
 		   if (NdisEqualMemory(Buffer, pFilter->module_setting->filter_module_name->Buffer, pFilter->module_setting->filter_module_name->Length)) {
-               FILTER_RELEASE_LOCK(&g_filter_list_lock, bFalse);
+			   UnlockLCXLLockList(&g_filter_list);
                return pFilter;
            }
        }
@@ -345,7 +381,7 @@ filterFindFilterModule(
        Link = Link->Flink;
    }
 
-   FILTER_RELEASE_LOCK(&g_filter_list_lock, bFalse);
+   UnlockLCXLLockList(&g_filter_list);
    return NULL;
 }
 

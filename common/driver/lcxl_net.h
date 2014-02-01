@@ -2,6 +2,8 @@
 #define _LCXL_NET_H_
 
 #include <netioddk.h>
+//author:LCXL
+//abstract:驱动共用的自定义数据包有关结构数据头文件
 //#include <ws2def.h>
 //#ifndef INCL_WINSOCK_API_PROTOTYPES
 //#define INCL_WINSOCK_API_PROTOTYPES

@@ -44,6 +44,11 @@ extern "C" {
 
 	} APP_MODULE_INFO, *PAPP_MODULE_INFO;
 
+	//IOCTL_LOADER_SET_VIRTUAL_IP
+	typedef struct _APP_IP {
+		NET_LUID	miniport_net_luid;
+		LCXL_IP		ip;
+	} APP_IP, *PAPP_IP;
 	//服务器列表
 	//IOCTL_LOADER_GET_SERVER_LIST
 	//input NET_LUID                     miniport_net_luid;
@@ -60,9 +65,9 @@ extern "C" {
 	} APP_ADD_SERVER, *PAPP_ADD_SERVER;
 	//删除服务器
 	typedef struct _APP_DEL_SERVER {
-		NET_LUID				miniport_net_luid;
+		NET_LUID			miniport_net_luid;
 		//MAC地址
-		IF_PHYSICAL_ADDRESS_LH	mac_addr;
+		IF_PHYSICAL_ADDRESS	mac_addr;
 	} APP_DEL_SERVER, *PAPP_DEL_SERVER;
 #ifdef __cplusplus
 }

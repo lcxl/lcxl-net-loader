@@ -30,11 +30,8 @@ NDIS_HANDLE         g_filter_driver_handle; // NDIS handle for filter driver
 NDIS_HANDLE         g_filter_driver_object;
 NDIS_HANDLE         g_ndis_filter_device_handle = NULL;
 PDEVICE_OBJECT      g_device_object = NULL;
-//过滤列表锁
-FILTER_LOCK         g_filter_list_lock;
-
 //过滤模块列表
-LIST_ENTRY          g_filter_list;
+LCXL_LOCK_LIST		g_filter_list;
 
 //转发的NBL的内存TAG
 #define TAG_SEND_NBL 'SEND'
@@ -95,7 +92,7 @@ Return Value:
     do
     {
         //添加代码
-		INIT_SERVER_MEM_MGR();
+		InitServerMemMgr();
 		INIT_ROUTE_MEM_MGR();
         //!添加代码!
 
@@ -150,12 +147,10 @@ Return Value:
         //
         // Initialize spin locks
         //
-        FILTER_INIT_LOCK(&g_filter_list_lock);
-        InitializeListHead(&g_filter_list);
+		InitLCXLLockList(&g_filter_list, DelLCXLFilterCallBack);
 
-		FILTER_INIT_LOCK(&g_Setting.module_list_lock);
-		InitializeListHead(&g_Setting.module_list.list_entry);
-		g_Setting.module_count = 0;
+		FILTER_INIT_LOCK(&g_setting.lock);
+		InitLCXLLockList(&g_setting.module_list, DelModuleSettingCallBack);
         Status = NdisFRegisterFilterDriver(DriverObject,
                                            (NDIS_HANDLE)g_filter_driver_object,
                                            &FChars,
@@ -163,6 +158,9 @@ Return Value:
         if (Status != NDIS_STATUS_SUCCESS)
         {
             DEBUGP(DL_WARN, "Register filter driver failed.\n");
+
+			DelLCXLLockList(&g_setting.module_list);
+			DelLCXLLockList(&g_filter_list);
             break;
         }
 
@@ -171,7 +169,9 @@ Return Value:
         if (Status != NDIS_STATUS_SUCCESS)
         {
             NdisFDeregisterFilterDriver(g_filter_driver_handle);
-            FILTER_FREE_LOCK(&g_filter_list_lock);
+            
+			DelLCXLLockList(&g_setting.module_list);
+			DelLCXLLockList(&g_filter_list);
             DEBUGP(DL_WARN, "Register device for the filter driver failed.\n");
             break;
         }
@@ -270,11 +270,11 @@ N.B.:  FILTER can use NdisRegisterDeviceEx to create a device, so the upper
 
 --*/
 {
-    PLCXL_FILTER              pFilter = NULL;
-    NDIS_STATUS             Status = NDIS_STATUS_SUCCESS;
-    NDIS_FILTER_ATTRIBUTES  FilterAttributes;
-    ULONG                   Size;
-    BOOLEAN               bFalse = FALSE;
+    PLCXL_FILTER			pFilter = NULL;
+    NDIS_STATUS				Status = NDIS_STATUS_SUCCESS;
+    NDIS_FILTER_ATTRIBUTES	FilterAttributes;
+    ULONG					Size;
+    BOOLEAN					bFalse = FALSE;
     //添加代码
     NET_BUFFER_LIST_POOL_PARAMETERS PoolParameters;
     //!添加代码!
@@ -320,7 +320,7 @@ N.B.:  FILTER can use NdisRegisterDeviceEx to create a device, so the upper
         NdisZeroMemory(pFilter, sizeof(LCXL_FILTER));
 		pFilter->attach_paramters = AttachParameters;
         
-        pFilter->MiniportIfIndex = AttachParameters->BaseMiniportIfIndex;
+        pFilter->miniport_if_index = AttachParameters->BaseMiniportIfIndex;
         //添加代码
 		pFilter->miniport_net_luid = AttachParameters->BaseMiniportNetLuid;
         //保存MAC地址（一个问题，当用户手动修改了MAC地址，会怎样- -）
@@ -330,11 +330,11 @@ N.B.:  FILTER can use NdisRegisterDeviceEx to create a device, so the upper
 		//初始化服务器列表
 		//InitializeListHead(&pFilter->server_list.list_entry);
 		//初始化路由列表
-		InitializeListHead(&pFilter->route_list.list_entry);
+		InitializeListHead(&pFilter->route_list);
         //初始化NBL发送池
         PoolParameters.Header.Type = NDIS_OBJECT_TYPE_DEFAULT;
         PoolParameters.Header.Revision = NET_BUFFER_LIST_POOL_PARAMETERS_REVISION_1;
-        PoolParameters.Header.Size = sizeof(PoolParameters);
+		PoolParameters.Header.Size = NDIS_SIZEOF_NET_BUFFER_LIST_POOL_PARAMETERS_REVISION_1;
         PoolParameters.ProtocolId = NDIS_PROTOCOL_ID_DEFAULT;
         //PoolParameters.ContextSize = sizeof(NPROT_SEND_NETBUFLIST_RSVD);
         PoolParameters.fAllocateNetBuffer = TRUE;
@@ -347,9 +347,9 @@ N.B.:  FILTER can use NdisRegisterDeviceEx to create a device, so the upper
         // driver, since its default characteristic has both a send and a receive handler,
         // these fields are initialized to TRUE.
         //
-        pFilter->TrackReceives = TRUE;
-        pFilter->TrackSends = TRUE;
-        pFilter->FilterHandle = NdisFilterHandle;
+        pFilter->track_receives = TRUE;
+        pFilter->track_sends = TRUE;
+        pFilter->filter_handle = NdisFilterHandle;
 
 
         NdisZeroMemory(&FilterAttributes, sizeof(NDIS_FILTER_ATTRIBUTES));
@@ -369,13 +369,10 @@ N.B.:  FILTER can use NdisRegisterDeviceEx to create a device, so the upper
         }
 
 
-        pFilter->State = FilterPaused;
+        pFilter->state = FilterPaused;
 		//加载配置文件
 		pFilter->module_setting = LoadModuleSetting(AttachParameters);
-        FILTER_ACQUIRE_LOCK(&g_filter_list_lock, bFalse);
-        InsertHeadList(&g_filter_list, &pFilter->FilterModuleLink);
-        FILTER_RELEASE_LOCK(&g_filter_list_lock, bFalse);
-
+		AddtoLCXLLockList(&g_filter_list, &pFilter->filter_module_link);
     }
     while (bFalse);
 
@@ -436,11 +433,11 @@ N.B.: When the filter is in Pausing state, it can still process OID requests,
     //
     // Set the flag that the filter is going to pause
     //
-    FILTER_ASSERT(pFilter->State == FilterRunning);
+    FILTER_ASSERT(pFilter->state == FilterRunning);
 
-    FILTER_ACQUIRE_LOCK(&pFilter->Lock, bFalse);
-    pFilter->State = FilterPausing;
-    FILTER_RELEASE_LOCK(&pFilter->Lock, bFalse);
+    FILTER_ACQUIRE_LOCK(&pFilter->lock, bFalse);
+    pFilter->state = FilterPausing;
+    FILTER_RELEASE_LOCK(&pFilter->lock, bFalse);
 
     //
     // Do whatever work is required to bring the filter into the Paused state.
@@ -455,7 +452,7 @@ N.B.: When the filter is in Pausing state, it can still process OID requests,
 
     Status = NDIS_STATUS_SUCCESS;
 
-    pFilter->State = FilterPaused;
+    pFilter->state = FilterPaused;
 
     DEBUGP(DL_TRACE, "<===FilterPause:  Status %x\n", Status);
     return Status;
@@ -498,7 +495,7 @@ Return Value:
     DEBUGP(DL_TRACE, "===>FilterRestart:   FilterModuleContext %p\n", FilterModuleContext);
 	KdPrint(("SYS:FilterRestart:miniport:%I64u %wZ %wZ %wZ\n", pFilter->miniport_net_luid.Value, pFilter->attach_paramters->FilterModuleGuidName, pFilter->attach_paramters->BaseMiniportInstanceName, pFilter->attach_paramters->BaseMiniportName));
 
-    FILTER_ASSERT(pFilter->State == FilterPaused);
+    FILTER_ASSERT(pFilter->state == FilterPaused);
 
     ConfigObject.Header.Type = NDIS_OBJECT_TYPE_CONFIGURATION_OBJECT;
     ConfigObject.Header.Revision = NDIS_CONFIGURATION_OBJECT_REVISION_1;
@@ -606,7 +603,7 @@ Return Value:
     //
     // If everything is OK, set the filter in running state.
     //
-    pFilter->State = FilterRunning; // when successful
+    pFilter->state = FilterRunning; // when successful
 
 
     Status = NDIS_STATUS_SUCCESS;
@@ -618,7 +615,7 @@ Return Value:
 
     if (Status != NDIS_STATUS_SUCCESS)
     {
-        pFilter->State = FilterPaused;
+        pFilter->state = FilterPaused;
     }
 
 
@@ -652,8 +649,6 @@ NOTE: Called at PASSIVE_LEVEL and the filter is in paused state
 --*/
 {
     PLCXL_FILTER                  pFilter = (PLCXL_FILTER)FilterModuleContext;
-    BOOLEAN                      bFalse = FALSE;
-
 
     DEBUGP(DL_TRACE, "===>FilterDetach:    FilterInstance %p\n", FilterModuleContext);
 
@@ -662,36 +657,23 @@ NOTE: Called at PASSIVE_LEVEL and the filter is in paused state
 	//
     // Filter must be in paused state
     //
-    FILTER_ASSERT(pFilter->State == FilterPaused);
+    FILTER_ASSERT(pFilter->state == FilterPaused);
 
 
     //
     // Detach must not fail, so do not put any code here that can possibly fail.
     //
 
-    //
-    // Free filter instance name if allocated.
-    //
-    if (pFilter->FilterName.Buffer != NULL)
-    {
-        FILTER_FREE_MEM(pFilter->FilterName.Buffer);
-    }
+	pFilter->module_setting->ref_count--;
 
     //添加代码
     if (pFilter->send_net_buffer_list_pool!=NULL) {
         NdisFreeNetBufferListPool(pFilter->send_net_buffer_list_pool);
 	}
-	pFilter->module_setting->ref_count--;
+	
     //!添加代码!
-
-    FILTER_ACQUIRE_LOCK(&g_filter_list_lock, bFalse);
-    RemoveEntryList(&pFilter->FilterModuleLink);
-    FILTER_RELEASE_LOCK(&g_filter_list_lock, bFalse);
-
-
-    //
-    // Free the memory allocated
-    FILTER_FREE_MEM(pFilter);
+	//删除
+	DelFromLCXLLockList(&g_filter_list, &pFilter->filter_module_link);
 
     DEBUGP(DL_TRACE, "<===FilterDetach Successfully\n");
     return;
@@ -720,9 +702,6 @@ Return Value:
 
 --*/
 {
-#if DBG
-    BOOLEAN               bFalse = FALSE;
-#endif
 
     UNREFERENCED_PARAMETER(DriverObject);
 
@@ -735,19 +714,20 @@ Return Value:
     NdisFDeregisterFilterDriver(g_filter_driver_handle);
 
 #if DBG
-    FILTER_ACQUIRE_LOCK(&g_filter_list_lock, bFalse);
-    ASSERT(IsListEmpty(&g_filter_list));
+	LockLCXLLockList(&g_filter_list);
+    
+    ASSERT(IsListEmpty(GetListofLCXLLockList(&g_filter_list)));
 
-    FILTER_RELEASE_LOCK(&g_filter_list_lock, bFalse);
+	UnlockLCXLLockList(&g_filter_list);
 
 #endif
-
-    FILTER_FREE_LOCK(&g_filter_list_lock);
+	//删除列表
+	DelLCXLLockList(&g_filter_list);
 
     DEBUGP(DL_TRACE, "<===FilterUnload\n");
     //添加代码
 	DEL_ROUTE_MEM_MGR();
-	DEL_SERVER_MEM_MGR();
+	DelServerMemMgr();
     //!添加代码!
     return;
 
@@ -810,7 +790,7 @@ NOTE: Called at <= DISPATCH_LEVEL  (unlike a miniport's MiniportOidRequest)
 
     do
     {
-        Status = NdisAllocateCloneOidRequest(pFilter->FilterHandle,
+        Status = NdisAllocateCloneOidRequest(pFilter->filter_handle,
                                             Request,
                                             FILTER_TAG,
                                             &ClonedRequest);
@@ -830,10 +810,10 @@ NOTE: Called at <= DISPATCH_LEVEL  (unlike a miniport's MiniportOidRequest)
         //
         ClonedRequest->RequestId = Request->RequestId;
 
-        pFilter->PendingOidRequest = ClonedRequest;
+        pFilter->pending_oid_request = ClonedRequest;
 
 
-        Status = NdisFOidRequest(pFilter->FilterHandle, ClonedRequest);
+        Status = NdisFOidRequest(pFilter->filter_handle, ClonedRequest);
 
         if (Status != NDIS_STATUS_PENDING)
         {
@@ -910,9 +890,9 @@ Arguments:
     PNDIS_OID_REQUEST                   OriginalRequest = NULL;
     BOOLEAN                             bFalse = FALSE;
 
-    FILTER_ACQUIRE_LOCK(&pFilter->Lock, bFalse);
+    FILTER_ACQUIRE_LOCK(&pFilter->lock, bFalse);
 
-    Request = pFilter->PendingOidRequest;
+    Request = pFilter->pending_oid_request;
 
     if (Request != NULL)
     {
@@ -923,13 +903,13 @@ Arguments:
 
     if ((OriginalRequest != NULL) && (OriginalRequest->RequestId == RequestId))
     {
-        FILTER_RELEASE_LOCK(&pFilter->Lock, bFalse);
+        FILTER_RELEASE_LOCK(&pFilter->lock, bFalse);
 
-        NdisFCancelOidRequest(pFilter->FilterHandle, RequestId);
+        NdisFCancelOidRequest(pFilter->filter_handle, RequestId);
     }
     else
     {
-        FILTER_RELEASE_LOCK(&pFilter->Lock, bFalse);
+        FILTER_RELEASE_LOCK(&pFilter->lock, bFalse);
     }
 
 
@@ -985,12 +965,12 @@ Arguments:
     }
 
 
-    FILTER_ACQUIRE_LOCK(&pFilter->Lock, bFalse);
+    FILTER_ACQUIRE_LOCK(&pFilter->lock, bFalse);
 
-    ASSERT(pFilter->PendingOidRequest == Request);
-    pFilter->PendingOidRequest = NULL;
+    ASSERT(pFilter->pending_oid_request == Request);
+    pFilter->pending_oid_request = NULL;
 
-    FILTER_RELEASE_LOCK(&pFilter->Lock, bFalse);
+    FILTER_RELEASE_LOCK(&pFilter->lock, bFalse);
 
 
     //
@@ -1021,9 +1001,9 @@ Arguments:
 
     (*Context) = NULL;
 
-    NdisFreeCloneOidRequest(pFilter->FilterHandle, Request);
+    NdisFreeCloneOidRequest(pFilter->filter_handle, Request);
 
-    NdisFOidRequestComplete(pFilter->FilterHandle, OriginalRequest, Status);
+    NdisFOidRequestComplete(pFilter->filter_handle, OriginalRequest, Status);
 
     DEBUGP(DL_TRACE, "<===FilterOidRequestComplete.\n");
 }
@@ -1070,19 +1050,19 @@ NOTE: called at <= DISPATCH_LEVEL
     //
 
 #if DBG
-    FILTER_ACQUIRE_LOCK(&pFilter->Lock, bFalse);
+    FILTER_ACQUIRE_LOCK(&pFilter->lock, bFalse);
     ASSERT(pFilter->bIndicating == FALSE);
     pFilter->bIndicating = TRUE;
-    FILTER_RELEASE_LOCK(&pFilter->Lock, bFalse);
+    FILTER_RELEASE_LOCK(&pFilter->lock, bFalse);
 #endif // DBG
 
-    NdisFIndicateStatus(pFilter->FilterHandle, StatusIndication);
+    NdisFIndicateStatus(pFilter->filter_handle, StatusIndication);
 
 #if DBG
-    FILTER_ACQUIRE_LOCK(&pFilter->Lock, bFalse);
+    FILTER_ACQUIRE_LOCK(&pFilter->lock, bFalse);
     ASSERT(pFilter->bIndicating == TRUE);
     pFilter->bIndicating = FALSE;
-    FILTER_RELEASE_LOCK(&pFilter->Lock, bFalse);
+    FILTER_RELEASE_LOCK(&pFilter->lock, bFalse);
 #endif // DBG
 
     DEBUGP(DL_TRACE, "<===FilterStatus.\n");
@@ -1150,7 +1130,7 @@ NOTE: called at PASSIVE_LEVEL
             break;
     }
 
-    NdisFDevicePnPEventNotify(pFilter->FilterHandle, NetDevicePnPEvent);
+    NdisFDevicePnPEventNotify(pFilter->filter_handle, NetDevicePnPEvent);
 
     DEBUGP(DL_TRACE, "<===FilterDevicePnPEventNotify\n");
 
@@ -1188,7 +1168,7 @@ NOTE: called at PASSIVE_LEVEL
     // nothing, but it is included in this sample for illustrative purposes.
     //
 
-    Status = NdisFNetPnPEvent(pFilter->FilterHandle, NetPnPEventNotification);
+    Status = NdisFNetPnPEvent(pFilter->filter_handle, NetPnPEventNotification);
 
     return Status;
 }
@@ -1249,7 +1229,7 @@ Return Value:
     // list, and the scratch fields are don't-care).
     //
 
-    if (pFilter->TrackSends)
+    if (pFilter->track_sends)
     {
         CurrNbl = NetBufferLists;
         while (CurrNbl)
@@ -1259,10 +1239,10 @@ Return Value:
 
         }
         DispatchLevel = NDIS_TEST_SEND_AT_DISPATCH_LEVEL(SendCompleteFlags);
-        FILTER_ACQUIRE_LOCK(&pFilter->Lock, DispatchLevel);
-        pFilter->OutstandingSends -= NumOfSendCompletes;
-        FILTER_LOG_SEND_REF(2, pFilter, PrevNbl, pFilter->OutstandingSends);
-        FILTER_RELEASE_LOCK(&pFilter->Lock, DispatchLevel);
+        FILTER_ACQUIRE_LOCK(&pFilter->lock, DispatchLevel);
+        pFilter->outstanding_sends -= NumOfSendCompletes;
+        FILTER_LOG_SEND_REF(2, pFilter, PrevNbl, pFilter->outstanding_sends);
+        FILTER_RELEASE_LOCK(&pFilter->lock, DispatchLevel);
     }
     //添加代码
     //Note  A filter driver should keep track of send requests that 
@@ -1272,7 +1252,7 @@ Return Value:
     PrepNbl = NULL;
     while (CurrNbl != NULL) {
         //如果是本驱动发出来的NBL，将此NBL脱离当前的NBL链
-        if (CurrNbl->SourceHandle == pFilter->FilterHandle) {
+        if (CurrNbl->SourceHandle == pFilter->filter_handle) {
             PNET_BUFFER_LIST pOwnerNBL;
 
             pOwnerNBL = CurrNbl;
@@ -1300,7 +1280,7 @@ Return Value:
     // Send complete the NBLs.  If you removed any NBLs from the chain, make
     // sure the chain isn't empty (i.e., NetBufferLists!=NULL).
 	if (NetBufferLists!=NULL) {
-		NdisFSendNetBufferListsComplete(pFilter->FilterHandle, NetBufferLists, SendCompleteFlags);
+		NdisFSendNetBufferListsComplete(pFilter->filter_handle, NetBufferLists, SendCompleteFlags);
 	}
     DEBUGP(DL_TRACE, "<===SendNBLComplete.\n");
 }
@@ -1351,13 +1331,13 @@ Arguments:
         // we should never get packets to send if we are not in running state
         //
 
-        FILTER_ACQUIRE_LOCK(&pFilter->Lock, DispatchLevel);
+        FILTER_ACQUIRE_LOCK(&pFilter->lock, DispatchLevel);
         //
         // If the filter is not in running state, fail the send
         //
-        if (pFilter->State != FilterRunning)
+        if (pFilter->state != FilterRunning)
         {
-            FILTER_RELEASE_LOCK(&pFilter->Lock, DispatchLevel);
+            FILTER_RELEASE_LOCK(&pFilter->lock, DispatchLevel);
 
             CurrNbl = NetBufferLists;
             while (CurrNbl)
@@ -1365,26 +1345,26 @@ Arguments:
                 NET_BUFFER_LIST_STATUS(CurrNbl) = NDIS_STATUS_PAUSED;
                 CurrNbl = NET_BUFFER_LIST_NEXT_NBL(CurrNbl);
             }
-            NdisFSendNetBufferListsComplete(pFilter->FilterHandle,
+            NdisFSendNetBufferListsComplete(pFilter->filter_handle,
                         NetBufferLists,
                         DispatchLevel ? NDIS_SEND_COMPLETE_FLAGS_DISPATCH_LEVEL : 0);
             break;
 
         }
-        FILTER_RELEASE_LOCK(&pFilter->Lock, DispatchLevel);
+        FILTER_RELEASE_LOCK(&pFilter->lock, DispatchLevel);
 #endif
-        if (pFilter->TrackSends)
+        if (pFilter->track_sends)
         {
-            FILTER_ACQUIRE_LOCK(&pFilter->Lock, DispatchLevel);
+            FILTER_ACQUIRE_LOCK(&pFilter->lock, DispatchLevel);
             CurrNbl = NetBufferLists;
             while (CurrNbl)
             {
-                pFilter->OutstandingSends++;
-                FILTER_LOG_SEND_REF(1, pFilter, CurrNbl, pFilter->OutstandingSends);
+                pFilter->outstanding_sends++;
+                FILTER_LOG_SEND_REF(1, pFilter, CurrNbl, pFilter->outstanding_sends);
 
                 CurrNbl = NET_BUFFER_LIST_NEXT_NBL(CurrNbl);
             }
-            FILTER_RELEASE_LOCK(&pFilter->Lock, DispatchLevel);
+            FILTER_RELEASE_LOCK(&pFilter->lock, DispatchLevel);
         }
         
         //
@@ -1395,7 +1375,7 @@ Arguments:
         // deep copy, and complete the original NBL.
         //
         
-        NdisFSendNetBufferLists(pFilter->FilterHandle, NetBufferLists, PortNumber, SendFlags);
+        NdisFSendNetBufferLists(pFilter->filter_handle, NetBufferLists, PortNumber, SendFlags);
 
 
     }
@@ -1458,7 +1438,7 @@ Arguments:
     // list, and the scratch fields are don't-care).
     //
 
-    if (pFilter->TrackReceives)
+    if (pFilter->track_receives)
     {
         while (CurrNbl)
         {
@@ -1471,17 +1451,17 @@ Arguments:
     // Return the received NBLs.  If you removed any NBLs from the chain, make
     // sure the chain isn't empty (i.e., NetBufferLists!=NULL).
 
-    NdisFReturnNetBufferLists(pFilter->FilterHandle, NetBufferLists, ReturnFlags);
+    NdisFReturnNetBufferLists(pFilter->filter_handle, NetBufferLists, ReturnFlags);
 
-    if (pFilter->TrackReceives)
+    if (pFilter->track_receives)
     {
         DispatchLevel = NDIS_TEST_RETURN_AT_DISPATCH_LEVEL(ReturnFlags);
-        FILTER_ACQUIRE_LOCK(&pFilter->Lock, DispatchLevel);
+        FILTER_ACQUIRE_LOCK(&pFilter->lock, DispatchLevel);
 
-        pFilter->OutstandingRcvs -= NumOfNetBufferLists;
-        Ref = pFilter->OutstandingRcvs;
+        pFilter->outstanding_rcvs -= NumOfNetBufferLists;
+        Ref = pFilter->outstanding_rcvs;
         FILTER_LOG_RCV_REF(3, pFilter, NetBufferLists, Ref);
-        FILTER_RELEASE_LOCK(&pFilter->Lock, DispatchLevel);
+        FILTER_RELEASE_LOCK(&pFilter->lock, DispatchLevel);
     }
 
 
@@ -1528,270 +1508,260 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 --*/
 {
 
-    PLCXL_FILTER        pFilter = (PLCXL_FILTER)FilterModuleContext;
+    PLCXL_FILTER        filter = (PLCXL_FILTER)FilterModuleContext;
     BOOLEAN             DispatchLevel;
     ULONG               Ref;
-    BOOLEAN             bFalse = FALSE;
     //修改代码，去掉DBG判定
 //#if DBG
-    ULONG               ReturnFlags = 0;
+    ULONG               return_flags = 0;
 //#endif
     //!修改代码!
-	PNET_BUFFER_LIST    pNextNBL;
+	PNET_BUFFER_LIST    next_nbl;
     //添加代码
 
-    ULONG               SendFlags = 0;
+    ULONG               send_flags = 0;
 
     //可以通过的NBL
-    PNET_BUFFER_LIST    pPassHeadNBL = NULL;
+    PNET_BUFFER_LIST    pass_nbl_head = NULL;
     //末尾的NBL
-    PNET_BUFFER_LIST    pPassLastNBL = NULL;
-    ULONG               NumberOfPassNBL = 0;
+    PNET_BUFFER_LIST    pass_nbl_tail = NULL;
+    ULONG               number_of_pass_nbl = 0;
     //需要丢掉的NBL
-    PNET_BUFFER_LIST    pDropHeadNBL = NULL;
-    PNET_BUFFER_LIST    pDropLastNBL = NULL;
+    PNET_BUFFER_LIST    drop_nbl_head = NULL;
+    PNET_BUFFER_LIST    drop_nbl_tail = NULL;
     //要转发的NBL列表
-    PNET_BUFFER_LIST    pSendNBLs = NULL;
+    PNET_BUFFER_LIST    send_nbl_list = NULL;
     //!添加代码!
 
 
     DEBUGP(DL_TRACE, "===>ReceiveNetBufferList: NetBufferLists = %p.\n", NetBufferLists);
-
-    if (NDIS_TEST_RECEIVE_AT_DISPATCH_LEVEL(ReceiveFlags)) {
-        NDIS_SET_RETURN_FLAG(ReturnFlags, NDIS_RETURN_FLAGS_DISPATCH_LEVEL);
-        NDIS_SET_SEND_FLAG(SendFlags, NDIS_SEND_FLAGS_DISPATCH_LEVEL);
+	DispatchLevel = NDIS_TEST_RECEIVE_AT_DISPATCH_LEVEL(ReceiveFlags);
+	if (DispatchLevel) {
+        NDIS_SET_RETURN_FLAG(return_flags, NDIS_RETURN_FLAGS_DISPATCH_LEVEL);
+        NDIS_SET_SEND_FLAG(send_flags, NDIS_SEND_FLAGS_DISPATCH_LEVEL);
     }
 
-    do
-    {
+	FILTER_ACQUIRE_LOCK(&filter->lock, DispatchLevel);
+	//如果没有在运行或者模块信息没有加载
+	if (filter->state != FilterRunning) {
+		FILTER_RELEASE_LOCK(&filter->lock, DispatchLevel);
 
-        DispatchLevel = NDIS_TEST_RECEIVE_AT_DISPATCH_LEVEL(ReceiveFlags);
-
-        FILTER_ACQUIRE_LOCK(&pFilter->Lock, DispatchLevel);
-		//如果没有在运行或者模块信息没有加载
-        if (pFilter->State != FilterRunning) {
-            FILTER_RELEASE_LOCK(&pFilter->Lock, DispatchLevel);
-
-            if (NDIS_TEST_RECEIVE_CAN_PEND(ReceiveFlags)) {
-                NdisFReturnNetBufferLists(pFilter->FilterHandle, NetBufferLists, ReturnFlags);
-            }
-            break;
-        }
-        FILTER_RELEASE_LOCK(&pFilter->Lock, DispatchLevel);
-		//如果没有加载配置信息，则放过所有的NBL
-		if (pFilter->module_setting == NULL) {
-			NdisFIndicateReceiveNetBufferLists(pFilter->FilterHandle, NetBufferLists, PortNumber, NumberOfNetBufferLists, ReceiveFlags);
-			break;
+		if (NDIS_TEST_RECEIVE_CAN_PEND(ReceiveFlags)) {
+			NdisFReturnNetBufferLists(filter->filter_handle, NetBufferLists, return_flags);
 		}
+		return;
+	}
+	FILTER_RELEASE_LOCK(&filter->lock, DispatchLevel);
+	ASSERT(filter->module_setting != NULL);
+	//如果没有加载配置信息，则放过所有的NBL
+	if ((filter->module_setting->flag & ML_ENABLED) == 0) {
+		NdisFIndicateReceiveNetBufferLists(filter->filter_handle, NetBufferLists, PortNumber, NumberOfNetBufferLists, ReceiveFlags);
+		return;
+	}
 
-        ASSERT(NumberOfNetBufferLists >= 1);
+	ASSERT(NumberOfNetBufferLists >= 1);
 
-        //
-        // If you would like to drop a received packet, then you must carefully
-        // modify the NBL chain as follows:
-        //
-        //     if NDIS_TEST_RECEIVE_CANNOT_PEND(ReceiveFlags):
-        //         For each NBL that is NOT dropped, temporarily unlink it from
-        //         the linked list, and indicate it up alone with 
-        //         NdisFIndicateReceiveNetBufferLists and the
-        //         NDIS_RECEIVE_FLAGS_RESOURCES flag set.  Then immediately
-        //         relink the NBL back into the chain.  When all NBLs have been
-        //         indicated up, you may return from this function.
-        //     otherwise (NDIS_TEST_RECEIVE_CANNOT_PEND is FALSE):
-        //         Divide the linked list of NBLs into two chains: one chain
-        //         of packets to drop, and everything else in another chain.
-        //         Return the first chain with NdisFReturnNetBufferLists, and
-        //         indicate up the rest with NdisFIndicateReceiveNetBufferLists.
-        //
-        // Note: on the receive path for Ethernet packets, one NBL will have 
-        // exactly one NB.  So (assuming you are receiving on Ethernet, or are 
-        // attached above Native WiFi) you do not need to worry about dropping
-        // one NB, but trying to indicate up the remaining NBs on the same NBL.
-        // In other words, if the first NB should be dropped, drop the whole NBL.
-        //
+    //
+    // If you would like to drop a received packet, then you must carefully
+    // modify the NBL chain as follows:
+    //
+    //     if NDIS_TEST_RECEIVE_CANNOT_PEND(ReceiveFlags):
+    //         For each NBL that is NOT dropped, temporarily unlink it from
+    //         the linked list, and indicate it up alone with 
+    //         NdisFIndicateReceiveNetBufferLists and the
+    //         NDIS_RECEIVE_FLAGS_RESOURCES flag set.  Then immediately
+    //         relink the NBL back into the chain.  When all NBLs have been
+    //         indicated up, you may return from this function.
+    //     otherwise (NDIS_TEST_RECEIVE_CANNOT_PEND is FALSE):
+    //         Divide the linked list of NBLs into two chains: one chain
+    //         of packets to drop, and everything else in another chain.
+    //         Return the first chain with NdisFReturnNetBufferLists, and
+    //         indicate up the rest with NdisFIndicateReceiveNetBufferLists.
+    //
+    // Note: on the receive path for Ethernet packets, one NBL will have 
+    // exactly one NB.  So (assuming you are receiving on Ethernet, or are 
+    // attached above Native WiFi) you do not need to worry about dropping
+    // one NB, but trying to indicate up the remaining NBs on the same NBL.
+    // In other words, if the first NB should be dropped, drop the whole NBL.
+    //
 
-        //
-        // If you would like to modify a packet, and can do so quickly, you may
-        // do it here.  However, make sure you save enough information to undo
-        // your modification in the FilterReturnNetBufferLists handler.
-        //
+    //
+    // If you would like to modify a packet, and can do so quickly, you may
+    // do it here.  However, make sure you save enough information to undo
+    // your modification in the FilterReturnNetBufferLists handler.
+    //
 
-        //
-        // If necessary, queue the NetBufferLists in a local structure for later
-        // processing.  However, do not queue them for "too long", or else the
-        // system's performance may be degraded.  If you need to hold onto an
-        // NBL for an unbounded amount of time, then allocate memory, perform a
-        // deep copy, and return the original NBL.
-        //
+    //
+    // If necessary, queue the NetBufferLists in a local structure for later
+    // processing.  However, do not queue them for "too long", or else the
+    // system's performance may be degraded.  If you need to hold onto an
+    // NBL for an unbounded amount of time, then allocate memory, perform a
+    // deep copy, and return the original NBL.
+	//
 
-		//添加代码
-		pNextNBL = NetBufferLists;
-		while (pNextNBL != NULL) {
-			PMDL                pMdl = NULL;
-			UINT                BufferLength;
-            ULONG               TotalLength;
-            ULONG               Offset;
-            PETHERNET_HEADER    pEthHeader = NULL;
-			//是否是虚拟IP的数据包
-			BOOLEAN				is_virtual_ip_nbl = FALSE;
+	//添加代码
+	next_nbl = NetBufferLists;
+	while (next_nbl != NULL) {
+		PMDL                current_mdl = NULL;
+		UINT                buffer_length;
+		ULONG               total_length;
+		ULONG               offset;
+		PETHERNET_HEADER    ethernet_header = NULL;
+		//是否此数据包已处理
+		BOOLEAN				is_processed_nbl = FALSE;
 
-			pMdl = NET_BUFFER_CURRENT_MDL(NET_BUFFER_LIST_FIRST_NB(pNextNBL));
-			TotalLength = NET_BUFFER_DATA_LENGTH(NET_BUFFER_LIST_FIRST_NB(pNextNBL));
-			Offset = NET_BUFFER_CURRENT_MDL_OFFSET(NET_BUFFER_LIST_FIRST_NB(pNextNBL));
-            
-            ASSERT(pMdl != NULL);
-            NdisQueryMdl(
-                    pMdl,
-                    &pEthHeader,
-                    &BufferLength,
-                    NormalPagePriority);
-			//各种有效性判断
-            if (pEthHeader != NULL && BufferLength != 0) {
-                PLCXL_ROUTE_LIST_ENTRY pRouteListEntry = NULL;
+		current_mdl = NET_BUFFER_CURRENT_MDL(NET_BUFFER_LIST_FIRST_NB(next_nbl));
+		total_length = NET_BUFFER_DATA_LENGTH(NET_BUFFER_LIST_FIRST_NB(next_nbl));
+		offset = NET_BUFFER_CURRENT_MDL_OFFSET(NET_BUFFER_LIST_FIRST_NB(next_nbl));
 
-                ASSERT(BufferLength > Offset);
-                //获取真正的的包数据
-                BufferLength -= Offset;
-                //获取帧数据头
-                pEthHeader = (PETHERNET_HEADER)((PUCHAR)pEthHeader + Offset);
-                
-                pRouteListEntry = IfRouteNBL(pFilter, pEthHeader, BufferLength);
-                //如果需要路由的话
-                if (pRouteListEntry!=NULL) {
-                    PETHERNET_HEADER    pSendBuffer;
-                    PMDL                pMdl = NULL;
-                    PNET_BUFFER_LIST    tmpNBL;
-                    ULONG               BytesCopied;
-                    //是虚拟IP的数据包
-					is_virtual_ip_nbl = TRUE;
-                    //是否可以Pend
-                    if (NDIS_TEST_RECEIVE_CANNOT_PEND(ReceiveFlags)) {
-                        //不作处理
-                        
-                    } else {
-                        //虚拟IP的数据包不能传到上层驱动，需要丢弃
-                        if (pDropHeadNBL == NULL) {
-                            pDropHeadNBL = pNextNBL;
-                            pDropLastNBL = pNextNBL;
-                        } else {
-                            NET_BUFFER_LIST_NEXT_NBL(pDropLastNBL) = pNextNBL;
-                        }
-                    }
-					//创建一个NBL
-                    pSendBuffer = (PETHERNET_HEADER)FILTER_ALLOC_MEM(pFilter->FilterHandle, BufferLength);
-                    pMdl = NdisAllocateMdl(pFilter->FilterHandle, pSendBuffer, BufferLength);
-                    tmpNBL = NdisAllocateNetBufferAndNetBufferList(
-                        pFilter->send_net_buffer_list_pool,
-                        0,                              // ContextSize
-                        0,                              // ContextBackfill
-                        pMdl,                           // MdlChain
-                        0,                              // DataOffset
-                        BufferLength);                   // DataLength
-                    NdisCopyFromNetBufferToNetBuffer(
-                        NET_BUFFER_LIST_FIRST_NB(tmpNBL),
-                        0,
-                        BufferLength,
-                        NET_BUFFER_LIST_FIRST_NB(pNextNBL),
-                        0, 
-                        &BytesCopied);
-                    //设置SourceHandle
-                    //A filter driver must set the SourceHandle member of each NET_BUFFER_LIST structure that it originates to the same value that it passes to the NdisFilterHandle parameter
+		ASSERT(current_mdl != NULL);
+		NdisQueryMdl(
+			current_mdl,
+			&ethernet_header,
+			&buffer_length,
+			NormalPagePriority);
+		//各种有效性判断
+		if (ethernet_header != NULL && buffer_length != 0) {
+			PLCXL_ROUTE_LIST_ENTRY route = NULL;
 
-                    tmpNBL->SourceHandle = pFilter->FilterHandle;
-                    //修改目标MAC地址
-                    RtlCopyMemory(&pSendBuffer->Destination, pRouteListEntry->dst_server->info.addr.mac_addr.Address, sizeof(pEthHeader->Destination));
-                    //
-                    // The other members of NET_BUFFER_DATA structure are already initialized properly during allocation.
-                    //
-                    NET_BUFFER_DATA_LENGTH(NET_BUFFER_LIST_FIRST_NB(tmpNBL)) = BytesCopied;
-                    //插入到转发队列中
-                    if (pSendNBLs==NULL) {
-                        pSendNBLs = tmpNBL;
-                    } else {
-                        NET_BUFFER_LIST_NEXT_NBL(pSendNBLs) = tmpNBL;
-                    }
-                } else {
-                    
-                }
-                
-            } else {
-                //如果无法获取到数据包信息，则
+			ASSERT(buffer_length > offset);
+			//获取真正的的包数据
+			buffer_length -= offset;
+			//获取帧数据头
+			ethernet_header = (PETHERNET_HEADER)((PUCHAR)ethernet_header + offset);
+
+			is_processed_nbl = ProcessNBL(filter, ethernet_header, buffer_length, &route);
+			//如果此数据包已处理，则不需要提交到上层驱动中
+			if (is_processed_nbl) {
+				PETHERNET_HEADER    send_buffer;
+				PMDL                send_mdl = NULL;
+				PNET_BUFFER_LIST    send_nbl;
+				ULONG               bytes_copied;
 				
-            }
-			//如果不是虚拟IP的数据包
-			if (!is_virtual_ip_nbl) {
-				
+				//是否可以Pend
 				if (NDIS_TEST_RECEIVE_CANNOT_PEND(ReceiveFlags)) {
-					PNET_BUFFER_LIST tmpNBL;
+					//不作处理
 
-					tmpNBL = NET_BUFFER_LIST_NEXT_NBL(pNextNBL);
-					NET_BUFFER_LIST_NEXT_NBL(pNextNBL) = NULL;
-					//接受不丢弃的数据包
-					NdisFIndicateReceiveNetBufferLists(pFilter->FilterHandle, pNextNBL, PortNumber, 1, ReceiveFlags | NDIS_RECEIVE_FLAGS_RESOURCES);
-					NET_BUFFER_LIST_NEXT_NBL(pNextNBL) = tmpNBL;
-				}
-				else {
-					if (pPassHeadNBL == NULL) {
-						pPassHeadNBL = pNextNBL;
-						pPassLastNBL = pNextNBL;
+				} else {
+					//虚拟IP的数据包不能传到上层驱动，需要丢弃
+					if (drop_nbl_head == NULL) {
+						drop_nbl_head = next_nbl;
+						drop_nbl_tail = next_nbl;
+					} else {
+						NET_BUFFER_LIST_NEXT_NBL(drop_nbl_tail) = next_nbl;
 					}
-					else {
-						NET_BUFFER_LIST_NEXT_NBL(pPassLastNBL) = pNextNBL;
-					}
-					NumberOfPassNBL++;
 				}
+				//如果需要路由此数据包
+				if (route != NULL) {
+					//创建一个NBL
+					send_buffer = (PETHERNET_HEADER)FILTER_ALLOC_MEM(filter->filter_handle, buffer_length);
+					send_mdl = NdisAllocateMdl(filter->filter_handle, send_buffer, buffer_length);
+					send_nbl = NdisAllocateNetBufferAndNetBufferList(
+						filter->send_net_buffer_list_pool,
+						0,                              // ContextSize
+						0,                              // ContextBackfill
+						send_mdl,                           // MdlChain
+						0,                              // DataOffset
+						buffer_length);                   // DataLength
+					NdisCopyFromNetBufferToNetBuffer(
+						NET_BUFFER_LIST_FIRST_NB(send_nbl),
+						0,
+						buffer_length,
+						NET_BUFFER_LIST_FIRST_NB(next_nbl),
+						0,
+						&bytes_copied);
+					//设置SourceHandle
+					//A filter driver must set the SourceHandle member of each NET_BUFFER_LIST structure that it originates to the same value that it passes to the NdisFilterHandle parameter
+
+					send_nbl->SourceHandle = filter->filter_handle;
+					//修改目标MAC地址
+					RtlCopyMemory(&send_buffer->Destination, route->dst_server->info.addr.mac_addr.Address, sizeof(ethernet_header->Destination));
+					//
+					// The other members of NET_BUFFER_DATA structure are already initialized properly during allocation.
+					//
+					NET_BUFFER_DATA_LENGTH(NET_BUFFER_LIST_FIRST_NB(send_nbl)) = bytes_copied;
+					//插入到转发队列中
+					if (send_nbl_list == NULL) {
+						send_nbl_list = send_nbl;
+					} else {
+						NET_BUFFER_LIST_NEXT_NBL(send_nbl_list) = send_nbl;
+					}
+				}
+			} else {
+
 			}
-			//获取下一个NBL
-			pNextNBL = NET_BUFFER_LIST_NEXT_NBL(pNextNBL);
+
+		} else {
+			//如果无法获取到数据包信息，则
+
 		}
-        if (NDIS_TEST_RECEIVE_CANNOT_PEND(ReceiveFlags)) {
-            //不接受的数据包
-			//NDIS_TEST_RECEIVE_CANNOT_PEND为TRUE时，不要做任何操作，直接返回
-            //NdisFReturnNetBufferLists(pFilter->FilterHandle, NetBufferLists, ReturnFlags);
-        } else {
-			ASSERT(pPassLastNBL != NULL || pDropLastNBL != NULL);
-            //将两个链表的最后一项的Next域清空
-			if (pPassLastNBL != NULL) {
-				NET_BUFFER_LIST_NEXT_NBL(pPassLastNBL) = NULL;
-				//接受PassHeadNBL
-				NdisFIndicateReceiveNetBufferLists(pFilter->FilterHandle, pPassHeadNBL, PortNumber, NumberOfPassNBL, ReceiveFlags);
+		//如果数据包未被处理，则发送给上层驱动
+		if (!is_processed_nbl) {
+
+			if (NDIS_TEST_RECEIVE_CANNOT_PEND(ReceiveFlags)) {
+				PNET_BUFFER_LIST tmpNBL;
+
+				tmpNBL = NET_BUFFER_LIST_NEXT_NBL(next_nbl);
+				NET_BUFFER_LIST_NEXT_NBL(next_nbl) = NULL;
+				//接受不丢弃的数据包
+				NdisFIndicateReceiveNetBufferLists(filter->filter_handle, next_nbl, PortNumber, 1, ReceiveFlags | NDIS_RECEIVE_FLAGS_RESOURCES);
+				NET_BUFFER_LIST_NEXT_NBL(next_nbl) = tmpNBL;
+			} else {
+				if (pass_nbl_head == NULL) {
+					pass_nbl_head = next_nbl;
+					pass_nbl_tail = next_nbl;
+				} else {
+					NET_BUFFER_LIST_NEXT_NBL(pass_nbl_tail) = next_nbl;
+				}
+				number_of_pass_nbl++;
 			}
-			if (pDropLastNBL != NULL) {
-				NET_BUFFER_LIST_NEXT_NBL(pDropLastNBL) = NULL;
+		}
+		//获取下一个NBL
+		next_nbl = NET_BUFFER_LIST_NEXT_NBL(next_nbl);
+	}
+	if (NDIS_TEST_RECEIVE_CANNOT_PEND(ReceiveFlags)) {
+		//不接受的数据包
+		//NDIS_TEST_RECEIVE_CANNOT_PEND为TRUE时，不要做任何操作，直接返回
+	} else {
+		ASSERT(pass_nbl_tail != NULL || drop_nbl_tail != NULL);
+		//将两个链表的最后一项的Next域清空
+		if (pass_nbl_tail != NULL) {
+			NET_BUFFER_LIST_NEXT_NBL(pass_nbl_tail) = NULL;
+			//接受PassHeadNBL
+			NdisFIndicateReceiveNetBufferLists(filter->filter_handle, pass_nbl_head, PortNumber, number_of_pass_nbl, ReceiveFlags);
+		}
+		if (drop_nbl_tail != NULL) {
+			NET_BUFFER_LIST_NEXT_NBL(drop_nbl_tail) = NULL;
+			//丢弃DropHeadNBL
+			NdisFReturnNetBufferLists(filter->filter_handle, drop_nbl_head, return_flags);
+		}
 
-				//丢弃DropHeadNBL
-				NdisFReturnNetBufferLists(pFilter->FilterHandle, pDropHeadNBL, ReturnFlags);
-			}
-           
-        }
-        //转发数据包给真实的服务器
-        if (NULL!=pSendNBLs) {
-            NdisFSendNetBufferLists(pFilter->FilterHandle, pSendNBLs, PortNumber, SendFlags);
-        }
-		//
-        if (pFilter->TrackReceives)
-        {
-            FILTER_ACQUIRE_LOCK(&pFilter->Lock, DispatchLevel);
-            pFilter->OutstandingRcvs += NumberOfNetBufferLists;
-            Ref = pFilter->OutstandingRcvs;
+	}
+	//转发数据包给真实的服务器
+	if (NULL != send_nbl_list) {
+		NdisFSendNetBufferLists(filter->filter_handle, send_nbl_list, PortNumber, send_flags);
+	}
+	//
+	if (filter->track_receives)
+	{
+		FILTER_ACQUIRE_LOCK(&filter->lock, DispatchLevel);
+		filter->outstanding_rcvs += NumberOfNetBufferLists;
+		Ref = filter->outstanding_rcvs;
 
-            FILTER_LOG_RCV_REF(1, pFilter, NetBufferLists, Ref);
-            FILTER_RELEASE_LOCK(&pFilter->Lock, DispatchLevel);
-        }
-        if (NDIS_TEST_RECEIVE_CANNOT_PEND(ReceiveFlags) &&
-            pFilter->TrackReceives)
-        {
-            FILTER_ACQUIRE_LOCK(&pFilter->Lock, DispatchLevel);
-            pFilter->OutstandingRcvs -= NumberOfNetBufferLists;
-            Ref = pFilter->OutstandingRcvs;
-            FILTER_LOG_RCV_REF(2, pFilter, NetBufferLists, Ref);
-            FILTER_RELEASE_LOCK(&pFilter->Lock, DispatchLevel);
-        }
+		FILTER_LOG_RCV_REF(1, filter, NetBufferLists, Ref);
+		FILTER_RELEASE_LOCK(&filter->lock, DispatchLevel);
+	}
+	if (NDIS_TEST_RECEIVE_CANNOT_PEND(ReceiveFlags) &&
+		filter->track_receives)
+	{
+		FILTER_ACQUIRE_LOCK(&filter->lock, DispatchLevel);
+		filter->outstanding_rcvs -= NumberOfNetBufferLists;
+		Ref = filter->outstanding_rcvs;
+		FILTER_LOG_RCV_REF(2, filter, NetBufferLists, Ref);
+		FILTER_RELEASE_LOCK(&filter->lock, DispatchLevel);
+	}
 
-    } while (bFalse);
-
-    DEBUGP(DL_TRACE, "<===ReceiveNetBufferList: Flags = %8x.\n", ReceiveFlags);
-
+	DEBUGP(DL_TRACE, "<===ReceiveNetBufferList: Flags = %8x.\n", ReceiveFlags);
 }
 
 
@@ -1824,7 +1794,7 @@ Return Value:
 {
     PLCXL_FILTER  pFilter = (PLCXL_FILTER)FilterModuleContext;
 
-    NdisFCancelSendNetBufferLists(pFilter->FilterHandle, CancelId);
+    NdisFCancelSendNetBufferLists(pFilter->filter_handle, CancelId);
 }
 
 
@@ -1864,12 +1834,12 @@ Return Value:
        UINT      i;
 
 
-       pFilter->CallsRestart++;
+       pFilter->calls_restart++;
 
-       i = pFilter->CallsRestart % 8;
+       i = pFilter->calls_restart % 8;
 
-       pFilter->TrackReceives = TRUE;
-       pFilter->TrackSends = TRUE;
+       pFilter->track_receives = TRUE;
+       pFilter->track_sends = TRUE;
 
        NdisMoveMemory(&OptionalHandlers, &DefaultChars, sizeof(OptionalHandlers));
        OptionalHandlers.Header.Type = NDIS_OBJECT_TYPE_FILTER_PARTIAL_CHARACTERISTICS;
@@ -1879,23 +1849,23 @@ Return Value:
 
             case 0:
                 OptionalHandlers.ReceiveNetBufferListsHandler = NULL;
-                pFilter->TrackReceives = FALSE;
+                pFilter->track_receives = FALSE;
                 break;
 
             case 1:
 
                 OptionalHandlers.ReturnNetBufferListsHandler = NULL;
-                pFilter->TrackReceives = FALSE;
+                pFilter->track_receives = FALSE;
                 break;
 
             case 2:
                 OptionalHandlers.SendNetBufferListsHandler = NULL;
-                pFilter->TrackSends = FALSE;
+                pFilter->track_sends = FALSE;
                 break;
 
             case 3:
                 OptionalHandlers.SendNetBufferListsCompleteHandler = NULL;
-                pFilter->TrackSends = FALSE;
+                pFilter->track_sends = FALSE;
                 break;
 
             case 4:
@@ -1919,7 +1889,7 @@ Return Value:
             case 7:
                 break;
        }
-       Status = NdisSetOptionalHandlers(pFilter->FilterHandle, (PNDIS_DRIVER_OPTIONAL_HANDLERS)&OptionalHandlers );
+       Status = NdisSetOptionalHandlers(pFilter->filter_handle, (PNDIS_DRIVER_OPTIONAL_HANDLERS)&OptionalHandlers );
    }
    return Status;
 }
@@ -2021,7 +1991,7 @@ Return Value:
 
     NdisRequest->RequestId = (PVOID)FILTER_REQUEST_ID;
 
-    Status = NdisFOidRequest(FilterModuleContext->FilterHandle,
+    Status = NdisFOidRequest(FilterModuleContext->filter_handle,
                             NdisRequest);
 
 
@@ -2150,22 +2120,21 @@ PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER pFilter, IN INT ipMode, IN PV
 		ASSERT(FALSE);
 		break;
 	}
-	route_info = GetRouteListEntry(&pFilter->route_list.list_entry, ipMode, pIPHeader, ptcp_header);
+	route_info = GetRouteListEntry(&pFilter->route_list, ipMode, pIPHeader, ptcp_header);
 	//建立连接的阶段
 	//有TH_SYN的阶段是建立连接的阶段，这个时候就得选择路由信息
 	if ((ptcp_header->th_flags & TH_SYN) != 0) {
 		PSERVER_INFO_LIST_ENTRY server;
 
 		//选择一个服务器
-		NdisAcquireSpinLock(&pFilter->module_setting->module_setting_lock);
-		
-		server = SelectServer(&pFilter->module_setting->server_list.list_entry, ipMode, pIPHeader, ptcp_header);
-		NdisReleaseSpinLock(&pFilter->module_setting->module_setting_lock);
+		server = SelectBestServer(&pFilter->module_setting->server_list, ipMode, pIPHeader, ptcp_header);
 		if (server == NULL) {
 			return NULL;
 		}
 		if (route_info == NULL) {
-			route_info = CreateRouteListEntry(&pFilter->route_list.list_entry);
+			route_info = CreateRouteListEntry(&pFilter->route_list);
+		} else {
+			DecRefServer(route_info->dst_server);
 		}
 		//初始化路由信息
 		InitRouteListEntry(route_info, ipMode, pIPHeader, ptcp_header, server);
@@ -2191,68 +2160,47 @@ PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER pFilter, IN INT ipMode, IN PV
 	return route_info;
 }
 
-PLCXL_ROUTE_LIST_ENTRY IfRouteNBL(IN PLCXL_FILTER pFilter, IN PETHERNET_HEADER pEthHeader, IN UINT BufferLength)
+BOOLEAN ProcessNBL(IN PLCXL_FILTER pFilter, IN PETHERNET_HEADER pEthHeader, IN UINT BufferLength, OUT PLCXL_ROUTE_LIST_ENTRY *route)
 {
-    USHORT UNALIGNED *pEthType = NULL;
-	USHORT EthType;
+    USHORT UNALIGNED *ethernet_type_ptr = NULL;
+	USHORT ethernet_type;
+	BOOLEAN is_processed = FALSE;
+
+	ASSERT(route != NULL && pFilter != NULL && pEthHeader != NULL);
+	*route = NULL;
     if (BufferLength < sizeof(ETHERNET_HEADER)) {
-        return NULL;
+        return FALSE;
     }
-    EthType = ntohs(pEthHeader->Type);
+    ethernet_type = ntohs(pEthHeader->Type);
     //判断帧类型是不是8021P_TAG
-    if (EthType == ETHERNET_TYPE_802_1Q) {
+    if (ethernet_type == ETHERNET_TYPE_802_1Q) {
         if (BufferLength >= sizeof(ETHERNET_HEADER)+4) {
-            pEthType = (USHORT UNALIGNED *)((PUCHAR)&pEthHeader->Type + 4);
+            ethernet_type_ptr = (USHORT UNALIGNED *)((PUCHAR)&pEthHeader->Type + 4);
             BufferLength -= sizeof(ETHERNET_HEADER)+4;
          } else {
             //缺代码
-             return NULL;
+			 return FALSE;
          }
     } else {
-         pEthType = &pEthHeader->Type;
-		 EthType = ntohs(pEthHeader->Type);
+         ethernet_type_ptr = &pEthHeader->Type;
+		 ethernet_type = ntohs(pEthHeader->Type);
          BufferLength -= sizeof(ETHERNET_HEADER);
     }
-    if (pEthType == NULL) {
-        return NULL;
+    if (ethernet_type_ptr == NULL) {
+		return FALSE;
     }
 
-    switch(EthType) {
-    case ETHERNET_TYPE_IPV4://IPv4协议
-        if (BufferLength>=sizeof(IPV4_HEADER)){
-            PIPV4_HEADER pIPHeader;
-
-            pIPHeader = (PIPV4_HEADER)((PUCHAR)pEthType+sizeof(USHORT));
-			//查看数据包的目标IP是否是虚拟IP
-			if (RtlCompareMemory(&pIPHeader->DestinationAddress, &pFilter->module_setting->virtual_ipv4, sizeof(pIPHeader->DestinationAddress)) == sizeof(pIPHeader->DestinationAddress)) {
-				//pIPHeader->iaDst
-				
-				switch (pIPHeader->Protocol) {
-				case 0x01://ICMP 
-
-					break;
-				case 0x06://TCP
-                    //目前仅支持TCP
-					return RouteTCPNBL(pFilter, IM_IPV4, pIPHeader);
-					break;
-				case 0x11://PROT_UDP
-					break;
-				default:
-					break;
-				}
-			}			
-        }
-        break;
+	switch (ethernet_type) {
 	case ETHERNET_TYPE_ARP:
 		//ARP_OPCODE  ARP_REQUEST  ARP_RESPONSE
 		if (BufferLength >= sizeof(ARP_HEADER)) {
-			PARP_HEADER pARPHeader;
+			PARP_HEADER arp_header;
 			LCXL_ARP_ETHERNET lcxl_arp_ethernet;
 
-			pARPHeader = (PARP_HEADER)((PUCHAR)pEthType + sizeof(USHORT));
-			LCXLReadARPEthernet(pARPHeader, &lcxl_arp_ethernet);
+			arp_header = (PARP_HEADER)((PUCHAR)ethernet_type_ptr + sizeof(USHORT));
+			LCXLReadARPEthernet(arp_header, &lcxl_arp_ethernet);
 
-			KdPrint(("SYS:ARP:HardwareAddressSpace=%d, ProtocolAddressSpace=%d, Opcode=%d, SenderHardwareAddress=%02x:%02x:%02x:%02x:%02x:%02x, SenderProtocolAddress=%d.%d.%d.%d, SenderHardwareAddress=%02x:%02x:%02x:%02x:%02x:%02x, SenderProtocolAddress=%d.%d.%d.%d\n", 
+			KdPrint(("SYS:ARP:HardwareAddressSpace=%d, ProtocolAddressSpace=%d, Opcode=%d, SenderHardwareAddress=%02x:%02x:%02x:%02x:%02x:%02x, SenderProtocolAddress=%d.%d.%d.%d, SenderHardwareAddress=%02x:%02x:%02x:%02x:%02x:%02x, SenderProtocolAddress=%d.%d.%d.%d\n",
 				lcxl_arp_ethernet.HardwareAddressSpace,
 				lcxl_arp_ethernet.ProtocolAddressSpace,
 				lcxl_arp_ethernet.Opcode,
@@ -2276,11 +2224,11 @@ PLCXL_ROUTE_LIST_ENTRY IfRouteNBL(IN PLCXL_FILTER pFilter, IN PETHERNET_HEADER p
 				lcxl_arp_ethernet.TargetProtocolAddress.S_un.S_un_b.s_b2,
 				lcxl_arp_ethernet.TargetProtocolAddress.S_un.S_un_b.s_b3,
 				lcxl_arp_ethernet.TargetProtocolAddress.S_un.S_un_b.s_b4));
-			
+
 			if (lcxl_arp_ethernet.ProtocolAddressSpace != ETHERNET_TYPE_IPV4) {
-				return NULL;
+				return FALSE;
 			}
-			
+
 			switch (lcxl_arp_ethernet.Opcode)
 			{
 			case ARP_REQUEST:
@@ -2294,23 +2242,51 @@ PLCXL_ROUTE_LIST_ENTRY IfRouteNBL(IN PLCXL_FILTER pFilter, IN PETHERNET_HEADER p
 			}
 		}
 		break;
-    case ETHERNET_TYPE_IPV6://IPv6协议
-		if (BufferLength >= sizeof(IPV6_HEADER)){
-			PIPV6_HEADER pIPHeader;
+	case ETHERNET_TYPE_IPV4://IPv4协议
+		if (BufferLength >= sizeof(IPV4_HEADER)){
+			PIPV4_HEADER ip_header;
 
-			pIPHeader = (PIPV6_HEADER)((PUCHAR)pEthType + sizeof(USHORT));
+			ip_header = (PIPV4_HEADER)((PUCHAR)ethernet_type_ptr + sizeof(USHORT));
 			//查看数据包的目标IP是否是虚拟IP
-			if (RtlCompareMemory(&pIPHeader->DestinationAddress, &pFilter->module_setting->virtual_ipv6, sizeof(pIPHeader->DestinationAddress)) == sizeof(pIPHeader->DestinationAddress)) {
-				switch (pIPHeader->NextHeader) {
+			if (RtlCompareMemory(&ip_header->DestinationAddress, &pFilter->module_setting->virtual_ipv4, sizeof(ip_header->DestinationAddress)) == sizeof(ip_header->DestinationAddress)) {
+				//pIPHeader->iaDst
+
+				switch (ip_header->Protocol) {
+				case 0x01://ICMP 
+
+					break;
+				case 0x06://TCP
+					//目前仅支持TCP
+					*route = RouteTCPNBL(pFilter, IM_IPV4, ip_header);
+					is_processed = *route != NULL;
+					break;
+				case 0x11://PROT_UDP
+					break;
+				default:
+					break;
+				}
+			}
+		}
+		break;
+
+	case ETHERNET_TYPE_IPV6://IPv6协议
+		if (BufferLength >= sizeof(IPV6_HEADER)){
+			PIPV6_HEADER ip_header;
+
+			ip_header = (PIPV6_HEADER)((PUCHAR)ethernet_type_ptr + sizeof(USHORT));
+			//查看数据包的目标IP是否是虚拟IP
+			if (RtlCompareMemory(&ip_header->DestinationAddress, &pFilter->module_setting->virtual_ipv6, sizeof(ip_header->DestinationAddress)) == sizeof(ip_header->DestinationAddress)) {
+				switch (ip_header->NextHeader) {
 				case 0x3A://ICMPv6
 				{
-					PICMPV6_MESSAGE pICMPv6Message = (PICMPV6_MESSAGE)((PUCHAR)pIPHeader + sizeof(IPV6_HEADER));
+					PICMPV6_MESSAGE pICMPv6Message = (PICMPV6_MESSAGE)((PUCHAR)ip_header + sizeof(IPV6_HEADER));
 					KdPrint(("SYS:ICMPv6:Type=%d, Code=%d, Checksum=%d\n", pICMPv6Message->Header.Type, pICMPv6Message->Header.Code, pICMPv6Message->Header.Checksum));
 				}
 					break;
 				case 0x06://TCP
 					//目前仅支持TCP
-					return RouteTCPNBL(pFilter, IM_IPV6, pIPHeader);
+					*route = RouteTCPNBL(pFilter, IM_IPV6, ip_header);
+					is_processed = *route != NULL;
 					break;
 				case 0x11://PROT_UDP
 					break;
@@ -2318,66 +2294,64 @@ PLCXL_ROUTE_LIST_ENTRY IfRouteNBL(IN PLCXL_FILTER pFilter, IN PETHERNET_HEADER p
 			}
 		}
 		break;
-    default:
-        break;
-    }
-    return NULL;
+	default:
+		break;
+	}
+	return is_processed;
 }
 
-PLCXL_FILTER FindAndLockFilter(IN NET_LUID miniport_net_luid)
+PLCXL_FILTER FindFilter(IN NET_LUID miniport_net_luid)
 {
 	PLCXL_FILTER filter = NULL;
-	BOOLEAN bFalse = FALSE;
 	BOOLEAN bFound = FALSE;
-	FILTER_ACQUIRE_LOCK(&g_filter_list_lock, bFalse);
-	filter = CONTAINING_RECORD(g_filter_list.Flink, LCXL_FILTER, FilterModuleLink);
-	while (&filter->FilterModuleLink != &g_filter_list) {
+	
+	ASSERT(g_filter_list.lock_count > 0);
+	filter = CONTAINING_RECORD(GetListofLCXLLockList(&g_filter_list)->Flink, LCXL_FILTER, filter_module_link);
+	while (&filter->filter_module_link != GetListofLCXLLockList(&g_filter_list)) {
 		if (miniport_net_luid.Value == filter->miniport_net_luid.Value) {
 			
 			bFound = TRUE;
 			break;
 		}
 
-		filter = CONTAINING_RECORD(filter->FilterModuleLink.Flink, LCXL_FILTER, FilterModuleLink);
+		filter = CONTAINING_RECORD(filter->filter_module_link.Flink, LCXL_FILTER, filter_module_link);
 	}
 	if (!bFound) {
-		FILTER_RELEASE_LOCK(&g_filter_list_lock, bFalse);
+		UnlockLCXLLockList(&g_filter_list);
 		filter = NULL;
 	}
 	return filter;
-}
-
-void UnlockFilter(IN PLCXL_FILTER pFilter)
-{
-	BOOLEAN bFalse = FALSE;
-	UNREFERENCED_PARAMETER(pFilter);
-	FILTER_RELEASE_LOCK(&g_filter_list_lock, bFalse);
 }
 
 void UpdateFiltersSetting()
 {
 	PLCXL_FILTER filter;
 
-	NdisAcquireSpinLock(&g_filter_list_lock);
-	filter = CONTAINING_RECORD(g_filter_list.Flink, LCXL_FILTER, FilterModuleLink);
-	while (&filter->FilterModuleLink != &g_filter_list) {
-		
+	LockLCXLLockList(&g_filter_list);
+	filter = CONTAINING_RECORD(GetListofLCXLLockList(&g_filter_list)->Flink, LCXL_FILTER, filter_module_link);
+	while (&filter->filter_module_link != GetListofLCXLLockList(&g_filter_list)) {
 		PLCXL_MODULE_SETTING_LIST_ENTRY module_setting;
-		NdisAcquireSpinLock(&g_Setting.module_list_lock);
-		module_setting = CONTAINING_RECORD(g_Setting.module_list.list_entry.Flink, LCXL_MODULE_SETTING_LIST_ENTRY, list_entry);
-		while (&module_setting->list_entry != &g_Setting.module_list.list_entry) {
+
+		LockLCXLLockList(&g_setting.module_list);
+		module_setting = CONTAINING_RECORD(GetListofLCXLLockList(&g_setting.module_list)->Flink, LCXL_MODULE_SETTING_LIST_ENTRY, list_entry);
+		while (&module_setting->list_entry != GetListofLCXLLockList(&g_setting.module_list)) {
 			if (filter->module_setting == NULL && module_setting->miniport_net_luid.Value == filter->miniport_net_luid.Value) {
 				filter->module_setting = module_setting;
 				break;
 			}
 			module_setting = CONTAINING_RECORD(module_setting->list_entry.Flink, LCXL_MODULE_SETTING_LIST_ENTRY, list_entry);
 		}
-
-		NdisReleaseSpinLock(&g_Setting.module_list_lock);
-		filter = CONTAINING_RECORD(filter->FilterModuleLink.Flink, LCXL_FILTER, FilterModuleLink);
-
+		UnlockLCXLLockList(&g_setting.module_list);
+		filter = CONTAINING_RECORD(filter->filter_module_link.Flink, LCXL_FILTER, filter_module_link);
 	}
-	NdisReleaseSpinLock(&g_filter_list_lock);
+	UnlockLCXLLockList(&g_filter_list);
+}
+
+void DelLCXLFilterCallBack(PLIST_ENTRY filter)
+{
+	//
+	// Free the memory allocated
+	FILTER_FREE_MEM(CONTAINING_RECORD(filter, LCXL_FILTER, filter_module_link));
 }
 
 

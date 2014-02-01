@@ -250,6 +250,7 @@
     <None Exclude="@(None)" Include="*.def;*.bat;*.hpj;*.asmx" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\common\driver\lcxl_lock_list.h" />
     <ClInclude Include="..\..\common\driver\lcxl_net.h" />
     <ClInclude Include="..\..\common\lcxl_type.h" />
     <ClInclude Include="..\common\drv_interface.h" />

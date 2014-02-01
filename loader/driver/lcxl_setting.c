@@ -2,7 +2,12 @@
 #include "lcxl_setting.h"
 
 //配置信息
-LCXL_SETTING		g_Setting;
+LCXL_SETTING		g_setting;
+
+VOID DelModuleSettingCallBack(PLIST_ENTRY module_setting)
+{
+	DelModuleSetting(CONTAINING_RECORD(module_setting, LCXL_MODULE_SETTING_LIST_ENTRY, list_entry));
+}
 
 VOID LoadSetting()
 {
@@ -39,7 +44,7 @@ VOID LoadSetting()
 					INT i;
 					INT module_count;
 
-					NdisAcquireSpinLock(&g_Setting.module_list_lock);
+					LockLCXLLockList(&g_setting.module_list);
 					//读取模块数量
 					cur_buf = LCXLReadFromBuf(cur_buf, &module_count, sizeof(module_count));
 					for (i = 0; i < module_count; i++) {
@@ -51,7 +56,8 @@ VOID LoadSetting()
 						
 						if (module_setting == NULL) {
 							INT j;
-							
+							INT server_count;
+
 							module_setting = NewModuleSetting();
 							//读取Luid
 							module_setting->miniport_net_luid.Value = miniport_net_luid.Value;
@@ -71,31 +77,22 @@ VOID LoadSetting()
 							cur_buf = LCXLReadFromBuf(cur_buf, &module_setting->virtual_ipv6, sizeof(module_setting->virtual_ipv6));
 
 							//读取服务器数量
-							cur_buf = LCXLReadFromBuf(cur_buf, &module_setting->server_count, sizeof(module_setting->server_count));
+							cur_buf = LCXLReadFromBuf(cur_buf, &server_count, sizeof(server_count));
 							//初始化服务器列表
-							InitializeListHead(&module_setting->server_list.list_entry);
-							//初始化服务器锁
-							NdisAllocateSpinLock(&module_setting->module_setting_lock);
-							for (j = 0; j < module_setting->server_count; j++) {
+							InitLCXLLockList(&module_setting->server_list, DelServerCallBack);
+							
+							for (j = 0; j < server_count; j++) {
 								PSERVER_INFO_LIST_ENTRY server = NULL;
-								server = ALLOC_SERVER();
+								server = AllocServer();
 								if (server != NULL) {
-									RtlZeroMemory(server, sizeof(SERVER_INFO_LIST_ENTRY));
 									cur_buf = LCXLReadFromBuf(cur_buf, &server->info, sizeof(server->info));
-
-									InsertHeadList(&module_setting->server_list.list_entry, &server->list_entry);
-								} else {
-									j--;
-									module_setting->server_count--;
+									AddtoLCXLLockList(&module_setting->server_list, &server->list_entry);
 								}
 							}
-							InsertHeadList(&g_Setting.module_list.list_entry, &module_setting->list_entry);
-						} else {
-							i--;
-							g_Setting.module_count--;
+							AddtoLCXLLockList(&g_setting.module_list, &module_setting->list_entry);
 						}
 					}
-					NdisReleaseSpinLock(&g_Setting.module_list_lock);
+					UnlockLCXLLockList(&g_setting.module_list);
 				}
 				ExFreePoolWithTag(buf, TAG_FILE_BUFFER);
 			} else {
@@ -109,21 +106,21 @@ VOID LoadSetting()
 
 PLCXL_MODULE_SETTING_LIST_ENTRY FindModuleSettingByLUID(IN NET_LUID miniport_net_luid)
 {
-	BOOLEAN bFound = FALSE;
+	BOOLEAN is_found = FALSE;
 	PLCXL_MODULE_SETTING_LIST_ENTRY module = NULL;
 
-	NdisAcquireSpinLock(&g_Setting.module_list_lock);
-	module = CONTAINING_RECORD(g_Setting.module_list.list_entry.Flink, LCXL_MODULE_SETTING_LIST_ENTRY, list_entry);
-	while (module != &g_Setting.module_list) {
+	NdisAcquireSpinLock(&g_setting.lock);
+	module = CONTAINING_RECORD(GetListofLCXLLockList(&g_setting.module_list)->Flink, LCXL_MODULE_SETTING_LIST_ENTRY, list_entry);
+	while (&module->list_entry != GetListofLCXLLockList(&g_setting.module_list)) {
 		if (module->miniport_net_luid.Value == miniport_net_luid.Value) {
-			bFound = TRUE;
+			is_found = TRUE;
 			break;
 		}
 		module = CONTAINING_RECORD(module->list_entry.Flink, LCXL_MODULE_SETTING_LIST_ENTRY, list_entry);
 	}
 
-	NdisReleaseSpinLock(&g_Setting.module_list_lock);
-	return bFound ? module : NULL;
+	NdisReleaseSpinLock(&g_setting.lock);
+	return is_found ? module : NULL;
 }
 
 
@@ -159,9 +156,7 @@ PLCXL_MODULE_SETTING_LIST_ENTRY LoadModuleSetting(IN PNDIS_FILTER_ATTACH_PARAMET
 		//引用计数加1
 		InterlockedIncrement(&module->ref_count);
 		if (is_new_module) {
-			NdisAcquireSpinLock(&g_Setting.module_list_lock);
-			InsertHeadList(&g_Setting.module_list.list_entry, &module->list_entry);
-			NdisReleaseSpinLock(&g_Setting.module_list_lock);
+			AddtoLCXLLockList(&g_setting.module_list, &module->list_entry);
 		}
 		
 	}
@@ -179,7 +174,7 @@ VOID SaveSetting()
 	INT buf_len;
 	PUCHAR buf;
 	PUCHAR cur_buf;
-
+	//打开文件
 	RtlInitUnicodeString(&file_path, LOADER_SETTING_FILE_PATH);
 	InitializeObjectAttributes(&oa, &file_path, OBJ_CASE_INSENSITIVE || OBJ_KERNEL_HANDLE, NULL, NULL);
 	status = ZwCreateFile(
@@ -200,12 +195,12 @@ VOID SaveSetting()
 		return;
 	}
 	buf_len = 0;
-	NdisAcquireSpinLock(&g_Setting.module_list_lock);
+	LockLCXLLockList(&g_setting.module_list);
 	//获取模块数量
-	buf_len += sizeof(g_Setting.module_count);
+	buf_len +=  sizeof(g_setting.module_list.list_count);
 	//先计算需要写入配置文件的长度
-	module = CONTAINING_RECORD(g_Setting.module_list.list_entry.Flink, LCXL_MODULE_SETTING_LIST_ENTRY, list_entry);
-	while (module != &g_Setting.module_list) {
+	module = CONTAINING_RECORD(GetListofLCXLLockList(&g_setting.module_list)->Flink, LCXL_MODULE_SETTING_LIST_ENTRY, list_entry);
+	while (&module->list_entry != GetListofLCXLLockList(&g_setting.module_list)) {
 		//如果是重启后删除的，则不保存到配置文件中
 		if ((module->flag & ML_DELETE_AFTER_RESTART) == 0) {
 			PSERVER_INFO_LIST_ENTRY server;
@@ -220,22 +215,25 @@ VOID SaveSetting()
 				sizeof(module->real_addr) +
 				sizeof(module->virtual_ipv4) +
 				sizeof(module->virtual_ipv6);
-			NdisAcquireSpinLock(&module->module_setting_lock);
-			buf_len += sizeof(module->server_count);
-			server = CONTAINING_RECORD(module->server_list.list_entry.Flink, SERVER_INFO_LIST_ENTRY, list_entry);
-			while (server != &module->server_list) {
+			
+			LockLCXLLockList(&module->server_list);
+			buf_len += sizeof(module->server_list.list_count);
+			server = CONTAINING_RECORD(GetListofLCXLLockList(&module->server_list)->Flink, SERVER_INFO_LIST_ENTRY, list_entry);
+			while (&server->list_entry != GetListofLCXLLockList(&module->server_list)) {
 				buf_len += sizeof(server->info);
 				server = CONTAINING_RECORD(server->list_entry.Flink, SERVER_INFO_LIST_ENTRY, list_entry);
 			}
-			NdisReleaseSpinLock(&module->module_setting_lock);
+			UnlockLCXLLockList(&module->server_list);
 		}
 		module = CONTAINING_RECORD(module->list_entry.Flink, LCXL_MODULE_SETTING_LIST_ENTRY, list_entry);
 	}
 
 	buf = cur_buf = ExAllocatePoolWithTag(NonPagedPool, buf_len, TAG_FILE_BUFFER);
 	//获取模块数量
-	cur_buf = LCXLWriteToBuf(cur_buf, &g_Setting.module_count, sizeof(g_Setting.module_count));
-	while (module != &g_Setting.module_list) {
+	cur_buf = LCXLWriteToBuf(cur_buf, &g_setting.module_list.list_count, sizeof(g_setting.module_list.list_count));
+
+	module = CONTAINING_RECORD(GetListofLCXLLockList(&g_setting.module_list)->Flink, LCXL_MODULE_SETTING_LIST_ENTRY, list_entry);
+	while (&module->list_entry != GetListofLCXLLockList(&g_setting.module_list)) {
 		//如果是重启后删除的，则不保存到配置文件中
 		if ((module->flag & ML_DELETE_AFTER_RESTART) == 0) {
 			PSERVER_INFO_LIST_ENTRY server;
@@ -256,22 +254,21 @@ VOID SaveSetting()
 			cur_buf = LCXLWriteToBuf(cur_buf, &module->virtual_ipv4, sizeof(module->virtual_ipv4));
 			//写入虚拟IPv6地址
 			cur_buf = LCXLWriteToBuf(cur_buf, &module->virtual_ipv6, sizeof(module->virtual_ipv6));
-
+			LockLCXLLockList(&module->server_list);
 			//写入服务器数量
-			cur_buf = LCXLWriteToBuf(cur_buf, &module->server_count, sizeof(module->server_count));
+			cur_buf = LCXLWriteToBuf(cur_buf, &module->server_list.list_count, sizeof(module->server_list.list_count));
 			//遍历写入服务器信息
-			NdisAcquireSpinLock(&module->module_setting_lock);
-			server = CONTAINING_RECORD(module->server_list.list_entry.Flink, SERVER_INFO_LIST_ENTRY, list_entry);
-			while (server != &module->server_list) {
+			server = CONTAINING_RECORD(GetListofLCXLLockList(&module->server_list)->Flink, SERVER_INFO_LIST_ENTRY, list_entry);
+			while (&server->list_entry != GetListofLCXLLockList(&module->server_list)) {
 				//写入服务器信息
 				cur_buf = LCXLWriteToBuf(cur_buf, &server->info, sizeof(server->info));
 				server = CONTAINING_RECORD(server->list_entry.Flink, SERVER_INFO_LIST_ENTRY, list_entry);
 			}
-			NdisReleaseSpinLock(&module->module_setting_lock);
+			UnlockLCXLLockList(&module->server_list);
 		}
 		module = CONTAINING_RECORD(module->list_entry.Flink, LCXL_MODULE_SETTING_LIST_ENTRY, list_entry);
 	}
-	NdisReleaseSpinLock(&g_Setting.module_list_lock);
+	UnlockLCXLLockList(&g_setting.module_list);
 	status = ZwWriteFile(file_handle, NULL, NULL, NULL, &iosb, buf, buf_len, NULL, NULL);
 	if (!NT_SUCCESS(status)) {
 		KdPrint(("SYS:SaveSetting:ZwCreateFile Failed:0x%08x, iosb.Info=0x%p\n", status, iosb.Information));
@@ -287,6 +284,7 @@ PLCXL_MODULE_SETTING_LIST_ENTRY NewModuleSetting()
 	module_setting = ExAllocatePoolWithTag(NonPagedPool, sizeof(LCXL_MODULE_SETTING_LIST_ENTRY), TAG_MODULE);
 	if (module_setting != NULL) {
 		NdisZeroMemory(module_setting, sizeof(LCXL_MODULE_SETTING_LIST_ENTRY));
+		NdisAllocateSpinLock(&module_setting->lock);
 	}
 	
 	return module_setting;

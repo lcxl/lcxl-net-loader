@@ -24,14 +24,13 @@
 //添加代码
 //获取所有的网卡接口序号
 #define IOCTL_LOADER_ALL_APP_MODULE			_NDIS_CONTROL_CODE(0x20, METHOD_BUFFERED)
-//获取虚拟IP
-#define IOCTL_LOADER_GET_VIRTUAL_IP			_NDIS_CONTROL_CODE(0x21, METHOD_BUFFERED)
+//input NET_LUID                     miniport_net_luid;
 //LCXL_IP
 //设置虚拟IP
 #define IOCTL_LOADER_SET_VIRTUAL_IP			_NDIS_CONTROL_CODE(0x22, METHOD_BUFFERED)
 //LCXL_IP
 //获取服务器列表
-//input NET_LUID                     miniport_net_luid;
+//input APP_IP
 //output APP_SERVER_LIST
 #define IOCTL_LOADER_GET_SERVER_LIST		_NDIS_CONTROL_CODE(0x23, METHOD_BUFFERED)
 //添加服务器

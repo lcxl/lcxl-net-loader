@@ -28,7 +28,7 @@ DWORD WINAPI LoaderGetAllModule(PAPP_MODULE_INFO pModuleList, PDWORD pDataSize) 
 	if (INVALID_HANDLE_VALUE == file_handle) {
 		return GetLastError();
 	}
-	if (DeviceIoControl(file_handle, IOCTL_LOADER_ALL_MODULE, NULL, 0, pModuleList, *pDataSize, pDataSize, NULL)) {
+	if (DeviceIoControl(file_handle, IOCTL_LOADER_ALL_APP_MODULE, NULL, 0, pModuleList, *pDataSize, pDataSize, NULL)) {
 
 	} else {
 		last_error = GetLastError();

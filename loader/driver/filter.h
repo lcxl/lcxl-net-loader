@@ -18,7 +18,7 @@ Notes:
 
 #include "lcxl_queue.h"
 #include "lcxl_setting.h"
-
+#include "../../common/driver/lcxl_lock_list.h"
 #pragma warning(disable:28930) // Unused assignment of pointer, by design in samples
 #pragma warning(disable:28931) // Unused assignment of variable, by design in samples
 
@@ -262,47 +262,43 @@ typedef struct _FILTER_REQUEST
 //
 typedef struct _LCXL_FILTER
 {
-    LIST_ENTRY						FilterModuleLink;
-    //Reference to this filter
-    ULONG                           RefCount;
+    LIST_ENTRY						filter_module_link;
 
 	PNDIS_FILTER_ATTACH_PARAMETERS	attach_paramters;
 
-    NDIS_HANDLE                     FilterHandle;
+    NDIS_HANDLE                     filter_handle;
     //小端口驱动网络接口序号
-    NET_IFINDEX                     MiniportIfIndex;
+    NET_IFINDEX                     miniport_if_index;
 
-    NDIS_STATUS                     Status;
-    NDIS_EVENT                      Event;
-    ULONG                           BackFillSize;
-    FILTER_LOCK                     Lock;    // Lock for protection of state and outstanding sends and recvs
+    NDIS_STATUS                     status;
+    NDIS_EVENT                      event;
+    ULONG                           back_fill_size;
+    FILTER_LOCK                     lock;    // Lock for protection of state and outstanding sends and recvs
 	//过滤驱动当前状态
-    volatile FILTER_STATE           State; 
-    ULONG                           OutstandingSends;
-    ULONG                           OutstandingRequest;
-    ULONG                           OutstandingRcvs;
-    FILTER_LOCK                     SendLock;
-    FILTER_LOCK                     RcvLock;
-    QUEUE_HEADER                    SendNBLQueue;
-    QUEUE_HEADER                    RcvNBLQueue;
+    volatile FILTER_STATE           state; 
+    ULONG                           outstanding_sends;
+    ULONG                           outstanding_request;
+    ULONG                           outstanding_rcvs;
+    FILTER_LOCK                     send_lock;
+    FILTER_LOCK                     rcv_lock;
+    QUEUE_HEADER                    send_nbl_queue;
+    QUEUE_HEADER                    rcv_nbl_queue;
 
-
-    NDIS_STRING                     FilterName;
-    ULONG                           CallsRestart;
-    BOOLEAN                         TrackReceives;
-    BOOLEAN                         TrackSends;
+    ULONG                           calls_restart;
+    BOOLEAN                         track_receives;
+    BOOLEAN                         track_sends;
 #if DBG
     BOOLEAN                         bIndicating;
 #endif
 
-    PNDIS_OID_REQUEST               PendingOidRequest;
+    PNDIS_OID_REQUEST               pending_oid_request;
     //添加的代码
 	//网卡本地唯一ID
 	NET_LUID						miniport_net_luid;
     //存储模块指针
 	PLCXL_MODULE_SETTING_LIST_ENTRY	module_setting;
 	//路由信息
-	LCXL_ROUTE_LIST_ENTRY			route_list;
+	LIST_ENTRY						route_list;//LCXL_ROUTE_LIST_ENTRY
     //NBL发送池
     NDIS_HANDLE                     send_net_buffer_list_pool;
 	//MAC地址
@@ -318,7 +314,7 @@ typedef struct _FILTER_DEVICE_EXTENSION
 
 
 #define FILTER_READY_TO_PAUSE(_Filter)      \
-    ((_Filter)->State == FilterPausing)
+    ((_Filter)->state == FilterPausing)
 
 //
 // The driver should maintain a list of NDIS filter handles
@@ -343,10 +339,9 @@ extern NDIS_HANDLE         g_filter_driver_object;
 extern NDIS_HANDLE         g_ndis_filter_device_handle;
 extern PDEVICE_OBJECT      g_device_object;
 
-extern FILTER_LOCK         g_filter_list_lock;
-extern LIST_ENTRY          g_filter_list;
+extern LCXL_LOCK_LIST		g_filter_list;
 //配置信息
-extern LCXL_SETTING			g_Setting;
+extern LCXL_SETTING			g_setting;
 
 
 //
@@ -445,20 +440,26 @@ VOID DriverReinitialize(
 
 ///<summary>
 ///路由TCP数据包
+///返回路由信息
 ///</summary>
 PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER pFilter, IN INT ipMode, IN PVOID pIPHeader);
 
 ///<summary>
-///是否路由此NBL，如果需要路由此NBL，返回路由信息，否则返回NULL
+///处理此NBL
+///参数：
+///route:如果需要路由此NBL，返回路由信息，否则返回NULL。注意，只有当函数返回为FALSE时此值恒为NULL
+///返回值：
+///TRUE:已处理，不要交给上层驱动程序；FALSE:未处理，交给上层处理程序
 ///</summary>
-PLCXL_ROUTE_LIST_ENTRY IfRouteNBL(IN PLCXL_FILTER pFilter, IN PETHERNET_HEADER pEthHeader, IN UINT BufferLength);
+BOOLEAN ProcessNBL(IN PLCXL_FILTER pFilter, IN PETHERNET_HEADER pEthHeader, IN UINT BufferLength, OUT PLCXL_ROUTE_LIST_ENTRY *route);
 
-PLCXL_FILTER FindAndLockFilter(IN NET_LUID miniport_net_luid);
-void UnlockFilter(IN PLCXL_FILTER pFilter);
-
+//寻找LCXL_FILTER结构并且锁定列表（锁定之后列表中的列表项不会被添加或删除）
+PLCXL_FILTER FindFilter(IN NET_LUID miniport_net_luid);
+//更新过滤器设置
 void UpdateFiltersSetting();
 //!添加代码!
 
+void DelLCXLFilterCallBack(PLIST_ENTRY filter);
 #endif  //_FILT_H
 
 
