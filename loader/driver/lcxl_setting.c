@@ -44,7 +44,8 @@ VOID LoadSetting()
 					INT i;
 					INT module_count;
 
-					LockLCXLLockList(&g_setting.module_list);
+					//读取用户角色，有均衡器角色和服务器角色
+					cur_buf = LCXLReadFromBuf(cur_buf, &g_setting.lcxl_role, sizeof(g_setting.lcxl_role));
 					//读取模块数量
 					cur_buf = LCXLReadFromBuf(cur_buf, &module_count, sizeof(module_count));
 					for (i = 0; i < module_count; i++) {
@@ -86,7 +87,7 @@ VOID LoadSetting()
 								server = AllocServer();
 								if (server != NULL) {
 									cur_buf = LCXLReadFromBuf(cur_buf, &server->info, sizeof(server->info));
-									AddtoLCXLLockList(&module_setting->server_list, &server->list_entry);
+									AddtoLCXLLockList(&module_setting->server_list, &server->list_entry.list_entry);
 								} else {
 									KdPrint(("SYS:LoadSetting:AllocServer failed.\n"));
 								}
@@ -94,7 +95,6 @@ VOID LoadSetting()
 							AddtoLCXLLockList(&g_setting.module_list, &module_setting->list_entry);
 						}
 					}
-					UnlockLCXLLockList(&g_setting.module_list);
 				}
 				ExFreePoolWithTag(buf, TAG_FILE_BUFFER);
 			} else {
@@ -111,7 +111,7 @@ PLCXL_MODULE_SETTING_LIST_ENTRY FindModuleSettingByLUID(IN NET_LUID miniport_net
 	BOOLEAN is_found = FALSE;
 	PLCXL_MODULE_SETTING_LIST_ENTRY module = NULL;
 
-	NdisAcquireSpinLock(&g_setting.lock);
+	LockLCXLLockList(&g_setting.module_list);
 	module = CONTAINING_RECORD(GetListofLCXLLockList(&g_setting.module_list)->Flink, LCXL_MODULE_SETTING_LIST_ENTRY, list_entry);
 	while (&module->list_entry != GetListofLCXLLockList(&g_setting.module_list)) {
 		if (module->miniport_net_luid.Value == miniport_net_luid.Value) {
@@ -120,19 +120,17 @@ PLCXL_MODULE_SETTING_LIST_ENTRY FindModuleSettingByLUID(IN NET_LUID miniport_net
 		}
 		module = CONTAINING_RECORD(module->list_entry.Flink, LCXL_MODULE_SETTING_LIST_ENTRY, list_entry);
 	}
-
-	NdisReleaseSpinLock(&g_setting.lock);
+	UnlockLCXLLockList(&g_setting.module_list);
 	return is_found ? module : NULL;
 }
 
 
 PLCXL_MODULE_SETTING_LIST_ENTRY LoadModuleSetting(IN PNDIS_FILTER_ATTACH_PARAMETERS	attach_paramters)
 {
-	
 	PLCXL_MODULE_SETTING_LIST_ENTRY module;
 	BOOLEAN is_new_module;
+
 	module = FindModuleSettingByLUID(attach_paramters->BaseMiniportNetLuid);
-	
 	is_new_module = module == NULL;
 	//如果没有找到
 	if (is_new_module) {
@@ -199,7 +197,7 @@ VOID SaveSetting()
 	buf_len = 0;
 	LockLCXLLockList(&g_setting.module_list);
 	//获取模块数量
-	buf_len +=  sizeof(g_setting.module_list.list_count);
+	buf_len +=  sizeof(g_setting.module_list.list_count)+sizeof(g_setting.lcxl_role);
 	//先计算需要写入配置文件的长度
 	module = CONTAINING_RECORD(GetListofLCXLLockList(&g_setting.module_list)->Flink, LCXL_MODULE_SETTING_LIST_ENTRY, list_entry);
 	while (&module->list_entry != GetListofLCXLLockList(&g_setting.module_list)) {
@@ -221,12 +219,12 @@ VOID SaveSetting()
 			LockLCXLLockList(&module->server_list);
 			buf_len += sizeof(module->server_list.list_count);
 			server = CONTAINING_RECORD(GetListofLCXLLockList(&module->server_list)->Flink, SERVER_INFO_LIST_ENTRY, list_entry);
-			while (&server->list_entry != GetListofLCXLLockList(&module->server_list)) {
+			while (&server->list_entry.list_entry != GetListofLCXLLockList(&module->server_list)) {
 				if ((server->info.status & SS_DELETED) == 0) {
 					buf_len += sizeof(server->info);
 				}
 				
-				server = CONTAINING_RECORD(server->list_entry.Flink, SERVER_INFO_LIST_ENTRY, list_entry);
+				server = CONTAINING_RECORD(server->list_entry.list_entry.Flink, SERVER_INFO_LIST_ENTRY, list_entry);
 			}
 			UnlockLCXLLockList(&module->server_list);
 		}
@@ -236,7 +234,8 @@ VOID SaveSetting()
 	buf = cur_buf = ExAllocatePoolWithTag(NonPagedPool, buf_len, TAG_FILE_BUFFER);
 	//获取模块数量
 	cur_buf = LCXLWriteToBuf(cur_buf, &g_setting.module_list.list_count, sizeof(g_setting.module_list.list_count));
-
+	//写入用户角色，有均衡器角色和服务器角色
+	cur_buf = LCXLWriteToBuf(cur_buf, &g_setting.lcxl_role, sizeof(g_setting.lcxl_role));
 	module = CONTAINING_RECORD(GetListofLCXLLockList(&g_setting.module_list)->Flink, LCXL_MODULE_SETTING_LIST_ENTRY, list_entry);
 	while (&module->list_entry != GetListofLCXLLockList(&g_setting.module_list)) {
 		//如果是重启后删除的，则不保存到配置文件中
@@ -264,12 +263,12 @@ VOID SaveSetting()
 			cur_buf = LCXLWriteToBuf(cur_buf, &module->server_list.list_count, sizeof(module->server_list.list_count));
 			//遍历写入服务器信息
 			server = CONTAINING_RECORD(GetListofLCXLLockList(&module->server_list)->Flink, SERVER_INFO_LIST_ENTRY, list_entry);
-			while (&server->list_entry != GetListofLCXLLockList(&module->server_list)) {
+			while (&server->list_entry.list_entry != GetListofLCXLLockList(&module->server_list)) {
 				//写入服务器信息
 				if ((server->info.status & SS_DELETED) == 0) {
 					cur_buf = LCXLWriteToBuf(cur_buf, &server->info, sizeof(server->info));
 				}
-				server = CONTAINING_RECORD(server->list_entry.Flink, SERVER_INFO_LIST_ENTRY, list_entry);
+				server = CONTAINING_RECORD(server->list_entry.list_entry.Flink, SERVER_INFO_LIST_ENTRY, list_entry);
 			}
 			UnlockLCXLLockList(&module->server_list);
 		}

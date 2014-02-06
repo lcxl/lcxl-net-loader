@@ -25,7 +25,7 @@ extern "C" {
 		//网卡本地唯一ID
 		NET_LUID			miniport_net_luid;
 		//真实地址
-		LCXL_SERVER_ADDR	real_addr;
+		LCXL_ADDR_INFO		real_addr;
 		//虚拟IPv4
 		IN_ADDR				virtual_ipv4;
 		//虚拟IPv6
@@ -55,13 +55,13 @@ extern "C" {
 	//output
 	typedef struct _APP_SERVER_LIST {
 		int					server_count;//服务器数量
-		LCXL_SERVER_ADDR	server_list[0];//服务器地址
+		LCXL_ADDR_INFO	server_list[0];//服务器地址
 	} APP_SERVER_LIST, *PAPP_SERVER_LIST;
 
 	//添加服务器
 	typedef struct _APP_ADD_SERVER {
 		NET_LUID			miniport_net_luid;
-		LCXL_SERVER_ADDR	server;
+		LCXL_ADDR_INFO	server;
 	} APP_ADD_SERVER, *PAPP_ADD_SERVER;
 	//删除服务器
 	typedef struct _APP_DEL_SERVER {

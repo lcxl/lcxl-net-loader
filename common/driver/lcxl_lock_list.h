@@ -21,10 +21,10 @@ typedef struct _LCXL_LOCK_LIST {
 	LIST_ENTRY				list;
 	//列表项数量，只有当锁定的时候才能访问，通过GetListCountofLCXLLockList获得
 	INT						list_count;
-	//待添加列表
-	LIST_ENTRY				to_be_add_list;//LCXL_TO_BE_LIST
-	//待删除列表
-	LIST_ENTRY				to_be_del_list;//LCXL_TO_BE_LIST
+	//待添加列表，LCXL_TO_BE_LIST
+	LIST_ENTRY				to_be_add_list;
+	//待删除列表，LCXL_TO_BE_LIST
+	LIST_ENTRY				to_be_del_list;
 	//内存管理器
 	NPAGED_LOOKASIDE_LIST	to_be_mem_mgr;
 	//自旋锁
@@ -34,9 +34,12 @@ typedef struct _LCXL_LOCK_LIST {
 	//删除列表项回调函数。
 	//注意：此函数运行在DISPATCH_LEVEL 下
 	DEL_LIST_ENTRY_FUNC		del_func;
-} LCXL_LOCK_LIST, *PLCXL_LOCK_LIST;
+} LCXL_LOCK_LIST, *PLCXL_LOCK_LIST;//LCXL锁列表
 
-__inline VOID InitLCXLLockList(IN PLCXL_LOCK_LIST lock_list, IN DEL_LIST_ENTRY_FUNC del_func)
+//初始化LCXL锁列表
+//lock_list:锁列表结构指针
+//del_func:删除对调函数，当从LCXL锁列表删除列表项时会调用del_func函数来释放列表项指针
+__inline VOID InitLCXLLockList(IN OUT PLCXL_LOCK_LIST lock_list, IN DEL_LIST_ENTRY_FUNC del_func)
 {
 	ASSERT(lock_list != NULL && del_func != NULL);
 	lock_list->lock_count = 0;

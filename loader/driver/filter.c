@@ -1509,8 +1509,8 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 {
 
     PLCXL_FILTER        filter = (PLCXL_FILTER)FilterModuleContext;
-    BOOLEAN             DispatchLevel;
-    ULONG               Ref;
+    BOOLEAN             dispatch_level;
+    ULONG               rcv_ref;
     //修改代码，去掉DBG判定
 //#if DBG
     ULONG               return_flags = 0;
@@ -1535,23 +1535,23 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 
 
     DEBUGP(DL_TRACE, "===>ReceiveNetBufferList: NetBufferLists = %p.\n", NetBufferLists);
-	DispatchLevel = NDIS_TEST_RECEIVE_AT_DISPATCH_LEVEL(ReceiveFlags);
-	if (DispatchLevel) {
+	dispatch_level = NDIS_TEST_RECEIVE_AT_DISPATCH_LEVEL(ReceiveFlags);
+	if (dispatch_level) {
         NDIS_SET_RETURN_FLAG(return_flags, NDIS_RETURN_FLAGS_DISPATCH_LEVEL);
         NDIS_SET_SEND_FLAG(send_flags, NDIS_SEND_FLAGS_DISPATCH_LEVEL);
     }
 
-	FILTER_ACQUIRE_LOCK(&filter->lock, DispatchLevel);
+	FILTER_ACQUIRE_LOCK(&filter->lock, dispatch_level);
 	//如果没有在运行或者模块信息没有加载
 	if (filter->state != FilterRunning) {
-		FILTER_RELEASE_LOCK(&filter->lock, DispatchLevel);
+		FILTER_RELEASE_LOCK(&filter->lock, dispatch_level);
 
 		if (NDIS_TEST_RECEIVE_CAN_PEND(ReceiveFlags)) {
 			NdisFReturnNetBufferLists(filter->filter_handle, NetBufferLists, return_flags);
 		}
 		return;
 	}
-	FILTER_RELEASE_LOCK(&filter->lock, DispatchLevel);
+	FILTER_RELEASE_LOCK(&filter->lock, dispatch_level);
 	ASSERT(filter->module_setting != NULL);
 	//如果没有加载配置信息，则放过所有的NBL
 	if ((filter->module_setting->flag & MSF_ENABLED) == 0) {
@@ -1747,21 +1747,21 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 	//
 	if (filter->track_receives)
 	{
-		FILTER_ACQUIRE_LOCK(&filter->lock, DispatchLevel);
+		FILTER_ACQUIRE_LOCK(&filter->lock, dispatch_level);
 		filter->outstanding_rcvs += NumberOfNetBufferLists;
-		Ref = filter->outstanding_rcvs;
+		rcv_ref = filter->outstanding_rcvs;
 
-		FILTER_LOG_RCV_REF(1, filter, NetBufferLists, Ref);
-		FILTER_RELEASE_LOCK(&filter->lock, DispatchLevel);
+		FILTER_LOG_RCV_REF(1, filter, NetBufferLists, rcv_ref);
+		FILTER_RELEASE_LOCK(&filter->lock, dispatch_level);
 	}
 	if (NDIS_TEST_RECEIVE_CANNOT_PEND(ReceiveFlags) &&
 		filter->track_receives)
 	{
-		FILTER_ACQUIRE_LOCK(&filter->lock, DispatchLevel);
+		FILTER_ACQUIRE_LOCK(&filter->lock, dispatch_level);
 		filter->outstanding_rcvs -= NumberOfNetBufferLists;
-		Ref = filter->outstanding_rcvs;
-		FILTER_LOG_RCV_REF(2, filter, NetBufferLists, Ref);
-		FILTER_RELEASE_LOCK(&filter->lock, DispatchLevel);
+		rcv_ref = filter->outstanding_rcvs;
+		FILTER_LOG_RCV_REF(2, filter, NetBufferLists, rcv_ref);
+		FILTER_RELEASE_LOCK(&filter->lock, dispatch_level);
 	}
 
 	DEBUGP(DL_TRACE, "<===ReceiveNetBufferList: Flags = %8x.\n", ReceiveFlags);
@@ -2137,7 +2137,7 @@ PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER pFilter, IN INT ipMode, IN PV
 		if (route_info == NULL) {
 			route_info = CreateRouteListEntry(&pFilter->route_list);
 		} else {
-			DecRefServerAndCheckIfCanDel(&pFilter->module_setting->server_list, route_info->dst_server);
+			DecRefListEntry(&pFilter->module_setting->server_list, &route_info->dst_server->list_entry);
 		}
 		//初始化路由信息
 		InitRouteListEntry(route_info, ipMode, pIPHeader, ptcp_header, server);

@@ -252,6 +252,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\common\driver\lcxl_lock_list.h" />
     <ClInclude Include="..\..\common\driver\lcxl_net.h" />
+    <ClInclude Include="..\..\common\driver\ref_lock_list.h" />
     <ClInclude Include="..\..\common\lcxl_type.h" />
     <ClInclude Include="..\common\drv_interface.h" />
     <ClInclude Include="..\common\drv_interface_type.h" />

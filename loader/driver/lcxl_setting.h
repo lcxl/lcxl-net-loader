@@ -8,17 +8,22 @@ abstract:
 */
 #include "lcxl_route.h"
 #include "../../common/driver/lcxl_lock_list.h"
-//配置文件
+//全局配置文件
 #define LOADER_SETTING_FILE_PATH    L"\\SystemRoot\\System32\\drivers\\etc\\lcxl_loader"
+//均衡器配置文件
+#define ROUTER_SETTING_FILE_PATH    L"\\SystemRoot\\System32\\drivers\\etc\\lcxl_router"
+//服务器配置文件
+#define SERVER_SETTING_FILE_PATH    L"\\SystemRoot\\System32\\drivers\\etc\\lcxl_server"
 #define TAG_MODULE					'MODU'
-//配置文件数据结构
+
 typedef struct _LCXL_MODULE_SETTING_LIST_ENTRY {
-	LIST_ENTRY			list_entry;		//列表项
+	//列表项
+	LIST_ENTRY			list_entry;
 	//ref_count = 0，没有filter和配置文件关联
 	//ref_count = 1，有filter和配置文件关联
 	LONG				ref_count;
-
-	
+	//自旋锁
+	FILTER_LOCK			lock;
 	//网卡本地唯一ID
 	NET_LUID			miniport_net_luid;
 	//重启后删除此设置
@@ -34,23 +39,23 @@ typedef struct _LCXL_MODULE_SETTING_LIST_ENTRY {
 	//模块名称
 	PNDIS_STRING		filter_module_name;
 	//真实地址
-	LCXL_SERVER_ADDR	real_addr;
+	LCXL_ADDR_INFO		real_addr;
 	//虚拟IPv4
 	IN_ADDR				virtual_ipv4;
 	//虚拟IPv6
 	IN6_ADDR			virtual_ipv6;
-	//服务器列表
-	LCXL_LOCK_LIST		server_list;//SERVER_INFO_LIST_ENTRY
-	// 服务器列表锁
-	FILTER_LOCK			lock;
-} LCXL_MODULE_SETTING_LIST_ENTRY, *PLCXL_MODULE_SETTING_LIST_ENTRY;
+	//------------------------LCXL_ROUTER角色------------------------
+	//服务器列表，SERVER_INFO_LIST_ENTRY
+	LCXL_LOCK_LIST		server_list;
+	//------------------------LCXL_SERVER角色------------------------
+
+} LCXL_MODULE_SETTING_LIST_ENTRY, *PLCXL_MODULE_SETTING_LIST_ENTRY;//配置模块数据结构
 
 typedef struct _LCXL_SETTING{
-	//模块列表锁
-	FILTER_LOCK			lock;
-
+	FILTER_LOCK			lock;//模块列表锁
+	INT					lcxl_role;//驱动当前角色，有LCXL_ROLE_ROUTER和LCXL_ROLE_SERVER两种角色
 	LCXL_LOCK_LIST		module_list;//LCXL_MODULE_SETTING_LIST_ENTRY
-} LCXL_SETTING, *PLCXL_SETTING;
+} LCXL_SETTING, *PLCXL_SETTING;//驱动设置
 
 
 
@@ -66,6 +71,8 @@ PLCXL_MODULE_SETTING_LIST_ENTRY NewModuleSetting();
 //释放配置信息内存
 VOID DelModuleSetting(IN PLCXL_MODULE_SETTING_LIST_ENTRY module_setting);
 
+//通过LUID寻找模块配置信息。
+//注意：调用此函数之前请先锁定g_setting.module_list
 PLCXL_MODULE_SETTING_LIST_ENTRY FindModuleSettingByLUID(IN NET_LUID miniport_net_luid);
 
 //从设置模块中加载设置
@@ -75,19 +82,6 @@ PLCXL_MODULE_SETTING_LIST_ENTRY LoadModuleSetting(IN PNDIS_FILTER_ATTACH_PARAMET
 ///保存配置文件
 ///</summary>
 VOID SaveSetting();
-
-//减少引用并且检查是否可以释放SERVER结构
-__inline LONG DecRefServerAndCheckIfCanDel(IN PLCXL_LOCK_LIST server_list, IN PSERVER_INFO_LIST_ENTRY server)
-{
-	LONG ref_count;
-
-	ref_count = DecRefServer(server);
-	if (ref_count <= 0) {
-		ASSERT((server->info.status & SS_DELETED) != 0);
-		DelFromLCXLLockList(server_list, &server->list_entry);
-	}
-	return ref_count;
-}
 
 //删除路由信息
 //route_info:路由信息
@@ -100,7 +94,7 @@ __inline VOID DeleteRouteListEntry(IN OUT PLCXL_ROUTE_LIST_ENTRY route_info, IN 
 	RemoveEntryList(&route_info->list_entry);
 	FreeRoute(route_info);
 	//将路由所在的服务器的引用减1
-	DecRefServerAndCheckIfCanDel(server_list, server);
+	DecRefListEntry(server_list, &server->list_entry);
 }
 
 

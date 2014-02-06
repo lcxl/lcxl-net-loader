@@ -6,8 +6,8 @@ NPAGED_LOOKASIDE_LIST  g_server_mem_mgr;
 //删除配置信息回调函数
 VOID DelServerCallBack(PLIST_ENTRY server)
 {
-	ASSERT(CONTAINING_RECORD(server, SERVER_INFO_LIST_ENTRY, list_entry)->ref_count == 0);
-	FreeServer(CONTAINING_RECORD(server, SERVER_INFO_LIST_ENTRY, list_entry));
+	ASSERT(CONTAINING_RECORD(GetRefListEntry(server), SERVER_INFO_LIST_ENTRY, list_entry)->list_entry.ref_count == 0);
+	FreeServer(CONTAINING_RECORD(GetRefListEntry(server), SERVER_INFO_LIST_ENTRY, list_entry));
 }
 
 PSERVER_INFO_LIST_ENTRY SelectBestServer(IN PLCXL_LOCK_LIST server_list, IN INT ipMode, IN PVOID pIPHeader, IN PTCP_HDR pTcpHeader)
@@ -34,10 +34,10 @@ PSERVER_INFO_LIST_ENTRY SelectBestServer(IN PLCXL_LOCK_LIST server_list, IN INT 
 			if (best_server == NULL || best_server->performance.process_time > server_info->performance.process_time) {
 				if (best_server != NULL) {
 					//减少引用
-					DecRefServer(best_server);
+					DecRefListEntry(server_list, &best_server->list_entry);
 				}
 				best_server = server_info;
-				IncRefServer(best_server);
+				IncRefListEntry(server_list, &best_server->list_entry);
 			}
 		}
 		UnLockServer(&lock_handle);
