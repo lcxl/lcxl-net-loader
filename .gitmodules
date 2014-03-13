@@ -4,3 +4,6 @@
 [submodule "component/lcxl_iocp"]
 	path = component/lcxl_iocp
 	url = https://github.com/LCXL/lcxl-iocp.git
+[submodule "component/tinyxml2"]
+	path = component/tinyxml2
+	url = https://github.com/leethomason/tinyxml2.git
