@@ -44,7 +44,7 @@ CServiceBase::CServiceBase() :m_IsCallRunFunc(FALSE)
 	m_SerStatus.dwWaitHint = 0;
 	m_SerStatus.dwWin32ExitCode = 0;
 
-	if (m_GlobalService != NULL) {
+	if (m_GlobalService == NULL) {
 		m_GlobalService = this;
 	} else {
 		throw std::exception("服务类只能实例化一个");

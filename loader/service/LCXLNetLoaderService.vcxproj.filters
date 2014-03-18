@@ -16,6 +16,12 @@
     <Filter Include="头文件\lcxl_iocp">
       <UniqueIdentifier>{c1f35143-39ea-436e-8f7e-af94dbe4fdaa}</UniqueIdentifier>
     </Filter>
+    <Filter Include="头文件\tinyxml">
+      <UniqueIdentifier>{ddfce353-b4b4-4a87-a5a8-69bfed1edfa6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\tinyxml">
+      <UniqueIdentifier>{6f6281ae-349c-43af-989e-1c12204a3c23}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -54,6 +60,9 @@
     <ClInclude Include="..\..\component\lcxl_iocp\lcxl_iocp_lcxl.h">
       <Filter>头文件\lcxl_iocp</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\component\tinyxml2\tinyxml2.h">
+      <Filter>头文件\tinyxml</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -70,6 +79,9 @@
     </ClCompile>
     <ClCompile Include="..\..\common\service\lcxl_service.cpp">
       <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\component\tinyxml2\tinyxml2.cpp">
+      <Filter>源文件\tinyxml</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

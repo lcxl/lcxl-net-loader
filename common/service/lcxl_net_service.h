@@ -23,7 +23,6 @@ public:
 	void SetExitEvent();
 	int GetListenPort();
 	void SetListenPort(int Port);
-
 };
 
 #endif

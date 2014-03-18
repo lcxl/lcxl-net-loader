@@ -11,7 +11,7 @@ TCHAR LCXLSHADOW_SER_NAME[] = _T("LCXLNetLoaderService");
 
 #ifdef LCXL_SHADOW_SER_TEST
 
-class CTestNetLoaderSer : public CNetLoaderSer {
+class CTestNetLoaderSer : public CNetLoaderService {
 public:
 	virtual BOOL Run() {
 		SerRun();
@@ -35,7 +35,7 @@ int _tmain(int argc, _TCHAR* argv[])
 #else
 
 //全局变量  
-CNetLoaderSer g_NetLoadSer;
+CNetLoaderService g_NetLoadSer;
 
 int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
@@ -56,7 +56,7 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 
 #endif
 
-void CNetLoaderSer::IOCPEvent(IocpEventEnum EventType, CSocketObj *SockObj, PIOCPOverlapped Overlapped)
+void CNetLoaderService::IOCPEvent(IocpEventEnum EventType, CSocketObj *SockObj, PIOCPOverlapped Overlapped)
 {
 	vector<CSocketObj*> *SockList;
 	switch (EventType) {
@@ -89,4 +89,13 @@ void CNetLoaderSer::IOCPEvent(IocpEventEnum EventType, CSocketObj *SockObj, PIOC
 	default:
 		break;
 	}
+}
+
+bool CNetLoaderService::LoadXMLFile(std::string XmlFilePath)
+{
+	bool resu = m_doc.LoadFile(XmlFilePath.c_str())==0;
+	if (m_doc.RootElement()->Name() != "lcxlnetloader") {
+
+	}
+	return resu;
 }
