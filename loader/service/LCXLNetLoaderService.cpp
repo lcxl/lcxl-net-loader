@@ -5,6 +5,7 @@
 #include "LCXLNetLoaderService.h"
 #include "resource.h"
 #include "../common/dll_interface.h"
+#include "lcxl_func.h"
 
 TCHAR LCXLSHADOW_SER_NAME[] = _T("LCXLNetLoaderService");
 
@@ -27,8 +28,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	UNREFERENCED_PARAMETER(argv);
 	SetErrorMode(SEM_FAILCRITICALERRORS);//使程序出现异常时不报错
 	//初始化一个分配表  
-	g_NetLoadSer.SetServiceName(LCXLSHADOW_SER_NAME);
-	g_NetLoadSer.SetListenPort(9999);
+	
+	
 	g_NetLoadSer.Run();
 	return 0;
 }
@@ -46,9 +47,7 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
 	UNREFERENCED_PARAMETER(nCmdShow);
-	SetErrorMode(SEM_FAILCRITICALERRORS);//使程序出现异常时不报错
-	g_NetLoadSer.SetServiceName(LCXLSHADOW_SER_NAME);
-	g_NetLoadSer.SetListenPort(9999);
+	SetErrorMode(SEM_FAILCRITICALERRORS);//使程序出现异常时不报错;
 	//初始化一个分配表  
 	g_NetLoadSer.Run();
 	return 0;
@@ -91,11 +90,17 @@ void CNetLoaderService::IOCPEvent(IocpEventEnum EventType, CSocketObj *SockObj, 
 	}
 }
 
-bool CNetLoaderService::LoadXMLFile(std::string XmlFilePath)
+bool CNetLoaderService::LoadConfigFile(std::string XmlFilePath)
 {
-	bool resu = m_doc.LoadFile(XmlFilePath.c_str())==0;
-	if (m_doc.RootElement()->Name() != "lcxlnetloader") {
+	return m_Config.LoadXMLFile(XmlFilePath);
+}
 
+bool CNetLoaderService::PreSerRun()
+{
+	if (!LoadConfigFile(tstring_to_string(ExtractFilePath(GetAppFilePath()))+"lcxlnetloader.xml")) {
+		return false;
 	}
-	return resu;
+	SetServiceName(LCXLSHADOW_SER_NAME);
+	SetListenPort(m_Config.GetPort());
+	return true;
 }

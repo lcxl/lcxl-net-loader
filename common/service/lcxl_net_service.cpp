@@ -28,6 +28,9 @@ DWORD CNetServiceBase::SerHandler(DWORD dwControl, DWORD dwEventType, LPVOID lpE
 
 void CNetServiceBase::SerRun()
 {
+	if (!PreSerRun()) {
+		return;
+	}
 	if (m_ListenPort == 0) {
 		throw std::exception("port must be set");
 	}

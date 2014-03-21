@@ -63,6 +63,12 @@
     <ClInclude Include="..\..\component\tinyxml2\tinyxml2.h">
       <Filter>头文件\tinyxml</Filter>
     </ClInclude>
+    <ClInclude Include="lcxl_config.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="lcxl_func.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -82,6 +88,12 @@
     </ClCompile>
     <ClCompile Include="..\..\component\tinyxml2\tinyxml2.cpp">
       <Filter>源文件\tinyxml</Filter>
+    </ClCompile>
+    <ClCompile Include="lcxl_config.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="lcxl_func.cpp">
+      <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

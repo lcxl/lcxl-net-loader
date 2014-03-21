@@ -229,6 +229,8 @@
     <ClInclude Include="..\..\component\tinyxml2\tinyxml2.h" />
     <ClInclude Include="..\common\dll_interface.h" />
     <ClInclude Include="LCXLNetLoaderService.h" />
+    <ClInclude Include="lcxl_config.h" />
+    <ClInclude Include="lcxl_func.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
@@ -239,6 +241,8 @@
     <ClCompile Include="..\..\component\lcxl_iocp\lcxl_string.cpp" />
     <ClCompile Include="..\..\component\tinyxml2\tinyxml2.cpp" />
     <ClCompile Include="LCXLNetLoaderService.cpp" />
+    <ClCompile Include="lcxl_config.cpp" />
+    <ClCompile Include="lcxl_func.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug-Test|Win32'">Create</PrecompiledHeader>

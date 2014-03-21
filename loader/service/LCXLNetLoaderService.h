@@ -2,14 +2,15 @@
 #define _LCXL_NET_LOADER_SERVICE_H_
 
 #include "../../common/service/lcxl_net_service.h"
-#include "../../component/tinyxml2/tinyxml2.h"
+#include "lcxl_config.h"
 class CNetLoaderService : public CNetServiceBase {
 private:
-	tinyxml2::XMLDocument m_doc;
+	CLCXLConfig m_Config;
 protected:
 	virtual void IOCPEvent(IocpEventEnum EventType, CSocketObj *SockObj, PIOCPOverlapped Overlapped);
+	virtual bool PreSerRun();
 public:
-	bool LoadXMLFile(std::string XmlFilePath);
+	bool LoadConfigFile(std::string XmlFilePath);
 };
 
 #endif

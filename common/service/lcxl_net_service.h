@@ -14,6 +14,7 @@ protected:
 	CSocketLst *mSockLst;
 	int m_ListenPort;
 	virtual void IOCPEvent(IocpEventEnum EventType, CSocketObj *SockObj, PIOCPOverlapped Overlapped) = 0;
+	virtual bool PreSerRun() = 0;
 protected:
 	virtual DWORD SerHandler(DWORD dwControl, DWORD dwEventType, LPVOID lpEventData);
 	virtual void SerRun();
