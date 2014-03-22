@@ -13,3 +13,17 @@
 *.a
 /Win7Debug
 /x64
+/component/jsoncpp/test
+/component/jsoncpp/build
+*.suo
+*.opensdf
+*.sdf
+/wdk_sample
+/loader/dll/Win7Debug
+/loader/dll/x64
+/loader/driver/Win7Debug
+/loader/driver/x64
+/loader/driver/Package/Win7Debug
+/loader/driver/Package/x64
+/loader/service/Debug
+/loader/service/x64
