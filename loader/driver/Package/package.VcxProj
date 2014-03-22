@@ -175,7 +175,7 @@
     <FilesToPackage Include="@(Inf->'%(CopyOutput)')" Condition="'@(Inf)'!=''" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ndislwf.vcxproj">
+    <ProjectReference Include="..\netloader.vcxproj">
       <Project>{7D21AF72-2FA4-4C13-BE8A-8186604BE0D4}</Project>
     </ProjectReference>
   </ItemGroup>
