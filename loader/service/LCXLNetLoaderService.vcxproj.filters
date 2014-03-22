@@ -22,6 +22,9 @@
     <Filter Include="源文件\tinyxml">
       <UniqueIdentifier>{6f6281ae-349c-43af-989e-1c12204a3c23}</UniqueIdentifier>
     </Filter>
+    <Filter Include="头文件\dll_exe_comm">
+      <UniqueIdentifier>{6cb8807e-2a33-4ff0-8546-e90288f78b4f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -37,9 +40,6 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="LCXLNetLoaderService.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="..\common\dll_interface.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="..\..\component\lcxl_iocp\lcxl_string.h">
@@ -68,6 +68,15 @@
     </ClInclude>
     <ClInclude Include="lcxl_func.h">
       <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\common\lcxl_type.h">
+      <Filter>头文件\dll_exe_comm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\dll_interface.h">
+      <Filter>头文件\dll_exe_comm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\drv_interface_type.h">
+      <Filter>头文件\dll_exe_comm</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

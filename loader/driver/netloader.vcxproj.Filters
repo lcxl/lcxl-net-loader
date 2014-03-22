@@ -17,6 +17,9 @@
       <Extensions>inf;inv;inx;mof;mc;</Extensions>
       <UniqueIdentifier>{366C830B-9D0B-420A-805C-766F3B63EEFB}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\sys_dll_comm">
+      <UniqueIdentifier>{7487c9ce-2813-4346-b93d-9868b26deab5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="device.c">
@@ -87,19 +90,10 @@
     <ClInclude Include="precomp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\common\lcxl_type.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="precomp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="flt_dbg.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\common\drv_interface.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\common\drv_interface_type.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="flt_dbg.h">
@@ -136,6 +130,15 @@
     </ClInclude>
     <ClInclude Include="..\..\common\driver\ref_lock_list.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\common\lcxl_type.h">
+      <Filter>Header Files\sys_dll_comm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\drv_interface_type.h">
+      <Filter>Header Files\sys_dll_comm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\drv_interface.h">
+      <Filter>Header Files\sys_dll_comm</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

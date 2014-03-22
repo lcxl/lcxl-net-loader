@@ -3,7 +3,7 @@
 //author:LCXL
 //abstract:驱动和应用程序共用的自定义数据包有关结构数据头文件
 //如果是驱动程序，需要前面加头文件lcxl_net.h
-//如果是Win32程序，需要前面加WinSock2.h
+//如果是Win32程序，需要前面加WinSock2.h和#include <Ws2ipdef.h>
 //#include "driver/lcxl_net.h"
 #include <ifdef.h>
 
@@ -28,9 +28,9 @@ extern "C" {
 	typedef struct _LCXL_ADDR_INFO {
 #define SA_ENABLE_IPV4	0x01//服务器启用了IPV4协议
 #define SA_ENABLE_IPV6	0x02//服务器启用了IPV6协议
-		UCHAR			status;//服务器IP地址情况，有SA_ENABLE_IPV4，和SA_ENABLE_IPV6，可以同时使用
-		IN_ADDR			ipv4;//IPv4地址
-		IN6_ADDR		ipv6;//IPv6地址
+		UCHAR				status;//服务器IP地址情况，有SA_ENABLE_IPV4，和SA_ENABLE_IPV6，可以同时使用
+		IN_ADDR				ipv4;//IPv4地址
+		IN6_ADDR			ipv6;//IPv6地址
 		IF_PHYSICAL_ADDRESS mac_addr;//MAC地址
 	} LCXL_ADDR_INFO, *PLCXL_ADDR_INFO;//IP地址和MAC地址结构信息
 
@@ -47,7 +47,7 @@ extern "C" {
 #define SS_DELETED	0x80//服务器已被删除
 		UCHAR				status;//服务器状态，
 		CHAR				comment[256];//备注名
-		LCXL_ADDR_INFO	addr;//服务器真实IP地址
+		LCXL_ADDR_INFO		addr;//服务器真实IP地址
 	} LCXL_SERVER_INFO, *PLCXL_SERVER_INFO;//服务器信息
 
 #ifdef __cplusplus

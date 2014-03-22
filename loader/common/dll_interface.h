@@ -7,7 +7,9 @@
 extern "C" {
 #endif
 
-DWORD WINAPI LoaderGetAllModule(PAPP_MODULE_INFO pModuleList, PDWORD pDataSize);
+BOOL WINAPI lnlGetAllModule(IN OUT PAPP_MODULE_INFO module_list, IN OUT PDWORD module_list_count);
+BOOL WINAPI lnlStartDriver(IN LUID miniport_net_luid);
+BOOL WINAPI lnlStopDriver(IN LUID miniport_net_luid);
 
 #ifdef __cplusplus
 }

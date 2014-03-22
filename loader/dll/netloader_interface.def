@@ -1,3 +1,5 @@
 LIBRARY netloader_interface
 EXPORTS
-	LoaderGetAllModule
+	lnlGetAllModule
+	lnlStartDriver
+	lnlStopDriver

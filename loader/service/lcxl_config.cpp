@@ -29,7 +29,7 @@ bool CLCXLConfig::LoadXMLFile(std::string XmlFilePath)
 
 	ele = m_XmlDoc.FirstChildElement(CONFIG_PORT);
 	if (ele == NULL) {
-		m_Port = CONFIG_DEFAULT_PORT;
+		m_Port = CONFIG_PORT_DEFAULT;
 	} else {
 		m_Port = ele->IntAttribute(CONFIG_VALUE);
 		if (m_Port <= 0 || m_Port >= 65535) {
@@ -38,14 +38,11 @@ bool CLCXLConfig::LoadXMLFile(std::string XmlFilePath)
 		}
 	}
 	
-	ele = m_XmlDoc.FirstChildElement(CONFIG_ROLE);
+	ele = m_XmlDoc.FirstChildElement(CONFIG_ROLENAME);
 	if (ele == NULL) {
-		m_Role = CONFIG_DEFAULT_ROLE;
+		SetRoleName(CONFIG_ROLENAME_DEFAULT);
 	} else {
-		m_Role = ele->Attribute(CONFIG_VALUE);
-		if (m_Role.empty()) {
-			m_Role = CONFIG_DEFAULT_ROLE;
-		}
+		SetRoleName(ele->Attribute(CONFIG_VALUE));
 	}
 
 
@@ -55,4 +52,37 @@ bool CLCXLConfig::LoadXMLFile(std::string XmlFilePath)
 bool CLCXLConfig::SaveXMLFile(std::string XmlFilePath)
 {
 	return m_XmlDoc.SaveFile(XmlFilePath.c_str()) == tinyxml2::XML_NO_ERROR;
+}
+
+void CLCXLConfig::SetRole(int val)
+{
+	
+	m_Role = val;
+	switch (m_Role) {
+	case LCXL_ROLE_ROUTER:
+		m_RoleName = CONFIG_ROLENAME_LOADER;
+		break;
+	case LCXL_ROLE_SERVER:
+		m_RoleName = CONFIG_ROLENAME_SERVER;
+		break;
+	default:
+		m_RoleName = CONFIG_ROLENAME_UNKNOWN;
+		m_Role = LCXL_ROLE_UNKNOWN;
+		break;
+	}
+
+}
+
+void CLCXLConfig::SetRoleName(const std::string val)
+{
+	m_RoleName = val;
+	if (m_RoleName == CONFIG_ROLENAME_LOADER) {
+		m_Role = LCXL_ROLE_ROUTER;
+	} else if (m_RoleName == CONFIG_ROLENAME_SERVER) {
+		m_Role = LCXL_ROLE_SERVER;
+	} else {
+		m_Role = LCXL_ROLE_UNKNOWN;
+		m_RoleName = CONFIG_ROLENAME_UNKNOWN;
+	}
+	
 }

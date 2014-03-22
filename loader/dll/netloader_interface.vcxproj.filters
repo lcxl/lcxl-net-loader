@@ -13,6 +13,12 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Header Files\sys_dll_comm">
+      <UniqueIdentifier>{99c2d8f2-dd25-439e-8909-b58884c81b0c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\dll_exe_comm">
+      <UniqueIdentifier>{9ff12971-7c43-4b99-8bba-e1848d1064c2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="interface.c">
@@ -20,23 +26,23 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\common\lcxl_type.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\common\dll_interface.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="interface.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\common\drv_interface.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\common\drv_interface_type.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\common\app_dbg.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\drv_interface.h">
+      <Filter>Header Files\sys_dll_comm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\drv_interface_type.h">
+      <Filter>Header Files\sys_dll_comm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\dll_interface.h">
+      <Filter>Header Files\dll_exe_comm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\common\lcxl_type.h">
+      <Filter>Header Files\sys_dll_comm</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

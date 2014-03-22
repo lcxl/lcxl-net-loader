@@ -90,17 +90,19 @@ void CNetLoaderService::IOCPEvent(IocpEventEnum EventType, CSocketObj *SockObj, 
 	}
 }
 
-bool CNetLoaderService::LoadConfigFile(std::string XmlFilePath)
-{
-	return m_Config.LoadXMLFile(XmlFilePath);
-}
-
 bool CNetLoaderService::PreSerRun()
 {
-	if (!LoadConfigFile(tstring_to_string(ExtractFilePath(GetAppFilePath()))+"lcxlnetloader.xml")) {
+	if (!m_Config.LoadXMLFile(tstring_to_string(ExtractFilePath(GetAppFilePath())) + "lcxlnetloader.xml")) {
 		return false;
 	}
 	SetServiceName(LCXLSHADOW_SER_NAME);
 	SetListenPort(m_Config.GetPort());
+	m_ModuleList.resize(10);
+	DWORD module_count = (DWORD)m_ModuleList.size();
+	if (!lnlGetAllModule(&m_ModuleList[0], &module_count)) {
+		return false;
+	}
+	m_ModuleList.resize(module_count);
+
 	return true;
 }

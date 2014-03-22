@@ -39,9 +39,16 @@ extern "C" {
 		//小端口驱动名称
 		USHORT				miniport_name_len;
 		WCHAR				miniport_name[MAX_INSTANCE_NAME_LENGTH];
-		//服务器数量
-		INT					server_count;
-
+		union _ROLE_UNION {
+			
+			struct _ROLE_LOADER {
+				//服务器数量
+				INT			server_count;
+			} loader;
+			struct _ROLE_SERVER {
+				INT			reserve;
+			} server;
+		} role;
 	} APP_MODULE_INFO, *PAPP_MODULE_INFO;
 
 	//IOCTL_LOADER_SET_VIRTUAL_IP

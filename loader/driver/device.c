@@ -232,7 +232,7 @@ FilterDeviceIoControl(
 				cur_buf->virtual_ipv4 = module->virtual_ipv4;
 				cur_buf->virtual_ipv6 = module->virtual_ipv6;
 				LockLCXLLockList(&module->server_list);
-				cur_buf->server_count = GetListCountofLCXLLockList(&module->server_list);
+				cur_buf->role.loader.server_count = GetListCountofLCXLLockList(&module->server_list);
 				UnlockLCXLLockList(&module->server_list);
 				FILTER_RELEASE_LOCK(&module->lock, bFalse);
 				cur_buf->miniport_net_luid = module->miniport_net_luid;
