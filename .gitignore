@@ -11,3 +11,5 @@
 *.lai
 *.la
 *.a
+/Win7Debug
+/x64
