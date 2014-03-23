@@ -153,6 +153,16 @@ __inline VOID UnlockLCXLLockList(IN PLCXL_LOCK_LIST lock_list)
 //删除LCXL锁定列表
 __inline VOID DelLCXLLockList(IN PLCXL_LOCK_LIST lock_list)
 {
+#ifdef DBG
+	KLOCK_QUEUE_HANDLE		queue_handle;
+	KeAcquireInStackQueuedSpinLock(&lock_list->lock, &queue_handle);
+	ASSERT(lock_list->lock_count == 0);
+	ASSERT(lock_list->list_count == 0);
+	KeReleaseInStackQueuedSpinLock(&queue_handle);
+#endif // DBG
+
+	
+
 	ASSERT(lock_list != NULL);
 	ExDeleteNPagedLookasideList(&lock_list->to_be_mem_mgr);
 }

@@ -7,6 +7,7 @@ PUNICODE_STRING LCXLNewString(IN PUNICODE_STRING sour)
 	resu = ExAllocatePoolWithTag(NonPagedPool, sour->MaximumLength + sizeof(UNICODE_STRING), TAG_FILE_BUFFER);
 	if (resu != NULL) {
 		resu->Buffer = (PWCH)((PUCHAR)resu + sizeof(UNICODE_STRING));
+		resu->MaximumLength = sour->MaximumLength;
 		RtlCopyUnicodeString(resu, sour);
 	}
 	return resu;

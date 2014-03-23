@@ -10,9 +10,9 @@ std::tstring GetAppFilePath()
 
 std::tstring ExtractFilePath(const std::tstring file_path)
 {
-	int pos = file_path.rfind(_T('\\'));
+	size_t pos = file_path.rfind(_T('\\'));
 	if (pos == std::tstring::npos) {
-		int pos = file_path.rfind(_T('/'));
+		pos = file_path.rfind(_T('/'));
 	}
 	if (pos == std::tstring::npos) {
 		return _T("");

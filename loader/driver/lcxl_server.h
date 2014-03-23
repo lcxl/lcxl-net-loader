@@ -25,6 +25,7 @@ typedef struct _SERVER_INFO_LIST_ENTRY
 extern NPAGED_LOOKASIDE_LIST  g_server_mem_mgr;
 
 #define InitServerMemMgr() ExInitializeNPagedLookasideList(&g_server_mem_mgr, NULL, NULL, 0, sizeof(SERVER_INFO_LIST_ENTRY), TAG_SERVER, 0)
+
 __inline PSERVER_INFO_LIST_ENTRY AllocServer()
 {
 	PSERVER_INFO_LIST_ENTRY resu;
@@ -65,6 +66,13 @@ __inline VOID FreeServer(PSERVER_INFO_LIST_ENTRY server)
 
 //删除配置信息回调函数
 VOID DelServerCallBack(PLIST_ENTRY server);
+__inline PSERVER_INFO_LIST_ENTRY GetServerbyListEntry(PLIST_ENTRY server_list_entry)
+{
+	return CONTAINING_RECORD(GetRefListEntry(server_list_entry), SERVER_INFO_LIST_ENTRY, list_entry);
+}
+//根据MAC地址寻找服务器
+//注意：使用FindServer之前需要锁定列表
+PSERVER_INFO_LIST_ENTRY FindServer(IN PLCXL_LOCK_LIST server_list, IN PIF_PHYSICAL_ADDRESS mac_addr);
 ///<summary>
 //选择服务器
 ///</summary>

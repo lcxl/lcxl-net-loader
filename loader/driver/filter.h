@@ -267,8 +267,6 @@ typedef struct _LCXL_FILTER
 	PNDIS_FILTER_ATTACH_PARAMETERS	attach_paramters;
 
     NDIS_HANDLE                     filter_handle;
-    //小端口驱动网络接口序号
-    NET_IFINDEX                     miniport_if_index;
 
     NDIS_STATUS                     status;
     NDIS_EVENT                      event;
@@ -293,16 +291,12 @@ typedef struct _LCXL_FILTER
 
     PNDIS_OID_REQUEST               pending_oid_request;
     //添加的代码
-	//网卡本地唯一ID
-	NET_LUID						miniport_net_luid;
     //存储模块指针
-	PLCXL_MODULE_SETTING_LIST_ENTRY	module_setting;
+	LCXL_MODULE_SETTING_INFO		module;
 	//路由信息
 	LIST_ENTRY						route_list;//LCXL_ROUTE_LIST_ENTRY
     //NBL发送池
     NDIS_HANDLE                     send_net_buffer_list_pool;
-	//MAC地址
-	IF_PHYSICAL_ADDRESS_LH			mac_addr;
     //!添加的代码!
 }LCXL_FILTER, *PLCXL_FILTER;
 
@@ -455,8 +449,6 @@ BOOLEAN ProcessNBL(IN PLCXL_FILTER pFilter, IN PETHERNET_HEADER pEthHeader, IN U
 
 //寻找LCXL_FILTER结构并且锁定列表（锁定之后列表中的列表项不会被添加或删除）
 PLCXL_FILTER FindFilter(IN NET_LUID miniport_net_luid);
-//更新过滤器设置
-void UpdateFiltersSetting();
 //!添加代码!
 
 void DelLCXLFilterCallBack(PLIST_ENTRY filter);

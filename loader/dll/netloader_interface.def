@@ -1,5 +1,7 @@
 LIBRARY netloader_interface
 EXPORTS
-	lnlGetAllModule
-	lnlStartDriver
-	lnlStopDriver
+	lnlGetModuleList
+	lnlSetVirtualIP
+	lnlGetServerList
+	lnlAddServer
+	lnlDelServer

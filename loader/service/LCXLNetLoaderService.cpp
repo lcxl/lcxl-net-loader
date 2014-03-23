@@ -97,12 +97,32 @@ bool CNetLoaderService::PreSerRun()
 	}
 	SetServiceName(LCXLSHADOW_SER_NAME);
 	SetListenPort(m_Config.GetPort());
-	m_ModuleList.resize(10);
-	DWORD module_count = (DWORD)m_ModuleList.size();
-	if (!lnlGetAllModule(&m_ModuleList[0], &module_count)) {
+	DWORD module_count = 20;
+	m_ModuleList.resize(module_count);
+	if (!lnlGetModuleList(&m_ModuleList[0], &module_count)) {
+		OutputDebugStr(_T("lnlGetModuleList failed.Error Code=%d\n"), GetLastError());
 		return false;
 	}
 	m_ModuleList.resize(module_count);
+#ifdef _DEBUG
+	std::vector<APP_MODULE_INFO>::iterator it;
+	for (it = m_ModuleList.begin(); it != m_ModuleList.end(); it++) {
+		OutputDebugStr(_T("APP:-----------------------------\n"));
+		OutputDebugStr(_T(
+"mac_addr=%02x-%02x-%02x-%02x-%02x-%02x\n\
+filter_module_name=%ws\n\
+miniport_friendly_name=%ws\n\
+miniport_name=%ws\n\
+miniport_net_luid=%I64x\n"), 
+			(*it).mac_addr.Address[0], (*it).mac_addr.Address[1], (*it).mac_addr.Address[2], (*it).mac_addr.Address[3], (*it).mac_addr.Address[4], (*it).mac_addr.Address[5],
+			(*it).filter_module_name,
+			(*it).miniport_friendly_name,
+			(*it).miniport_name,
+			(*it).miniport_net_luid
+			);
+		OutputDebugStr(_T("APP:-----------------------------\n"));
+	}
+#endif // _DEBUG
 
 	return true;
 }

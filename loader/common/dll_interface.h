@@ -7,9 +7,11 @@
 extern "C" {
 #endif
 
-BOOL WINAPI lnlGetAllModule(IN OUT PAPP_MODULE_INFO module_list, IN OUT PDWORD module_list_count);
-BOOL WINAPI lnlStartDriver(IN LUID miniport_net_luid);
-BOOL WINAPI lnlStopDriver(IN LUID miniport_net_luid);
+BOOL WINAPI lnlGetModuleList(OUT PAPP_MODULE_INFO module_list, IN OUT PDWORD module_list_count);
+BOOL WINAPI lnlSetVirtualIP(IN NET_LUID miniport_net_luid, IN LCXL_ADDR_INFO addr);
+BOOL WINAPI lnlGetServerList(IN NET_LUID miniport_net_luid, OUT PLCXL_SERVER_INFO server_list, IN OUT PDWORD server_list_count);
+BOOL WINAPI lnlAddServer(IN NET_LUID miniport_net_luid, IN PLCXL_SERVER_INFO server);
+BOOL WINAPI lnlDelServer(IN NET_LUID miniport_net_luid, IN PIF_PHYSICAL_ADDRESS mac_addr);
 
 #ifdef __cplusplus
 }

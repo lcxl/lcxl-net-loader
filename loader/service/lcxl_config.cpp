@@ -10,20 +10,17 @@ void OutputDebugStr(const TCHAR fmt[], ...);
 
 bool CLCXLConfig::LoadXMLFile(std::string XmlFilePath)
 {
+	if (m_XmlDoc.LoadFile(XmlFilePath.c_str()) == 0) {
+		//验证根元素名称是否正确
+		std::string root_ele_name = m_XmlDoc.RootElement()->Name();
+		std::transform(root_ele_name.begin(), root_ele_name.end(),
+			root_ele_name.begin(), ::tolower);
+		if (root_ele_name == CONFIG_ROOT_ELEMENT) {
+			OutputDebugStr(_T("The root element of the xml file is not 'lcxlnetloader'\n"));
+			return false;
+		}
+	}
 	
-
-	bool resu = m_XmlDoc.LoadFile(XmlFilePath.c_str()) == 0;
-	if (!resu) {
-		return false;
-	}
-	//验证根元素名称是否正确
-	std::string root_ele_name = m_XmlDoc.RootElement()->Name();
-	std::transform(root_ele_name.begin(), root_ele_name.end(),
-		root_ele_name.begin(), ::tolower);
-	if (root_ele_name == CONFIG_ROOT_ELEMENT) {
-		OutputDebugStr(_T("The root element of the xml file is not 'lcxlnetloader'\n"));
-		return false;
-	}
 
 	tinyxml2::XMLElement *ele;
 
@@ -46,7 +43,7 @@ bool CLCXLConfig::LoadXMLFile(std::string XmlFilePath)
 	}
 
 
-	return resu;
+	return true;
 }
 
 bool CLCXLConfig::SaveXMLFile(std::string XmlFilePath)
