@@ -1,5 +1,7 @@
 LIBRARY netloader_interface
 EXPORTS
+	lnlGetLcxlRole
+	lnlSetLcxlRole
 	lnlGetModuleList
 	lnlSetVirtualIP
 	lnlGetServerList
