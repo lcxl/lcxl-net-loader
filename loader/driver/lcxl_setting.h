@@ -12,7 +12,7 @@ abstract:
 #define TAG_MODULE					'MODU'
 
 typedef struct _LCXL_MODULE_SETTING_INFO {
-	NET_IFINDEX				miniport_if_index;
+	NET_IFINDEX				miniport_ifindex;
 	//网卡本地唯一ID
 	NET_LUID				miniport_net_luid;
 	//小端口驱动友好名称

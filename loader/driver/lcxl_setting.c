@@ -7,7 +7,7 @@ LCXL_SETTING		g_setting;
 VOID LoadModuleSetting(IN OUT PLCXL_MODULE_SETTING_INFO module, IN PNDIS_FILTER_ATTACH_PARAMETERS attach_paramters)
 {
 	//更新module中的信息
-	module->miniport_if_index = attach_paramters->BaseMiniportIfIndex;
+	module->miniport_ifindex = attach_paramters->BaseMiniportIfIndex;
 	module->miniport_net_luid = attach_paramters->BaseMiniportNetLuid;
 	//保存MAC地址（一个问题，当用户手动修改了MAC地址，会怎样- -）
 	module->mac_addr.Length = sizeof(module->mac_addr.Address) < attach_paramters->MacAddressLength ? sizeof(module->mac_addr.Address) : attach_paramters->MacAddressLength;

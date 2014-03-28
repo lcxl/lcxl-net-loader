@@ -40,14 +40,14 @@ extern "C" {
 		double              cpu_usage;//CPU使用率，最高为1
 	} LCXL_SERVER_PERFORMANCE, *PLCXL_SERVER_PERFORMANCE;//服务器性能
 	
-	typedef struct _LCXL_SERVER_INFO {
+	typedef struct _LCXL_SERVER {
 #define SS_ONLINE	0x01//服务器在线
 #define SS_DELETED	0x80//服务器已被删除
 		UCHAR				status;//服务器状态
 		UCHAR				ip_status;//IP协议启用状态
 		WCHAR				comment[256];//备注名
 		IF_PHYSICAL_ADDRESS mac_addr;//服务器MAC地址
-	} LCXL_SERVER_INFO, *PLCXL_SERVER_INFO;//服务器信息
+	} LCXL_SERVER, *PLCXL_SERVER;//服务器信息
 
 #ifdef __cplusplus
 }

@@ -36,7 +36,7 @@
 //LCXL_IP
 //获取服务器列表
 //input APP_IP
-//output array of LCXL_SERVER_INFO
+//output array of LCXL_SERVER
 #define IOCTL_LOADER_GET_SERVER_LIST		_NDIS_CONTROL_CODE(0x24, METHOD_BUFFERED)
 //添加服务器
 //input APP_ADD_SERVER

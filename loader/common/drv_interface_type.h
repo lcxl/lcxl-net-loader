@@ -14,9 +14,9 @@ extern "C" {
 	//IOCTL_LOADER_ALL_MODULE
 	//output
 
-	typedef struct _APP_MODULE_INFO {
+	typedef struct _APP_MODULE {
 		//小端口驱动ifindex
-		NET_IFINDEX			miniport_if_index;
+		NET_IFINDEX			miniport_ifindex;
 		//网卡本地唯一ID
 		NET_LUID			miniport_net_luid;
 		//虚拟地址IPv4/IPv6
@@ -38,7 +38,7 @@ extern "C" {
 				INT			reserve;
 			} server;
 		} role;
-	} APP_MODULE_INFO, *PAPP_MODULE_INFO;
+	} APP_MODULE, *PAPP_MODULE;
 
 	//IOCTL_LOADER_SET_VIRTUAL_IP
 	typedef struct _APP_VIRTUAL_IP {
@@ -48,11 +48,11 @@ extern "C" {
 	//服务器列表
 	//IOCTL_LOADER_GET_SERVER_LIST
 	//input NET_LUID                     miniport_net_luid;
-	//output array of LCXL_SERVER_INFO
+	//output array of LCXL_SERVER
 	//添加服务器
 	typedef struct _APP_ADD_SERVER {
 		NET_LUID			miniport_net_luid;
-		LCXL_SERVER_INFO	server;
+		LCXL_SERVER			server;
 	} APP_ADD_SERVER, *PAPP_ADD_SERVER;
 	//删除服务器
 	typedef struct _APP_DEL_SERVER {

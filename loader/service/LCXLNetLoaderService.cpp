@@ -97,16 +97,31 @@ bool CNetLoaderService::PreSerRun()
 	}
 	SetServiceName(LCXLSHADOW_SER_NAME);
 	SetListenPort(m_Config.GetPort());
+
+	//获取角色信息
+	INT sys_lcxl_role = lnlGetLcxlRole();
+	if (sys_lcxl_role != m_Config.GetRole()) {
+		if (sys_lcxl_role != LCXL_ROLE_UNKNOWN) {
+			lnlSetLcxlRole(LCXL_ROLE_UNKNOWN);
+		}
+		if (m_Config.GetRole() != LCXL_ROLE_UNKNOWN) {
+			lnlSetLcxlRole(m_Config.GetRole());
+		}
+	}
+
+	//获取网卡列表信息
 	DWORD module_count = 20;
-	m_ModuleList.resize(module_count);
-	if (!lnlGetModuleList(&m_ModuleList[0], &module_count)) {
+	std::vector<APP_MODULE> module_list;
+	module_list.resize(module_count);
+	if (!lnlGetModuleList(&module_list[0], &module_count)) {
 		OutputDebugStr(_T("lnlGetModuleList failed.Error Code=%d\n"), GetLastError());
 		return false;
 	}
-	m_ModuleList.resize(module_count);
+	module_list.resize(module_count);
+	m_Config.UpdateModuleList(module_list);
+	std::vector<CONFIG_MODULE>::iterator it;
+	for (it = m_Config.ModuleList().begin(); it != m_Config.ModuleList().end(); it++) {
 #ifdef _DEBUG
-	std::vector<APP_MODULE_INFO>::iterator it;
-	for (it = m_ModuleList.begin(); it != m_ModuleList.end(); it++) {
 		OutputDebugStr(_T("APP:-----------------------------\n"));
 		OutputDebugStr(_T(
 "mac_addr=%02x-%02x-%02x-%02x-%02x-%02x\n\
@@ -121,8 +136,9 @@ miniport_net_luid=%I64x\n"),
 			(*it).miniport_net_luid
 			);
 		OutputDebugStr(_T("APP:-----------------------------\n"));
-	}
-#endif // _DEBUG
+#endif
 
+	}
+	m_Config.SaveXMLFile(tstring_to_string(ExtractFilePath(GetAppFilePath())) + "lcxlnetloader.xml");
 	return true;
 }

@@ -17,7 +17,7 @@ typedef struct _SERVER_INFO_LIST_ENTRY
 	//锁
 	KSPIN_LOCK				lock;
 	//服务器状态
-	LCXL_SERVER_INFO		info;
+	LCXL_SERVER		info;
 	//服务器性能状态
 	LCXL_SERVER_PERFORMANCE	performance;
 } SERVER_INFO_LIST_ENTRY, *PSERVER_INFO_LIST_ENTRY;

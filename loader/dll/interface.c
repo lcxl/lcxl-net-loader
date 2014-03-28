@@ -62,15 +62,15 @@ BOOL WINAPI lnlSetLcxlRole(IN INT lcxl_role)
 	return lnlDeviceIoControl(IOCTL_SET_ROLE, &lcxl_role, sizeof(lcxl_role), NULL, 0, &data_size);
 }
 
-BOOL WINAPI lnlGetModuleList(OUT PAPP_MODULE_INFO pModuleList, IN OUT PDWORD pModuleListCount)
+BOOL WINAPI lnlGetModuleList(OUT PAPP_MODULE pModuleList, IN OUT PDWORD pModuleListCount)
 {
 	BOOL resu;
-	DWORD data_size = *pModuleListCount*sizeof(APP_MODULE_INFO);
+	DWORD data_size = *pModuleListCount*sizeof(APP_MODULE);
 
 	resu = lnlDeviceIoControl(IOCTL_GET_MODULE_LIST, NULL, 0, pModuleList, data_size, &data_size);
 	if (resu) {
-		assert(data_size%sizeof(APP_MODULE_INFO) == 0);
-		*pModuleListCount = data_size/sizeof(APP_MODULE_INFO);
+		assert(data_size%sizeof(APP_MODULE) == 0);
+		*pModuleListCount = data_size/sizeof(APP_MODULE);
 	} 
 	return resu;
 }
@@ -86,19 +86,19 @@ BOOL WINAPI lnlSetVirtualIP(IN NET_LUID miniport_net_luid, IN LCXL_ADDR_INFO add
 	return lnlDeviceIoControl(IOCTL_LOADER_SET_VIRTUAL_IP, &virtual_ip, sizeof(virtual_ip), NULL, 0, &data_size);
 }
 
-BOOL WINAPI lnlGetServerList(IN NET_LUID miniport_net_luid, OUT PLCXL_SERVER_INFO server_list, IN OUT PDWORD server_list_count)
+BOOL WINAPI lnlGetServerList(IN NET_LUID miniport_net_luid, OUT PLCXL_SERVER server_list, IN OUT PDWORD server_list_count)
 {
 	BOOL resu;
-	DWORD data_size = *server_list_count*sizeof(LCXL_SERVER_INFO);
+	DWORD data_size = *server_list_count*sizeof(LCXL_SERVER);
 
 	resu = lnlDeviceIoControl(IOCTL_LOADER_GET_SERVER_LIST, &miniport_net_luid, sizeof(miniport_net_luid), server_list, data_size, &data_size);
 	if (resu) {
-		assert(data_size%sizeof(LCXL_SERVER_INFO) == 0);
-		*server_list_count = data_size / sizeof(LCXL_SERVER_INFO);
+		assert(data_size%sizeof(LCXL_SERVER) == 0);
+		*server_list_count = data_size / sizeof(LCXL_SERVER);
 	} 
 	return resu;
 }
-BOOL WINAPI lnlAddServer(IN NET_LUID miniport_net_luid, IN PLCXL_SERVER_INFO server)
+BOOL WINAPI lnlAddServer(IN NET_LUID miniport_net_luid, IN PLCXL_SERVER server)
 {
 	DWORD data_size = 0;
 	APP_ADD_SERVER add_server;
