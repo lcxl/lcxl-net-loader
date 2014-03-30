@@ -3,7 +3,7 @@ EXPORTS
 	lnlGetLcxlRole
 	lnlSetLcxlRole
 	lnlGetModuleList
-	lnlSetVirtualIP
+	lnlSetVirtualAddr
 	lnlGetServerList
 	lnlAddServer
 	lnlDelServer

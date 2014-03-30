@@ -40,21 +40,21 @@ __inline PSERVER_INFO_LIST_ENTRY AllocServer()
 }
 //锁定服务器
 //参数:
-//__SER:PSERVER_INFO_LIST_ENTRY，服务器数据结构
-//__LockHandleInStack:PKLOCK_QUEUE_HANDLE，锁结构，此结构必须处于栈中 
-__inline VOID LockServer(IN PSERVER_INFO_LIST_ENTRY __SER, OUT PKLOCK_QUEUE_HANDLE __LockHandleInStack)
+//server:PSERVER_INFO_LIST_ENTRY，服务器数据结构
+//lock_handle_in_stack:PKLOCK_QUEUE_HANDLE，锁结构，此结构必须处于栈中 
+__inline VOID LockServer(IN PSERVER_INFO_LIST_ENTRY server, OUT PKLOCK_QUEUE_HANDLE lock_handle_in_stack)
 {
-	ASSERT(__SER != NULL && __LockHandleInStack != NULL); 
-	KeAcquireInStackQueuedSpinLock(&__SER->lock, __LockHandleInStack);
+	ASSERT(server != NULL && lock_handle_in_stack != NULL); 
+	KeAcquireInStackQueuedSpinLock(&server->lock, lock_handle_in_stack);
 }
 
 //解锁服务器
 //参数:
 //__LockHandleInStack:PKLOCK_QUEUE_HANDLE ，锁结构，此结构必须处于栈中 
-__inline VOID  UnLockServer(IN PKLOCK_QUEUE_HANDLE __LockHandleInStack)
+__inline VOID  UnLockServer(IN PKLOCK_QUEUE_HANDLE lock_handle_in_stack)
 {	
-	ASSERT(__LockHandleInStack != NULL); 
-	KeReleaseInStackQueuedSpinLock(__LockHandleInStack);
+	ASSERT(lock_handle_in_stack != NULL); 
+	KeReleaseInStackQueuedSpinLock(lock_handle_in_stack);
 }
 //释放服务器
 __inline VOID FreeServer(PSERVER_INFO_LIST_ENTRY server)

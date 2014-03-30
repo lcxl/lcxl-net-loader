@@ -45,7 +45,6 @@ extern "C" {
 #define SS_DELETED	0x80//服务器已被删除
 		UCHAR				status;//服务器状态
 		UCHAR				ip_status;//IP协议启用状态
-		WCHAR				comment[256];//备注名
 		IF_PHYSICAL_ADDRESS mac_addr;//服务器MAC地址
 	} LCXL_SERVER, *PLCXL_SERVER;//服务器信息
 

@@ -15,7 +15,7 @@
 
 #define CONFIG_ROLENAME "rolename"
 #define CONFIG_ROLENAME_UNKNOWN "unknown"
-#define CONFIG_ROLENAME_LOADER "loader"
+#define CONFIG_ROLENAME_ROUTE "router"
 #define CONFIG_ROLENAME_SERVER "server"
 #define CONFIG_ROLENAME_DEFAULT CONFIG_ROLENAME_UNKNOWN
 //CONFIG_MODULE_LIST
@@ -40,12 +40,17 @@
 #define ELEMENT_COMMENT "comment"
 //#define ELEMENT_MAC_ADDR "mac_addr"
 
-struct CONFIG_MODULE : APP_MODULE {
-	//服务器列表
-	std::vector<LCXL_SERVER>	server_list;
-};
+typedef struct _CONFIG_SERVER {
+	LCXL_SERVER server;
+	WCHAR		comment[256];//备注名
+} CONFIG_SERVER, *PCONFIG_SERVER;
 
-typedef CONFIG_MODULE *PCONFIG_MODULE_INFO;
+typedef struct _CONFIG_MODULE{
+	//驱动模块列表
+	APP_MODULE					module;
+	//服务器列表
+	std::vector<CONFIG_SERVER>	server_list;
+} CONFIG_MODULE, *PCONFIG_MODULE_INFO;
 
 class CLCXLConfig {
 private:
@@ -58,10 +63,16 @@ public:
 	static tinyxml2::XMLElement *WriteModuleList(tinyxml2::XMLElement *owner_element, const std::vector<CONFIG_MODULE> &module_list);
 	static tinyxml2::XMLElement *WriteModule(tinyxml2::XMLElement *owner_element, const CONFIG_MODULE &module);
 	static tinyxml2::XMLElement *WriteAddrInfo(tinyxml2::XMLElement *owner_element, const LCXL_ADDR_INFO &addr);
-	static tinyxml2::XMLElement *WriteServerList(tinyxml2::XMLElement *owner_element, const std::vector<LCXL_SERVER> &server_list);
-	static tinyxml2::XMLElement *WriteServer(tinyxml2::XMLElement *owner_element, const LCXL_SERVER &server);
-
+	static tinyxml2::XMLElement *WriteServerList(tinyxml2::XMLElement *owner_element, const std::vector<CONFIG_SERVER> &server_list);
+	static tinyxml2::XMLElement *WriteServer(tinyxml2::XMLElement *owner_element, const CONFIG_SERVER &server);
 public:
+	static std::vector<CONFIG_MODULE> & ReadModuleList(tinyxml2::XMLElement *owner_element, std::vector<CONFIG_MODULE> &module_list);
+	static CONFIG_MODULE & ReadModule(tinyxml2::XMLElement *owner_element, CONFIG_MODULE &module);
+	static LCXL_ADDR_INFO & ReadAddrInfo(tinyxml2::XMLElement *owner_element, LCXL_ADDR_INFO &addr);
+	static std::vector<CONFIG_SERVER> & ReadServerList(tinyxml2::XMLElement *owner_element, std::vector<CONFIG_SERVER> &server_list);
+	static CONFIG_SERVER & ReadServer(tinyxml2::XMLElement *owner_element, CONFIG_SERVER &server);
+public:
+	CLCXLConfig();
 	bool SaveXMLFile(std::string XmlFilePath);
 	bool LoadXMLFile(std::string XmlFilePath);
 

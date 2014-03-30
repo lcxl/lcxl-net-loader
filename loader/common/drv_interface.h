@@ -32,7 +32,7 @@
 //input NET_LUID                     miniport_net_luid;
 //LCXL_IP
 //设置虚拟IP
-#define IOCTL_LOADER_SET_VIRTUAL_IP			_NDIS_CONTROL_CODE(0x23, METHOD_BUFFERED)
+#define IOCTL_SET_VIRTUAL_ADDR			_NDIS_CONTROL_CODE(0x23, METHOD_BUFFERED)
 //LCXL_IP
 //获取服务器列表
 //input APP_IP

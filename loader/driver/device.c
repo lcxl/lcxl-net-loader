@@ -141,7 +141,6 @@ FilterDeviceIoControl(
     PUCHAR                      info;
     ULONG                       InfoLength = 0;
     PLCXL_FILTER                filter = NULL;
-    BOOLEAN                     bFalse = FALSE;
 
 
     UNREFERENCED_PARAMETER(DeviceObject);
@@ -259,6 +258,7 @@ FilterDeviceIoControl(
 				while (&filter->filter_module_link != GetListofLCXLLockList(&g_filter_list)) {
 					PLCXL_MODULE_SETTING_INFO module = &filter->module;
 					INT buflen;
+					KLOCK_QUEUE_HANDLE lock_handle;
 
 					//只读数据
 					cur_buf->miniport_ifindex = module->miniport_ifindex;
@@ -278,12 +278,13 @@ FilterDeviceIoControl(
 					cur_buf->miniport_name[buflen / sizeof(WCHAR)] = L'\0';
 
 					//需要线程保护的数据
-					FILTER_ACQUIRE_LOCK(&filter->lock, bFalse);
+					
+					LockFilter(filter, &lock_handle);
 					cur_buf->virtual_addr = module->virtual_addr;
 					LockLCXLLockList(&module->server_list);
 					cur_buf->role.loader.server_count = GetListCountofLCXLLockList(&module->server_list);
 					UnlockLCXLLockList(&module->server_list);
-					FILTER_RELEASE_LOCK(&filter->lock, bFalse);
+					UnlockFilter(&lock_handle);
 
 					cur_buf++;
 					filter = CONTAINING_RECORD(filter->filter_module_link.Flink, LCXL_FILTER, filter_module_link);
@@ -295,7 +296,7 @@ FilterDeviceIoControl(
 			InfoLength = (ULONG)((ULONG_PTR)cur_buf - (ULONG_PTR)output_buffer);
 		}
 			break;
-		case IOCTL_LOADER_SET_VIRTUAL_IP:
+		case IOCTL_SET_VIRTUAL_ADDR:
 			if (input_buffer_length == sizeof(APP_VIRTUAL_IP)) {
 				PAPP_VIRTUAL_IP ip;
 
@@ -303,10 +304,10 @@ FilterDeviceIoControl(
 				LockLCXLLockList(&g_filter_list);
 				filter = FindFilter(ip->miniport_net_luid);
 				if (filter != NULL) {
-					
-					NdisAcquireSpinLock(&filter->lock);
+					KLOCK_QUEUE_HANDLE lock_handle;
+					LockFilter(filter, &lock_handle);
 					filter->module.virtual_addr = ip->addr;
-					NdisReleaseSpinLock(&filter->lock);
+					UnlockFilter(&lock_handle);
 				} else {
 					status = STATUS_NOT_FOUND;
 				}
@@ -317,6 +318,10 @@ FilterDeviceIoControl(
 			}
 			break;
 		case IOCTL_LOADER_GET_SERVER_LIST:
+			if (g_setting.lcxl_role != LCXL_ROLE_ROUTER) {
+				status = STATUS_INVALID_PARAMETER;
+				break;
+			}
 			if (input_buffer_length == sizeof(NET_LUID)) {
 				PLCXL_SERVER cur_buf;
 
@@ -331,6 +336,7 @@ FilterDeviceIoControl(
 						PLIST_ENTRY server_entry = GetListofLCXLLockList(&module->server_list)->Flink;
 						while (server_entry != GetListofLCXLLockList(&module->server_list)) {
 							PSERVER_INFO_LIST_ENTRY server = GetServerbyListEntry(server_entry);
+
 							*cur_buf = server->info;
 
 							cur_buf++;
@@ -350,24 +356,32 @@ FilterDeviceIoControl(
 			}
 			break;
 		case IOCTL_LOADER_ADD_SERVER:
+			if (g_setting.lcxl_role != LCXL_ROLE_ROUTER) {
+				status = STATUS_INVALID_PARAMETER;
+				break;
+			}
 			if (sizeof(APP_ADD_SERVER) == input_buffer_length) {
 				PAPP_ADD_SERVER app_add_server;
 				
 				app_add_server = (PAPP_ADD_SERVER)input_buffer;
+				//寻找module
 				LockLCXLLockList(&g_filter_list);
 				filter = FindFilter(app_add_server->miniport_net_luid);
 				if (filter != NULL) {
 					PSERVER_INFO_LIST_ENTRY server = NULL;
+					//锁住server列表
 					LockLCXLLockList(&filter->module.server_list);
+					//查找server列表
 					server = FindServer(&filter->module.server_list, &app_add_server->server.mac_addr);
-					
+					//找不到？
 					if (server == NULL) {
+						//添加服务器
 						server = AllocServer();
 						server->info = app_add_server->server;
 						AddtoLCXLLockList(&filter->module.server_list, &server->list_entry.list_entry);
 					} else {
 						KLOCK_QUEUE_HANDLE lock_handle;
-
+						//更改服务器配置
 						LockServer(server, &lock_handle);
 						server->info = app_add_server->server;
 						UnLockServer(&lock_handle);
@@ -382,6 +396,10 @@ FilterDeviceIoControl(
 			}
 			break;
 		case IOCTL_LOADER_DEL_SERVER:
+			if (g_setting.lcxl_role != LCXL_ROLE_ROUTER) {
+				status = STATUS_INVALID_PARAMETER;
+				break;
+			}
 			if (sizeof(APP_DEL_SERVER) == input_buffer_length) {
 				PAPP_DEL_SERVER app_del_server = (PAPP_DEL_SERVER)input_buffer;
 

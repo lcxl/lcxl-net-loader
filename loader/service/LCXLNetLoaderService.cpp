@@ -28,7 +28,9 @@ int _tmain(int argc, _TCHAR* argv[])
 	UNREFERENCED_PARAMETER(argv);
 	SetErrorMode(SEM_FAILCRITICALERRORS);//使程序出现异常时不报错
 	//初始化一个分配表  
-	
+	printf("%s\n", "在回车之后开始执行");
+	char test[20];
+	scanf("%s", test);
 	
 	g_NetLoadSer.Run();
 	return 0;
@@ -92,9 +94,73 @@ void CNetLoaderService::IOCPEvent(IocpEventEnum EventType, CSocketObj *SockObj, 
 
 bool CNetLoaderService::PreSerRun()
 {
-	if (!m_Config.LoadXMLFile(tstring_to_string(ExtractFilePath(GetAppFilePath())) + "lcxlnetloader.xml")) {
+	//加载配置文件
+	if (!m_Config.LoadXMLFile(tstring_to_string(ExtractFilePath(GetAppFilePath())) + CONFIG_FILE_NAME)) {
 		return false;
 	}
+	//获取网卡列表信息
+	DWORD module_count = 20;
+	std::vector<APP_MODULE> module_list;
+
+	module_list.resize(module_count);
+	if (!lnlGetModuleList(&module_list[0], &module_count)) {
+		OutputDebugStr(_T("lnlGetModuleList failed.Error Code=%d\n"), GetLastError());
+		module_list.resize(module_count);
+		//return false;
+	}
+	module_list.resize(module_count);
+	//更新到配置文件中
+	m_Config.UpdateModuleList(module_list);
+	//开始进行设置
+	std::vector<CONFIG_MODULE>::iterator it;
+	for (it = m_Config.ModuleList().begin(); it != m_Config.ModuleList().end(); it++) {
+#ifdef _DEBUG
+		OutputDebugStr(_T("APP:-----------------------------\n"));
+		OutputDebugStr(_T(
+"mac_addr=%02x-%02x-%02x-%02x-%02x-%02x\n\
+filter_module_name=%ws\n\
+miniport_friendly_name=%ws\n\
+miniport_name=%ws\n\
+miniport_net_luid=%I64x\n"), 
+(*it).module.mac_addr.Address[0], (*it).module.mac_addr.Address[1], (*it).module.mac_addr.Address[2], (*it).module.mac_addr.Address[3], (*it).module.mac_addr.Address[4], (*it).module.mac_addr.Address[5],
+(*it).module.filter_module_name,
+(*it).module.miniport_friendly_name,
+(*it).module.miniport_name,
+(*it).module.miniport_net_luid
+			);
+		OutputDebugStr(_T("APP:-----------------------------\n"));
+#endif
+		vector<LCXL_SERVER> server_list;
+		DWORD server_list_count = 100;
+		server_list.resize(server_list_count);
+		if (!lnlGetServerList((*it).module.miniport_net_luid, &server_list[0], &server_list_count)) {
+			server_list.resize(server_list_count);
+		}
+		server_list.resize(server_list_count);
+
+		//启用虚拟IPv6
+		(*it).module.virtual_addr.status = SA_ENABLE_IPV6;
+		lnlSetVirtualAddr((*it).module.miniport_net_luid, &(*it).module.virtual_addr);
+
+
+		CONFIG_SERVER server;
+
+		server.server.status = SS_ONLINE;
+		server.server.ip_status = SA_ENABLE_IPV6;
+		wcscpy_s(server.comment, L"测试用");
+		server.server.mac_addr.Length = 6;
+		server.server.mac_addr.Address[0] = 0x00;
+		server.server.mac_addr.Address[1] = 0x0C;
+		server.server.mac_addr.Address[2] = 0x29;
+		server.server.mac_addr.Address[3] = 0x6F;
+		server.server.mac_addr.Address[4] = 0x05;
+		server.server.mac_addr.Address[5] = 0xCE;
+
+		(*it).server_list.push_back(server);
+
+		//lnlAddServer((*it).miniport_net_luid, &server);
+	}
+	//lnlSetLcxlRole(LCXL_ROLE_ROUTER);
 	SetServiceName(LCXLSHADOW_SER_NAME);
 	SetListenPort(m_Config.GetPort());
 
@@ -109,36 +175,7 @@ bool CNetLoaderService::PreSerRun()
 		}
 	}
 
-	//获取网卡列表信息
-	DWORD module_count = 20;
-	std::vector<APP_MODULE> module_list;
-	module_list.resize(module_count);
-	if (!lnlGetModuleList(&module_list[0], &module_count)) {
-		OutputDebugStr(_T("lnlGetModuleList failed.Error Code=%d\n"), GetLastError());
-		return false;
-	}
-	module_list.resize(module_count);
-	m_Config.UpdateModuleList(module_list);
-	std::vector<CONFIG_MODULE>::iterator it;
-	for (it = m_Config.ModuleList().begin(); it != m_Config.ModuleList().end(); it++) {
-#ifdef _DEBUG
-		OutputDebugStr(_T("APP:-----------------------------\n"));
-		OutputDebugStr(_T(
-"mac_addr=%02x-%02x-%02x-%02x-%02x-%02x\n\
-filter_module_name=%ws\n\
-miniport_friendly_name=%ws\n\
-miniport_name=%ws\n\
-miniport_net_luid=%I64x\n"), 
-			(*it).mac_addr.Address[0], (*it).mac_addr.Address[1], (*it).mac_addr.Address[2], (*it).mac_addr.Address[3], (*it).mac_addr.Address[4], (*it).mac_addr.Address[5],
-			(*it).filter_module_name,
-			(*it).miniport_friendly_name,
-			(*it).miniport_name,
-			(*it).miniport_net_luid
-			);
-		OutputDebugStr(_T("APP:-----------------------------\n"));
-#endif
 
-	}
-	m_Config.SaveXMLFile(tstring_to_string(ExtractFilePath(GetAppFilePath())) + "lcxlnetloader.xml");
+	m_Config.SaveXMLFile(tstring_to_string(ExtractFilePath(GetAppFilePath())) + CONFIG_FILE_NAME);
 	return true;
 }

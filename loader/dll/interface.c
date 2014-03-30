@@ -33,11 +33,13 @@ BOOL lnlDeviceIoControl(_In_ DWORD dwIoControlCode,
 	file_handle = OpenDirver();
 
 	if (INVALID_HANDLE_VALUE == file_handle) {
+		*lpBytesReturned = 0;
 		return FALSE;
 	}
 	if (DeviceIoControl(file_handle, dwIoControlCode, lpInBuffer, nInBufferSize, lpOutBuffer, nOutBufferSize, lpBytesReturned, NULL)) {
 
 	} else {
+		
 		last_error = GetLastError();
 	}
 
@@ -68,22 +70,22 @@ BOOL WINAPI lnlGetModuleList(OUT PAPP_MODULE pModuleList, IN OUT PDWORD pModuleL
 	DWORD data_size = *pModuleListCount*sizeof(APP_MODULE);
 
 	resu = lnlDeviceIoControl(IOCTL_GET_MODULE_LIST, NULL, 0, pModuleList, data_size, &data_size);
+	*pModuleListCount = data_size / sizeof(APP_MODULE);
 	if (resu) {
 		assert(data_size%sizeof(APP_MODULE) == 0);
-		*pModuleListCount = data_size/sizeof(APP_MODULE);
 	} 
 	return resu;
 }
 
-BOOL WINAPI lnlSetVirtualIP(IN NET_LUID miniport_net_luid, IN LCXL_ADDR_INFO addr)
+BOOL WINAPI lnlSetVirtualAddr(IN NET_LUID miniport_net_luid, IN PLCXL_ADDR_INFO addr)
 {
 	DWORD data_size = 0;
 	APP_VIRTUAL_IP virtual_ip;
 
 	virtual_ip.miniport_net_luid = miniport_net_luid;
-	virtual_ip.addr = addr;
+	virtual_ip.addr = *addr;
 	
-	return lnlDeviceIoControl(IOCTL_LOADER_SET_VIRTUAL_IP, &virtual_ip, sizeof(virtual_ip), NULL, 0, &data_size);
+	return lnlDeviceIoControl(IOCTL_SET_VIRTUAL_ADDR, &virtual_ip, sizeof(virtual_ip), NULL, 0, &data_size);
 }
 
 BOOL WINAPI lnlGetServerList(IN NET_LUID miniport_net_luid, OUT PLCXL_SERVER server_list, IN OUT PDWORD server_list_count)
@@ -92,9 +94,10 @@ BOOL WINAPI lnlGetServerList(IN NET_LUID miniport_net_luid, OUT PLCXL_SERVER ser
 	DWORD data_size = *server_list_count*sizeof(LCXL_SERVER);
 
 	resu = lnlDeviceIoControl(IOCTL_LOADER_GET_SERVER_LIST, &miniport_net_luid, sizeof(miniport_net_luid), server_list, data_size, &data_size);
+	*server_list_count = data_size / sizeof(LCXL_SERVER);
 	if (resu) {
 		assert(data_size%sizeof(LCXL_SERVER) == 0);
-		*server_list_count = data_size / sizeof(LCXL_SERVER);
+		
 	} 
 	return resu;
 }

@@ -40,7 +40,7 @@ extern "C" {
 		} role;
 	} APP_MODULE, *PAPP_MODULE;
 
-	//IOCTL_LOADER_SET_VIRTUAL_IP
+	//IOCTL_SET_VIRTUAL_ADDR
 	typedef struct _APP_VIRTUAL_IP {
 		NET_LUID			miniport_net_luid;
 		LCXL_ADDR_INFO		addr;

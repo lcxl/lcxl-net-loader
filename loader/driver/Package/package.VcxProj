@@ -168,7 +168,75 @@
     <VerifyDrivers />
     <VerifyFlags>133563</VerifyFlags>
   </PropertyGroup>
-  <ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Test|Win32'">
+    <Inf2Cat>
+      <AdditionalOptions>/USELOCALTIME %(AdditionalOptions)</AdditionalOptions>
+    </Inf2Cat>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8 Debug|Win32'">
+    <Inf2Cat>
+      <AdditionalOptions>/USELOCALTIME %(AdditionalOptions)</AdditionalOptions>
+    </Inf2Cat>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win7 Debug|Win32'">
+    <Inf2Cat>
+      <AdditionalOptions>/USELOCALTIME %(AdditionalOptions)</AdditionalOptions>
+    </Inf2Cat>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win7 Release|Win32'">
+    <Inf2Cat>
+      <AdditionalOptions>/USELOCALTIME %(AdditionalOptions)</AdditionalOptions>
+    </Inf2Cat>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1 Debug|Win32'">
+    <Inf2Cat>
+      <AdditionalOptions>/USELOCALTIME %(AdditionalOptions)</AdditionalOptions>
+    </Inf2Cat>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8 Release|Win32'">
+    <Inf2Cat>
+      <AdditionalOptions>/USELOCALTIME %(AdditionalOptions)</AdditionalOptions>
+    </Inf2Cat>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1 Release|Win32'">
+    <Inf2Cat>
+      <AdditionalOptions>/USELOCALTIME %(AdditionalOptions)</AdditionalOptions>
+    </Inf2Cat>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Test|x64'">
+    <Inf2Cat>
+      <AdditionalOptions>/USELOCALTIME %(AdditionalOptions)</AdditionalOptions>
+    </Inf2Cat>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8 Debug|x64'">
+    <Inf2Cat>
+      <AdditionalOptions>/USELOCALTIME %(AdditionalOptions)</AdditionalOptions>
+    </Inf2Cat>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win7 Debug|x64'">
+    <Inf2Cat>
+      <AdditionalOptions>/USELOCALTIME %(AdditionalOptions)</AdditionalOptions>
+    </Inf2Cat>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win7 Release|x64'">
+    <Inf2Cat>
+      <AdditionalOptions>/USELOCALTIME %(AdditionalOptions)</AdditionalOptions>
+    </Inf2Cat>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1 Debug|x64'">
+    <Inf2Cat>
+      <AdditionalOptions>/USELOCALTIME %(AdditionalOptions)</AdditionalOptions>
+    </Inf2Cat>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8 Release|x64'">
+    <Inf2Cat>
+      <AdditionalOptions>/USELOCALTIME %(AdditionalOptions)</AdditionalOptions>
+    </Inf2Cat>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1 Release|x64'">
+    <Inf2Cat>
+      <AdditionalOptions>/USELOCALTIME %(AdditionalOptions)</AdditionalOptions>
+    </Inf2Cat>
   </ItemDefinitionGroup>
   <ItemGroup>
     <!--Inf Include="DriverInf.inv" /-->

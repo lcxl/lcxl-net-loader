@@ -19,6 +19,7 @@ Notes:
 #include "lcxl_queue.h"
 #include "lcxl_setting.h"
 #include "../../common/driver/lcxl_lock_list.h"
+
 #pragma warning(disable:28930) // Unused assignment of pointer, by design in samples
 #pragma warning(disable:28931) // Unused assignment of variable, by design in samples
 
@@ -271,7 +272,7 @@ typedef struct _LCXL_FILTER
     NDIS_STATUS                     status;
     NDIS_EVENT                      event;
     ULONG                           back_fill_size;
-    FILTER_LOCK                     lock;    // Lock for protection of state and outstanding sends and recvs
+    KSPIN_LOCK                     lock;    // Lock for protection of state and outstanding sends and recvs
 	//过滤驱动当前状态
     volatile FILTER_STATE           state; 
     ULONG                           outstanding_sends;
@@ -432,24 +433,51 @@ VOID DriverReinitialize(
 	_In_      ULONG Count
 	);
 
+
+
 ///<summary>
 ///路由TCP数据包
 ///返回路由信息
 ///</summary>
 PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER pFilter, IN INT ipMode, IN PVOID pIPHeader);
 
-///<summary>
-///处理此NBL
-///参数：
-///route:如果需要路由此NBL，返回路由信息，否则返回NULL。注意，只有当函数返回为FALSE时此值恒为NULL
-///返回值：
-///TRUE:已处理，不要交给上层驱动程序；FALSE:未处理，交给上层处理程序
-///</summary>
-BOOLEAN ProcessNBL(IN PLCXL_FILTER pFilter, IN PETHERNET_HEADER pEthHeader, IN UINT BufferLength, OUT PLCXL_ROUTE_LIST_ENTRY *route);
+//************************************
+// 简介: 处理此NBL
+// 返回: BOOLEAN TRUE:已处理，不要交给上层驱动程序；FALSE:未处理，交给上层处理程序
+// 参数: IN PLCXL_FILTER pFilter
+// 参数: IN PETHERNET_HEADER pEthHeader 以太网协议头
+// 参数: IN UINT BufferLength
+// 参数: OUT PLCXL_ROUTE_LIST_ENTRY * route 如果需要路由此NBL，返回路由信息，否则返回NULL。注意，只有当函数返回为FALSE时此值恒为NULL
+//************************************
+BOOLEAN ProcessNBL(IN PLCXL_FILTER pFilter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PETHERNET_HEADER pEthHeader, IN UINT BufferLength, OUT PLCXL_ROUTE_LIST_ENTRY *route);
 
-//寻找LCXL_FILTER结构并且锁定列表（锁定之后列表中的列表项不会被添加或删除）
+//************************************
+// 简介: 寻找LCXL_FILTER结构，注意，需要锁定表之后才能使用
+// 返回: PLCXL_FILTER
+// 参数: IN NET_LUID miniport_net_luid 网卡的LUID
+//************************************
 PLCXL_FILTER FindFilter(IN NET_LUID miniport_net_luid);
-//!添加代码!
+
+//************************************
+// 简介: 锁定filter
+// 返回: void
+// 参数: IN PLCXL_FILTER filter
+// 参数: OUT PKLOCK_QUEUE_HANDLE lock_handle_in_stack
+//************************************
+__inline void LockFilter(IN PLCXL_FILTER filter, OUT PKLOCK_QUEUE_HANDLE lock_handle_in_stack) {
+	ASSERT(filter != NULL && lock_handle_in_stack != NULL);
+	KeAcquireInStackQueuedSpinLock(&filter->lock, lock_handle_in_stack);
+}
+
+//************************************
+// 简介: 解锁filter
+// 返回: void
+// 参数: IN PKLOCK_QUEUE_HANDLE lock_handle_in_stack
+//************************************
+__inline void UnlockFilter(IN PKLOCK_QUEUE_HANDLE lock_handle_in_stack) {
+	ASSERT(lock_handle_in_stack != NULL);
+	KeReleaseInStackQueuedSpinLock(lock_handle_in_stack);
+}
 
 void DelLCXLFilterCallBack(PLIST_ENTRY filter);
 #endif  //_FILT_H
