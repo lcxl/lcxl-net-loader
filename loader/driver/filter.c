@@ -1355,20 +1355,38 @@ Arguments:
 	{
 		UINT				buffer_length = 0;
 		PETHERNET_HEADER	eth_header;
-		BOOLEAN				is_processed_nbl = FALSE;
+		PROCESS_NBL_RESULT	return_data = { 0 };
 
 		eth_header = GetEthernetHeader(current_nbl, &buffer_length);
 
 		if (eth_header != NULL) {
 			INT lcxl_role;
-			PLCXL_ROUTE_LIST_ENTRY route;
-			
-			lcxl_role = g_setting.lcxl_role;
-			is_processed_nbl = ProcessNBL(filter, FALSE, lcxl_role, eth_header, buffer_length, &route);
-			
 
+			lcxl_role = g_setting.lcxl_role;
+			ProcessNBL(filter, FALSE, lcxl_role, eth_header, buffer_length, &return_data);
 		}
-		if (is_processed_nbl) {
+		switch (return_data.code) {
+		case PNRC_PASS:case PNRC_MODIFY:
+			if (pass_nbl_head == NULL) {
+				pass_nbl_head = current_nbl;
+				pass_nbl_tail = current_nbl;
+			} else {
+				NET_BUFFER_LIST_NEXT_NBL(pass_nbl_tail) = current_nbl;
+				pass_nbl_tail = current_nbl;
+			}
+			if (return_data.code == PNRC_MODIFY) {
+				//更改源地址mac
+				IF_PHYSICAL_ADDRESS router_mac_addr;
+				KLOCK_QUEUE_HANDLE lock_handle;
+				//获取router的mac地址
+				LockFilter(filter, &lock_handle);
+				router_mac_addr = filter->module.router_mac_addr;
+				UnlockFilter(&lock_handle);
+				//将源MAC地址更改为router的mac地址
+				RtlCopyMemory(&eth_header->Source, router_mac_addr.Address, sizeof(eth_header->Source));
+			}
+			break;
+		case PNRC_DROP:
 			//拦截此NBL
 			if (drop_nbl_head == NULL) {
 				drop_nbl_head = current_nbl;
@@ -1377,14 +1395,10 @@ Arguments:
 				NET_BUFFER_LIST_NEXT_NBL(drop_nbl_tail) = current_nbl;
 				drop_nbl_tail = current_nbl;
 			}
-		} else {
-			if (pass_nbl_head == NULL) {
-				pass_nbl_head = current_nbl;
-				pass_nbl_tail = current_nbl;
-			} else {
-				NET_BUFFER_LIST_NEXT_NBL(pass_nbl_tail) = current_nbl;
-				pass_nbl_tail = current_nbl;
-			}
+			break;
+		default:
+			ASSERT(FALSE);
+			break;
 		}
 		if (filter->track_sends)
 		{
@@ -1638,8 +1652,8 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 		UINT					buffer_length = 0;
 		PETHERNET_HEADER		ethernet_header = NULL;
 		//是否此数据包已处理
-		BOOLEAN					is_processed_nbl = FALSE;
-		PLCXL_ROUTE_LIST_ENTRY	route = NULL;
+		
+		PROCESS_NBL_RESULT	return_data = { 0 };
 		ethernet_header = GetEthernetHeader(current_nbl, &buffer_length);
 		
 		//各种有效性判断
@@ -1647,15 +1661,11 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 			INT lcxl_role;
 			
 			lcxl_role  = g_setting.lcxl_role;
-			is_processed_nbl = ProcessNBL(filter, TRUE, lcxl_role, ethernet_header, buffer_length, &route);
+			ProcessNBL(filter, TRUE, lcxl_role, ethernet_header, buffer_length, &return_data);
 		}
-		if (is_processed_nbl) {
-			//如果此数据包已处理，则不需要提交到上层驱动中
-			PETHERNET_HEADER    send_buffer;
-			PMDL                send_mdl = NULL;
-			PNET_BUFFER_LIST    send_nbl;
-			ULONG               bytes_copied;
-
+		switch (return_data.code) {
+		case PNRC_DROP:case PNRC_ROUTER:
+			//如果要拦截此NBL
 			//是否可以Pend
 			if (NDIS_TEST_RECEIVE_CANNOT_PEND(ReceiveFlags)) {
 				//不作处理
@@ -1671,7 +1681,13 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 				}
 			}
 			//如果需要路由此数据包
-			if (route != NULL) {
+			if (return_data.code == PNRC_ROUTER) {
+				PETHERNET_HEADER    send_buffer;
+				PMDL                send_mdl = NULL;
+				PNET_BUFFER_LIST    send_nbl;
+				ULONG               bytes_copied;
+
+				ASSERT(return_data.data.route != NULL);
 				//创建一个NBL
 				send_buffer = (PETHERNET_HEADER)FILTER_ALLOC_MEM(filter->filter_handle, buffer_length);
 				send_mdl = NdisAllocateMdl(filter->filter_handle, send_buffer, buffer_length);
@@ -1694,7 +1710,7 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 
 				send_nbl->SourceHandle = filter->filter_handle;
 				//修改目标MAC地址
-				RtlCopyMemory(&send_buffer->Destination, route->dst_server->info.mac_addr.Address, sizeof(ethernet_header->Destination));
+				RtlCopyMemory(&send_buffer->Destination, return_data.data.route->dst_server->info.mac_addr.Address, sizeof(ethernet_header->Destination));
 				//
 				// The other members of NET_BUFFER_DATA structure are already initialized properly during allocation.
 				//
@@ -1707,11 +1723,12 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 					NET_BUFFER_LIST_NEXT_NBL(send_nbl_tail) = send_nbl;
 					send_nbl_tail = send_nbl;
 				}
-				if (route->status == RS_CLOSED) {
-					DeleteRouteListEntry(route, &filter->module.server_list);
+				if (return_data.data.route->status == RS_CLOSED) {
+					DeleteRouteListEntry(return_data.data.route, &filter->module.server_list);
 				}
 			}
-		} else {
+			break;
+		case PNRC_PASS:
 			//如果数据包未被处理，则发送给上层驱动
 			if (NDIS_TEST_RECEIVE_CANNOT_PEND(ReceiveFlags)) {
 				PNET_BUFFER_LIST tmpNBL;
@@ -1731,6 +1748,7 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 				}
 				number_of_pass_nbl++;
 			}
+			break;
 		}
 		//获取下一个NBL
 		current_nbl = NET_BUFFER_LIST_NEXT_NBL(current_nbl);
@@ -2175,17 +2193,16 @@ PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER pFilter, IN INT ipMode, IN PV
 	return route_info;
 }
 
-BOOLEAN ProcessNBL(IN PLCXL_FILTER pFilter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PETHERNET_HEADER pEthHeader, IN UINT BufferLength, OUT PLCXL_ROUTE_LIST_ENTRY *route)
+VOID ProcessNBL(IN PLCXL_FILTER pFilter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PETHERNET_HEADER pEthHeader, IN UINT BufferLength, IN OUT PPROCESS_NBL_RESULT return_data)
 {
 	PVOID ethernet_data;
 	USHORT ethernet_type;
-	BOOLEAN is_processed = FALSE;
 
-	ASSERT(route != NULL && pFilter != NULL && pEthHeader != NULL);
-	*route = NULL;
+	ASSERT(return_data != NULL && pFilter != NULL && pEthHeader != NULL);
+	RtlZeroMemory(return_data, sizeof(PROCESS_NBL_RESULT));
 	ethernet_data = GetEthernetData(pEthHeader, BufferLength, &ethernet_type, &BufferLength);
 	if (ethernet_data == NULL) {
-		return FALSE;
+		return;
 	}
 	switch (ethernet_type) {
 	case ETHERNET_TYPE_ARP:
@@ -2230,7 +2247,7 @@ TPA=%d.%d.%d.%d\n",
 				lcxl_arp_ethernet.TargetProtocolAddress.S_un.S_un_b.s_b4));
 			//如果不是针对IPv4的ARP协议，则跳过
 			if (lcxl_arp_ethernet.ProtocolAddressSpace != ETHERNET_TYPE_IPV4) {
-				return FALSE;
+				return;
 			}
 
 			switch (lcxl_arp_ethernet.Opcode)
@@ -2268,9 +2285,22 @@ TPA=%d.%d.%d.%d\n",
 					switch (lcxl_role)
 					{
 					case LCXL_ROLE_ROUTER:
-						if (RtlCompareMemory(&ip_header->DestinationAddress, &virtual_addr.ipv4, sizeof(ip_header->DestinationAddress)) == sizeof(ip_header->DestinationAddress)) {
-							*route = RouteTCPNBL(pFilter, IM_IPV4, ip_header);
-							is_processed = *route != NULL;
+						if (is_recv) {
+							if (RtlCompareMemory(&ip_header->DestinationAddress, &virtual_addr.ipv4, sizeof(ip_header->DestinationAddress)) == sizeof(ip_header->DestinationAddress)) {
+								return_data->data.route = RouteTCPNBL(pFilter, IM_IPV4, ip_header);
+								if (return_data->data.route != NULL) {
+									return_data->code = PNRC_ROUTER;
+								}
+							}
+						}
+						break;
+					case LCXL_ROLE_SERVER:
+						if (!is_recv) {
+							//如果要发送的数据包的源IP地址是虚拟IP地址
+							if (RtlCompareMemory(&ip_header->SourceAddress, &virtual_addr.ipv4, sizeof(ip_header->SourceAddress)) == sizeof(ip_header->SourceAddress)) {
+								//更改此NBL
+								return_data->code = PNRC_MODIFY;
+							}
 						}
 						break;
 					}
@@ -2335,21 +2365,54 @@ TPA=%d.%d.%d.%d\n",
 							if (RtlCompareMemory(&ip_header->SourceAddress, &virtual_addr.ipv6, sizeof(ip_header->SourceAddress)) == sizeof(ip_header->SourceAddress)) {
 								//如果本机发送基于虚拟IPv6的请求，则拦截
 								if (!is_recv) {
-									is_processed = TRUE;
+									return_data->code = PNRC_DROP;
 								}
 							}
 						case 135://邻居请求(NS)
+							//这里要处理请求节点多播地址(solicited-node multicast address) 
+							if (!is_recv) {
+								//如果要发送邻居请求
+								IN6_ADDR solicited_node_multicast_address;
 
+								RtlZeroMemory(&solicited_node_multicast_address, sizeof(solicited_node_multicast_address));
+								//计算虚拟IPv6地址的被请求-节点多播地址
+								//前缀为 FF02::1:FF00:0/104
+								solicited_node_multicast_address.u.Word[0] = ntohs(0xFF02);
+								solicited_node_multicast_address.u.Word[5] = ntohs(0x0001);
+								solicited_node_multicast_address.u.Word[6] = ntohs(0xFF00 | ntohs(virtual_addr.ipv6.u.Word[6]));
+								solicited_node_multicast_address.u.Word[7] = virtual_addr.ipv6.u.Word[7];
+								
+								
+								if (RtlCompareMemory(&ip_header->DestinationAddress, &solicited_node_multicast_address, sizeof(ip_header->DestinationAddress)) == sizeof(ip_header->DestinationAddress)) {
+									//如果请求多播地址是虚拟IPv6的多播地址，则禁止发送
+									return_data->code = PNRC_DROP;
+								}
+							} else {
+								//如果收到了别的主机邻居请求
+								IN6_ADDR solicited_node_multicast_address;
+
+								RtlZeroMemory(&solicited_node_multicast_address, sizeof(solicited_node_multicast_address));
+								//计算虚拟IPv6地址的被请求-节点多播地址
+								//前缀为 FF02::1:FF00:0/104
+								solicited_node_multicast_address.u.Word[0] = ntohs(0xFF02);
+								solicited_node_multicast_address.u.Word[5] = ntohs(0x0001);
+								solicited_node_multicast_address.u.Word[6] = ntohs(0xFF00 | ntohs(virtual_addr.ipv6.u.Word[6]));
+								solicited_node_multicast_address.u.Word[7] = virtual_addr.ipv6.u.Word[7];
+								if (RtlCompareMemory(&ip_header->DestinationAddress, &solicited_node_multicast_address, sizeof(ip_header->DestinationAddress)) == sizeof(ip_header->DestinationAddress)) {
+									//如果请求多播地址是虚拟IPv6的多播地址，则禁止接收
+									return_data->code = PNRC_DROP;
+								}
+							}
 							break;
 						case 136://邻居宣告（NA）
 							//如果发现有别的主机对虚拟IP进行宣告
 							if (RtlCompareMemory(&ip_header->SourceAddress, &virtual_addr.ipv6, sizeof(ip_header->SourceAddress)) == sizeof(ip_header->SourceAddress)) {
 								if (is_recv) {
 									//发现有别的主机对虚拟IP进行宣告，则阻止此数据包传达到系统中
-									is_processed = TRUE;
+									return_data->code = PNRC_DROP;
 								} else {
 									//发现本机发送虚拟IP的宣告，则拦截
-									is_processed = TRUE;
+									return_data->code = PNRC_DROP;
 								}
 							}
 							break;
@@ -2362,11 +2425,26 @@ TPA=%d.%d.%d.%d\n",
 				case 0x06://TCP数据包
 					switch (lcxl_role) {
 					case LCXL_ROLE_ROUTER://如果角色是路由
-						//查看数据包的目标IP是否是虚拟IP
-						if (RtlCompareMemory(&ip_header->DestinationAddress, &virtual_addr.ipv6, sizeof(ip_header->DestinationAddress)) == sizeof(ip_header->DestinationAddress)) {
-							//路由此数据包
-							*route = RouteTCPNBL(pFilter, IM_IPV6, ip_header);
-							is_processed = *route != NULL;
+						
+						if (is_recv) {
+							//查看接收到的数据包的目标IP是否是虚拟IP
+							if (RtlCompareMemory(&ip_header->DestinationAddress, &virtual_addr.ipv6, sizeof(ip_header->DestinationAddress)) == sizeof(ip_header->DestinationAddress)) {
+								//路由此数据包
+								return_data->data.route = RouteTCPNBL(pFilter, IM_IPV4, ip_header);
+								if (return_data->data.route != NULL) {
+									return_data->code = PNRC_ROUTER;
+								}
+							}
+							
+						}
+						break;
+					case LCXL_ROLE_SERVER:
+						if (!is_recv) {
+							//如果要发送的数据包的源IP地址是虚拟IP地址
+							if (RtlCompareMemory(&ip_header->SourceAddress, &virtual_addr.ipv6, sizeof(ip_header->SourceAddress)) == sizeof(ip_header->SourceAddress)) {
+								//更改源MAC地址为router的mac地址
+								return_data->code = PNRC_MODIFY;
+							}
 						}
 						break;
 					}
@@ -2380,7 +2458,6 @@ TPA=%d.%d.%d.%d\n",
 	default:
 		break;
 	}
-	return is_processed;
 }
 
 PLCXL_FILTER FindFilter(IN NET_LUID miniport_net_luid)

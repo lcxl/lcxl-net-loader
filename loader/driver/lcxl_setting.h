@@ -29,7 +29,8 @@ typedef struct _LCXL_MODULE_SETTING_INFO {
 	//服务器列表，SERVER_INFO_LIST_ENTRY
 	LCXL_LOCK_LIST			server_list;
 	//------------------------LCXL_SERVER角色------------------------
-
+	//负载均衡器的mac地址
+	IF_PHYSICAL_ADDRESS		router_mac_addr;
 } LCXL_MODULE_SETTING_INFO, *PLCXL_MODULE_SETTING_INFO;//配置模块数据结构
 
 typedef struct _LCXL_SETTING{

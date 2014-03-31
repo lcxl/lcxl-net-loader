@@ -44,7 +44,8 @@
 //删除服务器
 //input APP_DEL_SERVER
 #define IOCTL_LOADER_DEL_SERVER				_NDIS_CONTROL_CODE(0x26, METHOD_BUFFERED)
-
+//在服务器中设置router的mac地址
+#define IOCTL_SERVER_SET_ROUTER_MAC_ADDR	_NDIS_CONTROL_CODE(0x27, METHOD_BUFFERED)
 //!添加代码!
 
 #endif

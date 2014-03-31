@@ -440,16 +440,33 @@ VOID DriverReinitialize(
 ///返回路由信息
 ///</summary>
 PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER pFilter, IN INT ipMode, IN PVOID pIPHeader);
-
+typedef enum _PROCESS_NBL_RESULT_CODE {
+	//数据包可以通过
+	PNRC_PASS = 0,
+	//拦截此数据包
+	PNRC_DROP = 1,
+	//要更改此数据包
+	PNRC_MODIFY = 2,
+	//要路由此数据包
+	PNRC_ROUTER = 3
+} PROCESS_NBL_RESULT_CODE, *PPROCESS_NBL_RESULT_CODE;
+typedef struct _PROCESS_NBL_RESULT{
+	PROCESS_NBL_RESULT_CODE code;
+	union {
+		//is_recv=true, lcxl_role=LCXL_ROLE_ROUTER，PNRC_ROUTER
+		//返回路由信息
+		PLCXL_ROUTE_LIST_ENTRY	route;
+	} data;
+} PROCESS_NBL_RESULT, *PPROCESS_NBL_RESULT;
 //************************************
 // 简介: 处理此NBL
 // 返回: BOOLEAN TRUE:已处理，不要交给上层驱动程序；FALSE:未处理，交给上层处理程序
 // 参数: IN PLCXL_FILTER pFilter
 // 参数: IN PETHERNET_HEADER pEthHeader 以太网协议头
 // 参数: IN UINT BufferLength
-// 参数: OUT PLCXL_ROUTE_LIST_ENTRY * route 如果需要路由此NBL，返回路由信息，否则返回NULL。注意，只有当函数返回为FALSE时此值恒为NULL
+// 参数: IN OUT PROCESS_NBL_RETURN_DATA return_data 如果需要路由此NBL，返回路由信息，否则返回NULL。注意，只有当函数返回为FALSE时此值恒为NULL
 //************************************
-BOOLEAN ProcessNBL(IN PLCXL_FILTER pFilter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PETHERNET_HEADER pEthHeader, IN UINT BufferLength, OUT PLCXL_ROUTE_LIST_ENTRY *route);
+VOID ProcessNBL(IN PLCXL_FILTER pFilter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PETHERNET_HEADER pEthHeader, IN UINT BufferLength, IN OUT PPROCESS_NBL_RESULT return_data);
 
 //************************************
 // 简介: 寻找LCXL_FILTER结构，注意，需要锁定表之后才能使用

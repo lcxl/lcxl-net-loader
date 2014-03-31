@@ -28,7 +28,7 @@
 #define ELEMENT_MINIPORT_FRIENDLY_NAME "miniport_friendly_name"
 #define ELEMENT_MINIPORT_NAME "miniport_name"
 #define ELEMENT_SERVER_LIST "server_list"
-
+#define ELEMENT_ROUTER_MAC_ADDR "router_mac_addr";
 //LCXL_ADDR_INFO
 #define ELEMENT_STATUS "status"
 #define ELEMENT_IPV4 "ipv4"
@@ -50,6 +50,7 @@ typedef struct _CONFIG_MODULE{
 	APP_MODULE					module;
 	//服务器列表
 	std::vector<CONFIG_SERVER>	server_list;
+
 } CONFIG_MODULE, *PCONFIG_MODULE_INFO;
 
 class CLCXLConfig {

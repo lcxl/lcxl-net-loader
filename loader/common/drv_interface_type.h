@@ -35,7 +35,8 @@ extern "C" {
 				INT			server_count;
 			} loader;
 			struct  {
-				INT			reserve;
+				//负载均衡器的mac地址
+				IF_PHYSICAL_ADDRESS		router_mac_addr;
 			} server;
 		} role;
 	} APP_MODULE, *PAPP_MODULE;
@@ -60,6 +61,13 @@ extern "C" {
 		//MAC地址
 		IF_PHYSICAL_ADDRESS	mac_addr;
 	} APP_DEL_SERVER, *PAPP_DEL_SERVER;
+
+	//在服务器中设置负载均衡器的mac地址
+	typedef struct _APP_SET_ROUTER_MAC_ADDR {
+		NET_LUID			miniport_net_luid;
+		//MAC地址
+		IF_PHYSICAL_ADDRESS	mac_addr;
+	} APP_SET_ROUTER_MAC_ADDR, *PAPP_SET_ROUTER_MAC_ADDR;
 #ifdef __cplusplus
 }
 #endif

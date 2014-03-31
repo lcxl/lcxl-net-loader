@@ -434,6 +434,26 @@ FilterDeviceIoControl(
 				status = STATUS_INFO_LENGTH_MISMATCH;
 			}
 			break;
+		case IOCTL_SERVER_SET_ROUTER_MAC_ADDR://服务器角色：设置负载均衡器的mac地址
+			if (g_setting.lcxl_role != LCXL_ROLE_SERVER) {
+				status = STATUS_INVALID_PARAMETER;
+				break;
+			}
+			if (sizeof(APP_SET_ROUTER_MAC_ADDR) == input_buffer_length) {
+				PAPP_SET_ROUTER_MAC_ADDR router_mac_addr = (PAPP_SET_ROUTER_MAC_ADDR)input_buffer;
+
+				LockLCXLLockList(&g_filter_list);
+				filter = FindFilter(router_mac_addr->miniport_net_luid);
+				if (filter != NULL) {
+					KLOCK_QUEUE_HANDLE lock_handle;
+
+					LockFilter(filter, &lock_handle);
+					filter->module.router_mac_addr = router_mac_addr->mac_addr;
+					UnlockFilter(&lock_handle);
+				}
+				UnlockLCXLLockList(&g_filter_list);
+			}
+			break;
 		//!添加代码!
         default:
 			status = STATUS_INVALID_PARAMETER;
