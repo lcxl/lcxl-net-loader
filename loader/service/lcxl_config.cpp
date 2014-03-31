@@ -191,6 +191,17 @@ tinyxml2::XMLElement * CLCXLConfig::WriteModule(tinyxml2::XMLElement *owner_elem
 	//插入服务器列表
 	owner_element->InsertEndChild(WriteServerList(owner_element->GetDocument()->NewElement(ELEMENT_SERVER_LIST), module.server_list));
 
+	//写入router_mac_addr
+	element = owner_element->GetDocument()->NewElement(ELEMENT_ROUTER_MAC_ADDR);
+	element->SetAttribute(CONFIG_VALUE, string_format(
+		"%02x-%02x-%02x-%02x-%02x-%02x",
+		module.router_mac_addr.Address[0],
+		module.router_mac_addr.Address[1],
+		module.router_mac_addr.Address[2],
+		module.router_mac_addr.Address[3],
+		module.router_mac_addr.Address[4],
+		module.router_mac_addr.Address[5]).c_str());
+	owner_element->InsertEndChild(element);
 	return owner_element;
 }
 
@@ -309,6 +320,22 @@ CONFIG_MODULE & CLCXLConfig::ReadModule(tinyxml2::XMLElement *owner_element, CON
 	element = owner_element->FirstChildElement(ELEMENT_SERVER_LIST);
 	if (element != NULL) {
 		ReadServerList(element, module.server_list);
+	}
+
+	//读取router_mac_addr
+	element = owner_element->FirstChildElement(ELEMENT_ROUTER_MAC_ADDR);
+	if (element != NULL) {
+		module.router_mac_addr.Length = 6;
+		sscanf_s(
+			element->Attribute(CONFIG_VALUE),
+			"%02x-%02x-%02x-%02x-%02x-%02x",
+			&module.router_mac_addr.Address[0],
+			&module.router_mac_addr.Address[1],
+			&module.router_mac_addr.Address[2],
+			&module.router_mac_addr.Address[3],
+			&module.router_mac_addr.Address[4],
+			&module.router_mac_addr.Address[5]
+			);
 	}
 	return module;
 }

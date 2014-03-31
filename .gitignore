@@ -30,3 +30,7 @@
 /ipch
 /loader/bin
 /loader/service/*.user
+/loader/web/.metadata
+/loader/web/RemoteSystemsTempFiles
+/loader/web/WorklightServerConfig
+/loader/web/netloader-web/target

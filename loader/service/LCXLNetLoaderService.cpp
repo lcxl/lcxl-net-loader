@@ -111,6 +111,17 @@ bool CNetLoaderService::PreSerRun()
 	module_list.resize(module_count);
 	//更新到配置文件中
 	m_Config.UpdateModuleList(module_list);
+	//设置
+	//获取角色信息
+	INT sys_lcxl_role = lnlGetLcxlRole();
+	if (sys_lcxl_role != m_Config.GetRole()) {
+		if (sys_lcxl_role != LCXL_ROLE_UNKNOWN) {
+			lnlSetLcxlRole(LCXL_ROLE_UNKNOWN);
+		}
+		if (m_Config.GetRole() != LCXL_ROLE_UNKNOWN) {
+			lnlSetLcxlRole(m_Config.GetRole());
+		}
+	}
 	//开始进行设置
 	std::vector<CONFIG_MODULE>::iterator it;
 	for (it = m_Config.ModuleList().begin(); it != m_Config.ModuleList().end(); it++) {
@@ -130,13 +141,23 @@ miniport_net_luid=%I64x\n"),
 			);
 		OutputDebugStr(_T("APP:-----------------------------\n"));
 #endif
-		vector<LCXL_SERVER> server_list;
-		DWORD server_list_count = 100;
-		server_list.resize(server_list_count);
-		if (!lnlGetServerList((*it).module.miniport_net_luid, &server_list[0], &server_list_count)) {
+		switch (sys_lcxl_role) {
+		case LCXL_ROLE_ROUTER:
+		{
+			vector<LCXL_SERVER> server_list;
+			DWORD server_list_count = 100;
+			server_list.resize(server_list_count);
+			if (!lnlGetServerList((*it).module.miniport_net_luid, &server_list[0], &server_list_count)) {
+				server_list.resize(server_list_count);
+			}
 			server_list.resize(server_list_count);
 		}
-		server_list.resize(server_list_count);
+			break;
+		case LCXL_ROLE_SERVER:
+
+			break;
+		}
+		
 
 		//启用虚拟IPv6
 		(*it).module.virtual_addr.status = SA_ENABLE_IPV6;
@@ -160,20 +181,10 @@ miniport_net_luid=%I64x\n"),
 
 		//lnlAddServer((*it).miniport_net_luid, &server);
 	}
-	//lnlSetLcxlRole(LCXL_ROLE_ROUTER);
 	SetServiceName(LCXLSHADOW_SER_NAME);
 	SetListenPort(m_Config.GetPort());
 
-	//获取角色信息
-	INT sys_lcxl_role = lnlGetLcxlRole();
-	if (sys_lcxl_role != m_Config.GetRole()) {
-		if (sys_lcxl_role != LCXL_ROLE_UNKNOWN) {
-			lnlSetLcxlRole(LCXL_ROLE_UNKNOWN);
-		}
-		if (m_Config.GetRole() != LCXL_ROLE_UNKNOWN) {
-			lnlSetLcxlRole(m_Config.GetRole());
-		}
-	}
+	
 
 
 	m_Config.SaveXMLFile(tstring_to_string(ExtractFilePath(GetAppFilePath())) + CONFIG_FILE_NAME);

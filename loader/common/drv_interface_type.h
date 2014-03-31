@@ -47,7 +47,7 @@ extern "C" {
 		LCXL_ADDR_INFO		addr;
 	} APP_VIRTUAL_IP, *PAPP_VIRTUAL_IP;
 	//服务器列表
-	//IOCTL_LOADER_GET_SERVER_LIST
+	//IOCTL_ROUTER_GET_SERVER_LIST
 	//input NET_LUID                     miniport_net_luid;
 	//output array of LCXL_SERVER
 	//添加服务器

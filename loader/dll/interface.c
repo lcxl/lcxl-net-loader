@@ -93,7 +93,7 @@ BOOL WINAPI lnlGetServerList(IN NET_LUID miniport_net_luid, OUT PLCXL_SERVER ser
 	BOOL resu;
 	DWORD data_size = *server_list_count*sizeof(LCXL_SERVER);
 
-	resu = lnlDeviceIoControl(IOCTL_LOADER_GET_SERVER_LIST, &miniport_net_luid, sizeof(miniport_net_luid), server_list, data_size, &data_size);
+	resu = lnlDeviceIoControl(IOCTL_ROUTER_GET_SERVER_LIST, &miniport_net_luid, sizeof(miniport_net_luid), server_list, data_size, &data_size);
 	*server_list_count = data_size / sizeof(LCXL_SERVER);
 	if (resu) {
 		assert(data_size%sizeof(LCXL_SERVER) == 0);
@@ -109,7 +109,7 @@ BOOL WINAPI lnlAddServer(IN NET_LUID miniport_net_luid, IN PLCXL_SERVER server)
 	add_server.miniport_net_luid = miniport_net_luid;
 	add_server.server = *server;
 	
-	return lnlDeviceIoControl(IOCTL_LOADER_ADD_SERVER, &add_server, sizeof(add_server), NULL, 0, &data_size);
+	return lnlDeviceIoControl(IOCTL_ROUTER_ADD_SERVER, &add_server, sizeof(add_server), NULL, 0, &data_size);
 }
 BOOL WINAPI lnlDelServer(IN NET_LUID miniport_net_luid, IN PIF_PHYSICAL_ADDRESS mac_addr)
 {
@@ -119,7 +119,7 @@ BOOL WINAPI lnlDelServer(IN NET_LUID miniport_net_luid, IN PIF_PHYSICAL_ADDRESS 
 	del_server.miniport_net_luid = miniport_net_luid;
 	del_server.mac_addr = *mac_addr;
 	
-	return lnlDeviceIoControl(IOCTL_LOADER_DEL_SERVER, &del_server, sizeof(del_server), NULL, 0, &data_size);
+	return lnlDeviceIoControl(IOCTL_ROUTER_DEL_SERVER, &del_server, sizeof(del_server), NULL, 0, &data_size);
 }
 
 BOOL WINAPI lnlSetRouterMacAddr(IN NET_LUID miniport_net_luid, PIF_PHYSICAL_ADDRESS mac_addr)

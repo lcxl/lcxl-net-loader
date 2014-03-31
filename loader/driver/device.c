@@ -317,7 +317,7 @@ FilterDeviceIoControl(
 				status = STATUS_INFO_LENGTH_MISMATCH;
 			}
 			break;
-		case IOCTL_LOADER_GET_SERVER_LIST:
+		case IOCTL_ROUTER_GET_SERVER_LIST:
 			if (g_setting.lcxl_role != LCXL_ROLE_ROUTER) {
 				status = STATUS_INVALID_PARAMETER;
 				break;
@@ -355,7 +355,7 @@ FilterDeviceIoControl(
 				status = STATUS_INFO_LENGTH_MISMATCH;
 			}
 			break;
-		case IOCTL_LOADER_ADD_SERVER:
+		case IOCTL_ROUTER_ADD_SERVER:
 			if (g_setting.lcxl_role != LCXL_ROLE_ROUTER) {
 				status = STATUS_INVALID_PARAMETER;
 				break;
@@ -395,7 +395,7 @@ FilterDeviceIoControl(
 				status = STATUS_INFO_LENGTH_MISMATCH;
 			}
 			break;
-		case IOCTL_LOADER_DEL_SERVER:
+		case IOCTL_ROUTER_DEL_SERVER:
 			if (g_setting.lcxl_role != LCXL_ROLE_ROUTER) {
 				status = STATUS_INVALID_PARAMETER;
 				break;

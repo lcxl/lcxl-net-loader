@@ -28,7 +28,7 @@
 #define ELEMENT_MINIPORT_FRIENDLY_NAME "miniport_friendly_name"
 #define ELEMENT_MINIPORT_NAME "miniport_name"
 #define ELEMENT_SERVER_LIST "server_list"
-#define ELEMENT_ROUTER_MAC_ADDR "router_mac_addr";
+#define ELEMENT_ROUTER_MAC_ADDR "router_mac_addr"
 //LCXL_ADDR_INFO
 #define ELEMENT_STATUS "status"
 #define ELEMENT_IPV4 "ipv4"
@@ -48,9 +48,12 @@ typedef struct _CONFIG_SERVER {
 typedef struct _CONFIG_MODULE{
 	//驱动模块列表
 	APP_MODULE					module;
+	//------------------------LCXL_ROUTER角色------------------------
 	//服务器列表
 	std::vector<CONFIG_SERVER>	server_list;
-
+	//------------------------LCXL_SERVER角色------------------------
+	//负载均衡器mac地址
+	IF_PHYSICAL_ADDRESS			router_mac_addr;
 } CONFIG_MODULE, *PCONFIG_MODULE_INFO;
 
 class CLCXLConfig {
@@ -59,7 +62,7 @@ private:
 	int								m_Port;
 	std::string						m_Rolename;
 	int								m_Role;
-	std::vector<CONFIG_MODULE>	m_ModuleList;
+	std::vector<CONFIG_MODULE>		m_ModuleList;
 public:
 	static tinyxml2::XMLElement *WriteModuleList(tinyxml2::XMLElement *owner_element, const std::vector<CONFIG_MODULE> &module_list);
 	static tinyxml2::XMLElement *WriteModule(tinyxml2::XMLElement *owner_element, const CONFIG_MODULE &module);
