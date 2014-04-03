@@ -7,7 +7,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+#pragma pack(push,1)
 #define MAX_INSTANCE_NAME_LENGTH     256
 
 	//获取所有的网卡接口序号
@@ -15,20 +15,21 @@ extern "C" {
 	//output
 
 	typedef struct _APP_MODULE {
-		//小端口驱动ifindex
+		//0:小端口驱动ifindex
 		NET_IFINDEX			miniport_ifindex;
-		//网卡本地唯一ID
+		//4:网卡本地唯一ID
 		NET_LUID			miniport_net_luid;
-		//虚拟地址IPv4/IPv6
+		//12:虚拟地址IPv4/IPv6
 		LCXL_ADDR_INFO		virtual_addr;
-		//服务器MAC地址
+		//36:服务器MAC地址
 		IF_PHYSICAL_ADDRESS mac_addr;
-		//模块名称
+		//70:模块名称
 		WCHAR				filter_module_name[MAX_INSTANCE_NAME_LENGTH];
-		//小端口驱动友好名称
+		//582:小端口驱动友好名称
 		WCHAR				miniport_friendly_name[MAX_INSTANCE_NAME_LENGTH];
-		//小端口驱动名称
+		//1094:小端口驱动名称
 		WCHAR				miniport_name[MAX_INSTANCE_NAME_LENGTH];
+		//1606
 		union {
 			struct {
 				//服务器数量
@@ -38,6 +39,7 @@ extern "C" {
 				//负载均衡器的mac地址
 				IF_PHYSICAL_ADDRESS		router_mac_addr;
 			} server;
+		//
 		} role;
 	} APP_MODULE, *PAPP_MODULE;
 
@@ -68,6 +70,7 @@ extern "C" {
 		//MAC地址
 		IF_PHYSICAL_ADDRESS	mac_addr;
 	} APP_SET_ROUTER_MAC_ADDR, *PAPP_SET_ROUTER_MAC_ADDR;
+#pragma pack(pop)
 #ifdef __cplusplus
 }
 #endif

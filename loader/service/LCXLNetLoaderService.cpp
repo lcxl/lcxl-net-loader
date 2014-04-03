@@ -6,11 +6,15 @@
 #include "resource.h"
 #include "../common/dll_interface.h"
 #include "lcxl_func.h"
+#include "lcxl_net_code.h"
+#include <Ws2tcpip.h>
 
 TCHAR LCXLSHADOW_SER_NAME[] = _T("LCXLNetLoaderService");
 
 
 #ifdef LCXL_SHADOW_SER_TEST
+
+#include <conio.h>
 
 class CTestNetLoaderSer : public CNetLoaderService {
 public:
@@ -27,10 +31,10 @@ int _tmain(int argc, _TCHAR* argv[])
 	UNREFERENCED_PARAMETER(argc);
 	UNREFERENCED_PARAMETER(argv);
 	SetErrorMode(SEM_FAILCRITICALERRORS);//使程序出现异常时不报错
+	OutputDebugStr(_T("sizeof APP_MODULE=%d, sizeof router_mac_addr=%d, sizeof lcxl_addr_info=%d, sizeof CONFIG_SERVER=%d"), sizeof(APP_MODULE), sizeof(IF_PHYSICAL_ADDRESS), sizeof(LCXL_ADDR_INFO), sizeof(CONFIG_SERVER));
 	//初始化一个分配表  
-	printf("%s\n", "在回车之后开始执行");
-	char test[20];
-	scanf("%s", test);
+	printf("%s\n", "输入任意字符开始");
+	_getch();
 	
 	g_NetLoadSer.Run();
 	return 0;
@@ -57,7 +61,7 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 
 #endif
 
-void CNetLoaderService::IOCPEvent(IocpEventEnum EventType, CSocketObj *SockObj, PIOCPOverlapped Overlapped)
+void CNetLoaderService::IOCPEvent(IocpEventEnum EventType, CLLSockObj *SockObj, PIOCPOverlapped Overlapped)
 {
 	vector<CSocketObj*> *SockList;
 	switch (EventType) {
@@ -78,6 +82,7 @@ void CNetLoaderService::IOCPEvent(IocpEventEnum EventType, CSocketObj *SockObj, 
 	case ieRecvPart:
 		break;
 	case ieRecvAll:
+		RecvEvent(SockObj, Overlapped);
 		break;
 	case ieRecvFailed:
 		break;
@@ -184,9 +189,121 @@ miniport_net_luid=%I64x\n"),
 	SetServiceName(LCXLSHADOW_SER_NAME);
 	SetListenPort(m_Config.GetPort());
 
-	
-
-
 	m_Config.SaveXMLFile(tstring_to_string(ExtractFilePath(GetAppFilePath())) + CONFIG_FILE_NAME);
 	return true;
+}
+
+void CNetLoaderService::RecvEvent(CLLSockObj *SockObj, PIOCPOverlapped Overlapped)
+{
+	long datalen = SockObj->GetRecvDataLen();
+	PVOID data = SockObj->GetRecvData();
+	Json::Value ret;
+
+	if (datalen%sizeof(WCHAR)==0) {
+		std::wstring datastr_w(PWCHAR(data), datalen / sizeof(WCHAR));
+		std::string datastr = wstring_to_string(datastr_w);
+
+		Json::Reader reader;
+		Json::Value root;
+		
+		if (reader.parse(datastr, root)) {
+			ProcessJsonData(root, ret);
+		}
+		
+	}
+	if (ret.isNull()) {
+		ret[JSON_CODE] = JC_NONE;
+		ret[JSON_STATUS] = JS_FAIL;
+	}
+	Json::FastWriter writer;
+	std::wstring retstr = string_to_wstring(writer.write(ret));
+	SockObj->SendData((PVOID)retstr.c_str(), retstr.size()*sizeof(wchar_t));
+}
+
+bool CNetLoaderService::ProcessJsonData(const Json::Value &root, Json::Value &ret)
+{
+	int code = root[JSON_CODE].asInt();
+	int status = JS_SUCCESS;
+	Json::Value data;
+	
+	switch (code) {
+	case JC_MODULE_LIST:
+	{
+		std::vector<CONFIG_MODULE>::iterator it;
+		for (it = m_Config.ModuleList().begin(); it != m_Config.ModuleList().end(); it++) {
+			Json::Value module;
+			
+			module["filter_module_name"] = (*it).module.filter_module_name;
+			module["mac_addr"] = string_format(
+				"%02x-%02x-%02x-%02x-%02x-%02x",
+				(*it).module.mac_addr.Address[0],
+				(*it).module.mac_addr.Address[1],
+				(*it).module.mac_addr.Address[2],
+				(*it).module.mac_addr.Address[3],
+				(*it).module.mac_addr.Address[4],
+				(*it).module.mac_addr.Address[5]).c_str();
+			module["miniport_friendly_name"] = (*it).module.miniport_friendly_name;
+			module["miniport_ifindex"] = (UINT)(*it).module.miniport_ifindex;
+			module["miniport_name"] = (*it).module.miniport_name;
+			module["miniport_net_luid"] = (*it).module.miniport_net_luid.Value;
+			
+			Json::Value virtual_addr;
+			char ipv4[16];
+			inet_ntop(AF_INET, const_cast<IN_ADDR*>(&(*it).module.virtual_addr.ipv4), ipv4, sizeof(ipv4) / sizeof(ipv4[0]));
+			char ipv6[100];
+			inet_ntop(AF_INET6, const_cast<IN6_ADDR*>(&(*it).module.virtual_addr.ipv6), ipv6, sizeof(ipv6) / sizeof(ipv6[0]));
+
+			virtual_addr["status"] = (*it).module.virtual_addr.status;
+			virtual_addr["ipv4"] = ipv4;
+			virtual_addr["ipv6"] = ipv6;
+			module["virtual_addr"] = virtual_addr;
+
+			data.append(module);
+		}
+	}
+		
+		break;
+	case JC_SERVER_LIST:
+	{
+		NET_LUID luid;
+
+		luid.Value= root[JSON_DATA].asInt64();
+		status = JS_JSON_DATA_NOT_FOUND;
+		if (luid.Value == 0) {
+			std::vector<CONFIG_MODULE>::iterator it;
+			for (it = m_Config.ModuleList().begin(); it != m_Config.ModuleList().end(); it++) {
+				if ((*it).module.miniport_net_luid.Value == luid.Value) {
+					std::vector<CONFIG_SERVER>::iterator sit;
+					
+					status = JS_SUCCESS;
+					for (sit = (*it).server_list.begin(); sit != (*it).server_list.end(); sit++) {
+						Json::Value server;
+
+						server["status"] = (*sit).server.status;
+						server["ip_status"] = (*sit).server.ip_status;
+						server["mac_addr"] = string_format(
+							"%02x-%02x-%02x-%02x-%02x-%02x",
+							(*sit).server.mac_addr.Address[0],
+							(*sit).server.mac_addr.Address[1],
+							(*sit).server.mac_addr.Address[2],
+							(*sit).server.mac_addr.Address[3],
+							(*sit).server.mac_addr.Address[4],
+							(*sit).server.mac_addr.Address[5]).c_str();
+						server["comment"] = (*sit).comment;
+						data.append(server);
+					}
+				}
+			}
+		}
+	}
+		break;
+	default:
+		status = JS_JSON_CODE_NOT_FOUND;
+		break;
+	}
+
+	ret[JSON_CODE] = code;
+	ret[JSON_STATUS] = status;
+	ret[JSON_DATA] = data;
+	return code == JS_SUCCESS;
 }

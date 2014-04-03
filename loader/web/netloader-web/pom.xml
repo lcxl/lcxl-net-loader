@@ -24,11 +24,22 @@
 		<artifactId>spring-orm</artifactId>
 		<version>${spring.version}</version>
 	</dependency>
+	<dependency>
+	<groupId>org.codehaus.jackson</groupId>
+	<artifactId>jackson-core-asl</artifactId>
+	<version>${jackson.version}</version>
+</dependency>
+<dependency>
+	<groupId>org.codehaus.jackson</groupId>
+	<artifactId>jackson-mapper-asl</artifactId>
+	<version>${jackson.version}</version>
+</dependency>
   </dependencies>
   <build>
     <finalName>web</finalName>
   </build>
   <properties>
   	<spring.version>4.0.2.RELEASE</spring.version>
+  	<jackson.version>1.9.13</jackson.version>
   </properties>
 </project>

@@ -25,6 +25,9 @@
     <Filter Include="头文件\dll_exe_comm">
       <UniqueIdentifier>{6cb8807e-2a33-4ff0-8546-e90288f78b4f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="头文件\jsoncpp">
+      <UniqueIdentifier>{15586eb8-44b8-4367-bc7e-d6401c6691bf}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -77,6 +80,33 @@
     </ClInclude>
     <ClInclude Include="..\common\drv_interface_type.h">
       <Filter>头文件\dll_exe_comm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\component\jsoncpp\include\json\autolink.h">
+      <Filter>头文件\jsoncpp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\component\jsoncpp\include\json\config.h">
+      <Filter>头文件\jsoncpp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\component\jsoncpp\include\json\features.h">
+      <Filter>头文件\jsoncpp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\component\jsoncpp\include\json\forwards.h">
+      <Filter>头文件\jsoncpp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\component\jsoncpp\include\json\json.h">
+      <Filter>头文件\jsoncpp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\component\jsoncpp\include\json\reader.h">
+      <Filter>头文件\jsoncpp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\component\jsoncpp\include\json\value.h">
+      <Filter>头文件\jsoncpp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\component\jsoncpp\include\json\writer.h">
+      <Filter>头文件\jsoncpp</Filter>
+    </ClInclude>
+    <ClInclude Include="lcxl_net_code.h">
+      <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

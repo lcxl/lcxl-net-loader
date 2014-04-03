@@ -9,11 +9,11 @@ class CNetServiceBase : public CServiceBase{
 protected:
 	//退出事件
 	HANDLE mExitEvent;
-	CIOCPBaseList *mSerList;
+	CIOCPLCXLList *mSerList;
 	CIOCPManager *mIOCPMgr;
-	CSocketLst *mSockLst;
+	CLLSockLst *mSockLst;
 	int m_ListenPort;
-	virtual void IOCPEvent(IocpEventEnum EventType, CSocketObj *SockObj, PIOCPOverlapped Overlapped) = 0;
+	virtual void IOCPEvent(IocpEventEnum EventType, CLLSockObj *SockObj, PIOCPOverlapped Overlapped) = 0;
 	virtual bool PreSerRun() = 0;
 protected:
 	virtual DWORD SerHandler(DWORD dwControl, DWORD dwEventType, LPVOID lpEventData);
