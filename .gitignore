@@ -34,3 +34,7 @@
 /loader/web/RemoteSystemsTempFiles
 /loader/web/WorklightServerConfig
 /loader/web/netloader-web/target
+/component/jsoncpp/makefiles/vs120/x64
+/component/jsoncpp/makefiles/vs120/Debug
+/component/jsoncpp/makefiles/vs120/bin
+/loader/service/Debug-Test

@@ -217,7 +217,7 @@ void CNetLoaderService::RecvEvent(CLLSockObj *SockObj, PIOCPOverlapped Overlappe
 	}
 	Json::FastWriter writer;
 	std::wstring retstr = string_to_wstring(writer.write(ret));
-	SockObj->SendData((PVOID)retstr.c_str(), retstr.size()*sizeof(wchar_t));
+	SockObj->SendData((PVOID)retstr.c_str(), (ULONG)retstr.size()*sizeof(wchar_t));
 }
 
 bool CNetLoaderService::ProcessJsonData(const Json::Value &root, Json::Value &ret)
@@ -233,7 +233,7 @@ bool CNetLoaderService::ProcessJsonData(const Json::Value &root, Json::Value &re
 		for (it = m_Config.ModuleList().begin(); it != m_Config.ModuleList().end(); it++) {
 			Json::Value module;
 			
-			module["filter_module_name"] = (*it).module.filter_module_name;
+			module["filter_module_name"] = wstring_to_string(wstring((*it).module.filter_module_name)).c_str();
 			module["mac_addr"] = string_format(
 				"%02x-%02x-%02x-%02x-%02x-%02x",
 				(*it).module.mac_addr.Address[0],
@@ -242,9 +242,9 @@ bool CNetLoaderService::ProcessJsonData(const Json::Value &root, Json::Value &re
 				(*it).module.mac_addr.Address[3],
 				(*it).module.mac_addr.Address[4],
 				(*it).module.mac_addr.Address[5]).c_str();
-			module["miniport_friendly_name"] = (*it).module.miniport_friendly_name;
+			module["miniport_friendly_name"] = wstring_to_string(wstring((*it).module.miniport_friendly_name)).c_str();
 			module["miniport_ifindex"] = (UINT)(*it).module.miniport_ifindex;
-			module["miniport_name"] = (*it).module.miniport_name;
+			module["miniport_name"] = wstring_to_string(wstring((*it).module.miniport_name)).c_str();
 			module["miniport_net_luid"] = (*it).module.miniport_net_luid.Value;
 			
 			Json::Value virtual_addr;
@@ -289,7 +289,7 @@ bool CNetLoaderService::ProcessJsonData(const Json::Value &root, Json::Value &re
 							(*sit).server.mac_addr.Address[3],
 							(*sit).server.mac_addr.Address[4],
 							(*sit).server.mac_addr.Address[5]).c_str();
-						server["comment"] = (*sit).comment;
+						server["comment"] = wstring_to_string(wstring((*sit).comment)).c_str();
 						data.append(server);
 					}
 				}

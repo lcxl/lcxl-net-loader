@@ -35,14 +35,14 @@ void CNetServiceBase::SerRun()
 		throw std::exception("port must be set");
 	}
 	mIOCPMgr = new CIOCPManager();
-	mSerList = new CIOCPBaseList(mIOCPMgr);
+	mSerList = new CIOCPLCXLList(mIOCPMgr);
 
-	DOnIOCPBaseEvent iocp_event(this, reinterpret_cast<EOnIOCPBaseEvent>(&CNetServiceBase::IOCPEvent));
+	DOnIOCPLCXLEvent iocp_event(this, reinterpret_cast<EOnIOCPLCXLEvent>(&CNetServiceBase::IOCPEvent));
 	mSerList->SetIOCPEvent(iocp_event);
 
 	mExitEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 
-	mSockLst = new CSocketLst();
+	mSockLst = new CLLSockLst();
 	// 启动监听
 	if (mSockLst->StartListen(mSerList, m_ListenPort)) {
 		//
