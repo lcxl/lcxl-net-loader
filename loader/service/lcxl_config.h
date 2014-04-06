@@ -90,6 +90,7 @@ public:
 	///将驱动的module同步到配置文件中
 	void UpdateModuleList(const std::vector<APP_MODULE> &module_list);
 	std::vector<CONFIG_MODULE> &ModuleList() { return m_ModuleList; }
+	CONFIG_MODULE *FindModuleByLuid(NET_LUID miniport_net_luid);
 };
 
 #endif

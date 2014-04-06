@@ -418,4 +418,15 @@ CLCXLConfig::CLCXLConfig()
 	SetRolename(CONFIG_ROLENAME_DEFAULT);
 }
 
+CONFIG_MODULE * CLCXLConfig::FindModuleByLuid(NET_LUID miniport_net_luid)
+{
+	std::vector<CONFIG_MODULE>::iterator it;
+	for (it = m_ModuleList.begin(); it != m_ModuleList.end(); it++) {
+		if ((*it).module.miniport_net_luid.Value == miniport_net_luid.Value) {
+			return &(*it);
+		}
+	}
+	return NULL;
+}
+
 

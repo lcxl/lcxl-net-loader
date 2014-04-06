@@ -80,7 +80,7 @@ BOOL WINAPI lnlGetModuleList(OUT PAPP_MODULE pModuleList, IN OUT PDWORD pModuleL
 BOOL WINAPI lnlSetVirtualAddr(IN NET_LUID miniport_net_luid, IN PLCXL_ADDR_INFO addr)
 {
 	DWORD data_size = 0;
-	APP_VIRTUAL_IP virtual_ip;
+	APP_SET_VIRTUAL_ADDR virtual_ip;
 
 	virtual_ip.miniport_net_luid = miniport_net_luid;
 	virtual_ip.addr = *addr;

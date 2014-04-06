@@ -298,10 +298,10 @@ FilterDeviceIoControl(
 		}
 			break;
 		case IOCTL_SET_VIRTUAL_ADDR:
-			if (input_buffer_length == sizeof(APP_VIRTUAL_IP)) {
-				PAPP_VIRTUAL_IP ip;
+			if (input_buffer_length == sizeof(APP_SET_VIRTUAL_ADDR)) {
+				PAPP_SET_VIRTUAL_ADDR ip;
 
-				ip = (PAPP_VIRTUAL_IP)input_buffer;
+				ip = (PAPP_SET_VIRTUAL_ADDR)input_buffer;
 				LockLCXLLockList(&g_filter_list);
 				filter = FindFilter(ip->miniport_net_luid);
 				if (filter != NULL) {

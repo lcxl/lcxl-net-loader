@@ -39,10 +39,10 @@ extern "C" {
 	} APP_MODULE, *PAPP_MODULE;
 
 	//IOCTL_SET_VIRTUAL_ADDR
-	typedef struct _APP_VIRTUAL_IP {
+	typedef struct _APP_SET_VIRTUAL_ADDR {
 		NET_LUID			miniport_net_luid;
 		LCXL_ADDR_INFO		addr;
-	} APP_VIRTUAL_IP, *PAPP_VIRTUAL_IP;
+	} APP_SET_VIRTUAL_ADDR, *PAPP_SET_VIRTUAL_ADDR;
 	//服务器列表
 	//IOCTL_ROUTER_GET_SERVER_LIST
 	//input NET_LUID                     miniport_net_luid;

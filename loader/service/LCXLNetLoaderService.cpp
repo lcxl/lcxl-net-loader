@@ -278,31 +278,51 @@ bool CNetLoaderService::ProcessJsonData(const Json::Value &root, Json::Value &re
 
 		luid.Value= root[JSON_DATA].asInt64();
 		status = JS_JSON_DATA_NOT_FOUND;
-		if (luid.Value == 0) {
-			std::vector<CONFIG_MODULE>::iterator it;
-			for (it = m_Config.ModuleList().begin(); it != m_Config.ModuleList().end(); it++) {
-				if ((*it).module.miniport_net_luid.Value == luid.Value) {
-					std::vector<CONFIG_SERVER>::iterator sit;
+		if (luid.Value != 0) {
+			PCONFIG_MODULE_INFO module = m_Config.FindModuleByLuid(luid);
+			if (module) {
+				std::vector<CONFIG_SERVER>::iterator sit;
 					
-					status = JS_SUCCESS;
-					for (sit = (*it).server_list.begin(); sit != (*it).server_list.end(); sit++) {
-						Json::Value server;
+				status = JS_SUCCESS;
+				for (sit = module->server_list.begin(); sit != module->server_list.end(); sit++) {
+					Json::Value server;
 
-						server["status"] = (*sit).server.status;
-						server["ip_status"] = (*sit).server.ip_status;
-						server["mac_addr"] = string_format(
-							"%02x-%02x-%02x-%02x-%02x-%02x",
-							(*sit).server.mac_addr.Address[0],
-							(*sit).server.mac_addr.Address[1],
-							(*sit).server.mac_addr.Address[2],
-							(*sit).server.mac_addr.Address[3],
-							(*sit).server.mac_addr.Address[4],
-							(*sit).server.mac_addr.Address[5]).c_str();
-						server["comment"] = wstring_to_string(wstring((*sit).comment)).c_str();
-						data.append(server);
-					}
+					server["status"] = (*sit).server.status;
+					server["ip_status"] = (*sit).server.ip_status;
+					server["mac_addr"] = string_format(
+						"%02x-%02x-%02x-%02x-%02x-%02x",
+						(*sit).server.mac_addr.Address[0],
+						(*sit).server.mac_addr.Address[1],
+						(*sit).server.mac_addr.Address[2],
+						(*sit).server.mac_addr.Address[3],
+						(*sit).server.mac_addr.Address[4],
+						(*sit).server.mac_addr.Address[5]).c_str();
+					server["comment"] = wstring_to_string(wstring((*sit).comment)).c_str();
+					data.append(server);
 				}
 			}
+		}
+	}
+		break;
+	case JC_SET_VIRTUAL_ADDR:
+	{
+		NET_LUID miniport_net_luid;
+		LCXL_ADDR_INFO addr;
+
+		const Json::Value &data = root[JSON_DATA];
+		const Json::Value &virtual_addr = data["virtual_addr"];
+
+		miniport_net_luid.Value = data["miniport_net_luid"].asInt64();
+		addr.status = virtual_addr["status"].asInt();
+		inet_pton(AF_INET, virtual_addr["ipv4"].asCString(), &addr.ipv4);
+		inet_pton(AF_INET6, virtual_addr["ipv6"].asCString(), &addr.ipv6);
+		if (lnlSetVirtualAddr(miniport_net_luid, &addr)){
+			PCONFIG_MODULE_INFO module = m_Config.FindModuleByLuid(miniport_net_luid);
+			if (module) {
+				module->module.virtual_addr = addr;
+			}
+		} else {
+			status = JS_FAIL;
 		}
 	}
 		break;
