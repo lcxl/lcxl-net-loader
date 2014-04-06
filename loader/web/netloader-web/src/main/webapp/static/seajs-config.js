@@ -12,6 +12,9 @@ seajs.config({
 	  
 	  //"catalog":"user-modules/catalog.js",
 	  "navbar":"user-modules/navbar.js",
+	  "module-list":"user-modules/module-list.js",
+	  "bs-dialog":"user-modules/bs-dialog.js",
+	  "virtual-addr-setting":"user-modules/virtual-addr-setting.js",
 	  
 	  "index":"html/index.js",
 	  //"mysql-cluster":"html/mysql-cluster.js",

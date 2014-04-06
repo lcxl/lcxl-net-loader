@@ -1,0 +1,14 @@
+@CHARSET "UTF-8";
+
+.vert-middle {
+	vertical-align: middle !important;
+}
+
+.lcxl-table-vert-middle > thead > tr > th,
+.lcxl-table-vert-middle > tbody > tr > th,
+.lcxl-table-vert-middle > tfoot > tr > th,
+.lcxl-table-vert-middle > thead > tr > td,
+.lcxl-table-vert-middle > tbody > tr > td,
+.lcxl-table-vert-middle > tfoot > tr > td {
+  vertical-align: middle;
+}

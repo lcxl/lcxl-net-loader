@@ -1,51 +1,41 @@
 package com.lcxbox.netloader.router.service;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.UnknownHostException;
-import java.util.List;
 
-import org.codehaus.jackson.JsonEncoding;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.springframework.stereotype.Service;
 
 import com.lcxbox.netloader.router.model.CommonRequest;
 import com.lcxbox.netloader.router.model.LcxlNetCode;
-import com.lcxbox.netloader.router.model.Module;
 import com.lcxbox.netloader.router.model.ModuleListResponse;
-import com.lcxbox.socket.cmd.JsonSocket;
+import com.lcxbox.netloader.router.model.ServerListRequest;
+import com.lcxbox.netloader.router.model.ServerListResponse;
+import com.lcxbox.socket.json.SocketRequest;
 
-@Service
+@Service()
 public class RouterService implements IRouterService {
-	/**
-	 * 获取模块列表命令
-	 */
-	public static final short LL_GET_MODULE_LIST = 0x0001;
-	/**
-	 * 获取服务器列表
-	 */
-	public static final short LL_GET_SERVER_LIST = 0x0002;
-	private ObjectMapper  objectMapper = new ObjectMapper();
 	
-	private String host = "localhost";
+	private String host = "192.168.237.134";
 	private Integer port = 32112;
 	
-	public List<Module> getModuleList() throws UnknownHostException, IOException {
+	public ModuleListResponse getModuleList() throws UnknownHostException, IOException {
 		// TODO Auto-generated method stub
-		JsonSocket sock = new JsonSocket(host, port);
+		
 		CommonRequest request = new CommonRequest();
 		request.setCode(LcxlNetCode.JC_MODULE_LIST);
 		
-		ByteArrayOutputStream os = new ByteArrayOutputStream();
-		objectMapper.getJsonFactory().createJsonGenerator(os, JsonEncoding.UTF16_LE).writeObject(request);
-		String ret = new String(sock.sendData(os.toByteArray()));
-		os.close();
-		sock.close();
 		
-		objectMapper.readValue(ret, ModuleListResponse.class);
-		return null;
+		return SocketRequest.jsonRequest(host, port, request, ModuleListResponse.class);
 	}
-
+	
+	public ServerListResponse getServerList(long miniport_net_luid) throws UnknownHostException, IOException {
+		// TODO Auto-generated method stub
+		ServerListRequest request = new ServerListRequest();
+		request.setCode(LcxlNetCode.JC_SERVER_LIST);
+		request.setMiniportNetLuid(miniport_net_luid);
+		return SocketRequest.jsonRequest(host, port, request, ServerListResponse.class);
+	}
+	
 	public String getHost() {
 		return host;
 	}
@@ -61,6 +51,8 @@ public class RouterService implements IRouterService {
 	public void setPort(Integer port) {
 		this.port = port;
 	}
+
+	
 
 	
 }

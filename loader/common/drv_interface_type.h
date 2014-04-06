@@ -30,17 +30,12 @@ extern "C" {
 		//1094:小端口驱动名称
 		WCHAR				miniport_name[MAX_INSTANCE_NAME_LENGTH];
 		//1606
-		union {
-			struct {
-				//服务器数量
-				INT			server_count;
-			} loader;
-			struct  {
-				//负载均衡器的mac地址
-				IF_PHYSICAL_ADDRESS		router_mac_addr;
-			} server;
-		//
-		} role;
+		//------------------------LCXL_ROUTER角色------------------------
+		//服务器数量
+		INT					server_count;
+		//------------------------LCXL_SERVER角色------------------------	
+		//负载均衡器的mac地址
+		IF_PHYSICAL_ADDRESS	router_mac_addr;
 	} APP_MODULE, *PAPP_MODULE;
 
 	//IOCTL_SET_VIRTUAL_ADDR

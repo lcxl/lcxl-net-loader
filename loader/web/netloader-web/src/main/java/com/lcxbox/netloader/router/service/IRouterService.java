@@ -2,10 +2,11 @@ package com.lcxbox.netloader.router.service;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
-import java.util.List;
 
-import com.lcxbox.netloader.router.model.Module;
+import com.lcxbox.netloader.router.model.ModuleListResponse;
+import com.lcxbox.netloader.router.model.ServerListResponse;
 
 public interface IRouterService {
-	public List<Module> getModuleList() throws UnknownHostException, IOException;
+	public ModuleListResponse getModuleList() throws UnknownHostException, IOException;
+	public ServerListResponse getServerList(long miniport_net_luid) throws UnknownHostException, IOException;
 }

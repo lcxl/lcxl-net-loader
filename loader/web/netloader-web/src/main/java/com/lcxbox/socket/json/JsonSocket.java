@@ -1,4 +1,4 @@
-package com.lcxbox.socket.cmd;
+package com.lcxbox.socket.json;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -23,9 +23,16 @@ public class JsonSocket {
 	 * @throws IOException
 	 */
 	public byte[] sendData(byte[] data) throws IOException {
-		os.writeInt(data.length);
+		byte[] datalen = new byte[4];
+		datalen[0] = (byte) (data.length & 0xFF);
+		datalen[1] = (byte) ((data.length>>8) & 0xFF);
+		datalen[2] = (byte) ((data.length>>16) & 0xFF);
+		datalen[3] = (byte) ((data.length>>24) & 0xFF);
+		
+		os.write(datalen);
 		os.write(data);
-		int len = is.readInt();
+		is.readFully(datalen);
+		int len = (datalen[0] & 0xff)|((datalen[1]& 0xff)<<8)|((datalen[2]& 0xff)<<16)|((datalen[3]& 0xff)<<24);
 		byte[] ret = new byte[len];
 		is.readFully(ret);
 		return ret;

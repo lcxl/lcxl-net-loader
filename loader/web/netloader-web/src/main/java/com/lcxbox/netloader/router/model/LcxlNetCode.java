@@ -1,10 +1,20 @@
 package com.lcxbox.netloader.router.model;
-
+/**
+ * 内容与lcxl_net_code.h同步
+ * @author lcxl
+ *
+ */
 public class LcxlNetCode {
 
 	public final static String JSON_CODE = "code";
 	public final static int JC_NONE = 0x00;
+	/**
+	 * 获取模块列表命令
+	 */
 	public final static int JC_MODULE_LIST = 0x01;
+	/**
+	 * 获取服务器列表
+	 */
 	public final static int JC_SERVER_LIST = 0x03;
 
 

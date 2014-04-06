@@ -281,8 +281,9 @@ FilterDeviceIoControl(
 					
 					LockFilter(filter, &lock_handle);
 					cur_buf->virtual_addr = module->virtual_addr;
+					cur_buf->router_mac_addr = module->router_mac_addr;
 					LockLCXLLockList(&module->server_list);
-					cur_buf->role.loader.server_count = GetListCountofLCXLLockList(&module->server_list);
+					cur_buf->server_count = GetListCountofLCXLLockList(&module->server_list);
 					UnlockLCXLLockList(&module->server_list);
 					UnlockFilter(&lock_handle);
 

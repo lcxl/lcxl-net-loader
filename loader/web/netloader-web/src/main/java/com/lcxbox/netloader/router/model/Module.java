@@ -25,6 +25,12 @@ public class Module {
 	@JsonProperty("miniport_name")
 	private String miniportName;
 
+	@JsonProperty("server_count")
+	private Integer serverCount;
+	
+	@JsonProperty("router_mac_addr")
+	private String routerMacAddr;
+	
 	public Integer getMiniportIfindex() {
 		return miniportIfindex;
 	}
@@ -79,6 +85,22 @@ public class Module {
 
 	public void setMiniportName(String miniportName) {
 		this.miniportName = miniportName;
+	}
+
+	public Integer getServerCount() {
+		return serverCount;
+	}
+
+	public void setServerCount(Integer serverCount) {
+		this.serverCount = serverCount;
+	}
+
+	public String getRouterMacAddr() {
+		return routerMacAddr;
+	}
+
+	public void setRouterMacAddr(String routerMacAddr) {
+		this.routerMacAddr = routerMacAddr;
 	}
 
 	

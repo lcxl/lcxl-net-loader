@@ -163,7 +163,7 @@ miniport_net_luid=%I64x\n"),
 			break;
 		}
 		
-
+#ifdef LCXL_SHADOW_SER_TEST
 		//启用虚拟IPv6
 		(*it).module.virtual_addr.status = SA_ENABLE_IPV6;
 		lnlSetVirtualAddr((*it).module.miniport_net_luid, &(*it).module.virtual_addr);
@@ -183,7 +183,7 @@ miniport_net_luid=%I64x\n"),
 		server.server.mac_addr.Address[5] = 0xCE;
 
 		(*it).server_list.push_back(server);
-
+#endif
 		//lnlAddServer((*it).miniport_net_luid, &server);
 	}
 	SetServiceName(LCXLSHADOW_SER_NAME);
@@ -246,7 +246,16 @@ bool CNetLoaderService::ProcessJsonData(const Json::Value &root, Json::Value &re
 			module["miniport_ifindex"] = (UINT)(*it).module.miniport_ifindex;
 			module["miniport_name"] = wstring_to_string(wstring((*it).module.miniport_name)).c_str();
 			module["miniport_net_luid"] = (*it).module.miniport_net_luid.Value;
-			
+			module["server_count"] = (*it).module.server_count;
+			module["router_mac_addr"] = string_format(
+				"%02x-%02x-%02x-%02x-%02x-%02x",
+				(*it).module.router_mac_addr.Address[0],
+				(*it).module.router_mac_addr.Address[1],
+				(*it).module.router_mac_addr.Address[2],
+				(*it).module.router_mac_addr.Address[3],
+				(*it).module.router_mac_addr.Address[4],
+				(*it).module.router_mac_addr.Address[5]).c_str();
+
 			Json::Value virtual_addr;
 			char ipv4[16];
 			inet_ntop(AF_INET, const_cast<IN_ADDR*>(&(*it).module.virtual_addr.ipv4), ipv4, sizeof(ipv4) / sizeof(ipv4[0]));

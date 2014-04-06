@@ -1,0 +1,59 @@
+<div class="panel-group" class=".network-card-list">
+{{#if data}}
+{{#each data}}
+	<div class="panel panel-primary">
+		<div class="panel-heading">
+			<div class="panel-title">
+				<a data-toggle="collapse" data-toggle="collapse"
+					data-parent=".network-card-list" href="#network-card-{{miniport_net_luid}}">
+					{{miniport_friendly_name}} </a><span class="badge pull-right">{{server_count}}台</span>
+			</div>
+		</div>
+		<div id="network-card-{{miniport_net_luid}}" class="panel-collapse collapse">
+			<div class="panel-body">
+				<table class="table table-bordered table-hover lcxl-table-vert-middle">
+					<thead>
+						<tr>
+							<th>名称</th>
+							<th>数值</th>
+							<th>操作</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>网卡MAC地址</td>
+							<td>{{mac_addr}}</td>
+							<td></td>
+						</tr>
+						<tr>
+							<td>微端口名称</td>
+							<td>{{miniport_name}}</td>
+							<td></td>
+						</tr>
+						<tr>
+							<td>虚拟IPv4地址</td>
+							<td class="{{#ifEnableIpv4 virtual_addr.status}}success{{else}}danger{{/ifEnableIpv4}}">{{virtual_addr.ipv4}}<span
+								class="badge pull-right">{{#ifEnableIpv4 virtual_addr.status}}已启用{{else}}已禁用{{/ifEnableIpv4}}</span></td>
+							<td rowspan="2"><a
+								class="btn btn-default btn-sm" id="virtual-addr-setting-{{miniport_net_luid}}">设置</a></td>
+						</tr>
+						<tr>
+							<td>虚拟IPv6地址</td>
+							<td class="{{#ifEnableIpv6 virtual_addr.status}}success{{else}}danger{{/ifEnableIpv6}}">{{virtual_addr.ipv6}}<span
+								class="badge pull-right">{{#ifEnableIpv6 virtual_addr.status}}已启用{{else}}已禁用{{/ifEnableIpv6}}</span></td>
+						</tr>
+						<tr>
+							<td>服务器列表</td>
+							<td>{{server_count}}台</td>
+							<td><a class="btn btn-default btn-sm" id="server-list-setting-{{miniport_net_luid}}">管理服务器</a></td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+	{{/each}}
+{{else}}
+<div class="alert alert-danger"><strong>注意：</strong>没有网卡列表或获取网卡列表失败！</div>
+{{/if}}
+</div>

@@ -1,13 +1,16 @@
 package com.lcxbox.netloader.router.model;
 
-public class CommonRequest {
-	private Integer code;
+import org.codehaus.jackson.map.annotate.JsonSerialize;
 
-	public Integer getCode() {
+@JsonSerialize(include=JsonSerialize.Inclusion.NON_EMPTY)
+public class CommonRequest {
+	private int code;
+
+	public int getCode() {
 		return code;
 	}
 
-	public void setCode(Integer code) {
+	public void setCode(int code) {
 		this.code = code;
 	}
 	
