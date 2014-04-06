@@ -25,7 +25,7 @@ define(function(require, exports, module) {
 	
 	
 	//获取网卡列表
-	$.getJSON("router/module_list.do").done(
+	$.getJSON("netloader/module_list.do").done(
 		function(data) {
 			//生成网卡列表
 			var moduleList = new ModuleList(".module-list", data);
@@ -61,7 +61,7 @@ define(function(require, exports, module) {
 				//监听按钮点击事件
 				bsDialog.onButtonClick = function(html, data) {
 					if ($(html).attr("id")=="virtual-addr-setting-ok") {
-						virtualAddrSetting.ajaxSubmit("");
+						virtualAddrSetting.ajaxSubmit("netloader/set_virtual_addr.do");
 					}
 				};
 				bsDialog.modal("show");

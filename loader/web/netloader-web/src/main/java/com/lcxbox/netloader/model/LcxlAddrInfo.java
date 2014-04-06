@@ -1,6 +1,8 @@
-package com.lcxbox.netloader.router.model;
+package com.lcxbox.netloader.model;
 
 public class LcxlAddrInfo {
+	public final static int SA_ENABLE_IPV4 = 0x01;//服务器启用了IPV4协议
+	public final static int SA_ENABLE_IPV6 = 0x02;//服务器启用了IPV6协议
 	private Integer status;
 	private String ipv4;
 	private String ipv6;

@@ -1,4 +1,4 @@
-package com.lcxbox.netloader.router.model;
+package com.lcxbox.netloader.model;
 /**
  * 内容与lcxl_net_code.h同步
  * @author lcxl
@@ -16,7 +16,10 @@ public class LcxlNetCode {
 	 * 获取服务器列表
 	 */
 	public final static int JC_SERVER_LIST = 0x03;
-
+	/**
+	 * 设置虚拟IP地址
+	 */
+	public final static int JC_SET_VIRTUAL_ADDR = 0x04;
 
 	public final static String JSON_DATA = "data";
 

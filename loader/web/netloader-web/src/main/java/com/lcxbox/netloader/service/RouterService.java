@@ -1,15 +1,18 @@
-package com.lcxbox.netloader.router.service;
+package com.lcxbox.netloader.service;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
 
 import org.springframework.stereotype.Service;
 
-import com.lcxbox.netloader.router.model.CommonRequest;
-import com.lcxbox.netloader.router.model.LcxlNetCode;
-import com.lcxbox.netloader.router.model.ModuleListResponse;
-import com.lcxbox.netloader.router.model.ServerListRequest;
-import com.lcxbox.netloader.router.model.ServerListResponse;
+import com.lcxbox.netloader.model.CommonRequest;
+import com.lcxbox.netloader.model.CommonResponse;
+import com.lcxbox.netloader.model.LcxlAddrInfo;
+import com.lcxbox.netloader.model.LcxlNetCode;
+import com.lcxbox.netloader.model.ModuleListResponse;
+import com.lcxbox.netloader.model.ServerListRequest;
+import com.lcxbox.netloader.model.ServerListResponse;
+import com.lcxbox.netloader.model.SetVirtualAddrRequest;
 import com.lcxbox.socket.json.SocketRequest;
 
 @Service()
@@ -23,8 +26,6 @@ public class RouterService implements IRouterService {
 		
 		CommonRequest request = new CommonRequest();
 		request.setCode(LcxlNetCode.JC_MODULE_LIST);
-		
-		
 		return SocketRequest.jsonRequest(host, port, request, ModuleListResponse.class);
 	}
 	
@@ -34,6 +35,16 @@ public class RouterService implements IRouterService {
 		request.setCode(LcxlNetCode.JC_SERVER_LIST);
 		request.setMiniportNetLuid(miniport_net_luid);
 		return SocketRequest.jsonRequest(host, port, request, ServerListResponse.class);
+	}
+	
+	public CommonResponse setVirtualAddr(long miniportNetLuid,
+			LcxlAddrInfo virtualAddr) throws UnknownHostException, IOException {
+		// TODO Auto-generated method stub
+		SetVirtualAddrRequest request = new SetVirtualAddrRequest();
+		request.setCode(LcxlNetCode.JC_SET_VIRTUAL_ADDR);
+		request.setMiniportNetLuid(miniportNetLuid);
+		request.setVirtualAddr(virtualAddr);
+		return SocketRequest.jsonRequest(host, port, request, CommonResponse.class);
 	}
 	
 	public String getHost() {
@@ -51,6 +62,8 @@ public class RouterService implements IRouterService {
 	public void setPort(Integer port) {
 		this.port = port;
 	}
+
+	
 
 	
 

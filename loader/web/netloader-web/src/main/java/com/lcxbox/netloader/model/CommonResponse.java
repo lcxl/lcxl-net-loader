@@ -1,4 +1,4 @@
-package com.lcxbox.netloader.router.model;
+package com.lcxbox.netloader.model;
 
 public class CommonResponse {
 	private Integer code;
