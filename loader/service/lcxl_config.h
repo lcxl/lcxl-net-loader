@@ -6,6 +6,7 @@
 #include "../../component/tinyxml2/tinyxml2.h"
 #include "../common/drv_interface_type.h"
 #include <vector>
+#include "lcxl_func.h"
 
 #define CONFIG_ROOT_ELEMENT "netloader"
 #define CONFIG_VALUE "value"
@@ -52,8 +53,6 @@ typedef struct _CONFIG_MODULE{
 	//服务器列表
 	std::vector<CONFIG_SERVER>	server_list;
 	//------------------------LCXL_SERVER角色------------------------
-	//负载均衡器mac地址
-	IF_PHYSICAL_ADDRESS			router_mac_addr;
 } CONFIG_MODULE, *PCONFIG_MODULE_INFO;
 
 class CLCXLConfig {
@@ -63,6 +62,7 @@ private:
 	std::string						m_Rolename;
 	int								m_Role;
 	std::vector<CONFIG_MODULE>		m_ModuleList;
+	CRITICAL_SECTION				m_CriticalSection;
 public:
 	static tinyxml2::XMLElement *WriteModuleList(tinyxml2::XMLElement *owner_element, const std::vector<CONFIG_MODULE> &module_list);
 	static tinyxml2::XMLElement *WriteModule(tinyxml2::XMLElement *owner_element, const CONFIG_MODULE &module);
@@ -77,6 +77,14 @@ public:
 	static CONFIG_SERVER & ReadServer(tinyxml2::XMLElement *owner_element, CONFIG_SERVER &server);
 public:
 	CLCXLConfig();
+	~CLCXLConfig();
+
+	//************************************
+	// 简介: 在返回值的生存周期期间加锁，返回值销毁时自动解锁
+	// 返回: CCSLocker
+	//************************************
+	CCSLocker LockinLifeCycle();
+
 	bool SaveXMLFile(std::string XmlFilePath);
 	bool LoadXMLFile(std::string XmlFilePath);
 

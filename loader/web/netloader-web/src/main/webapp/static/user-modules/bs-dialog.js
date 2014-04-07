@@ -30,6 +30,16 @@ define(function(require, exports, module) {
 	BsDialog.prototype.modal = function(options) {
 		$(this._select_).find(".modal").modal(options);
 	};
+	BsDialog.prototype.errormsg = function(msg) {
+		if (msg==null ||msg=="") {
+			$(this.bodytag+" .error_msg").empty();
+		} else {
+			$(this.bodytag+" .error_msg").html('<div class="alert alert-warning alert-dismissable">\
+					  <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>'
+					+msg+
+					'</div>');
+		}
+	}
 	BsDialog.prototype.onButtonClick = function (html, data) {
 		
 	};

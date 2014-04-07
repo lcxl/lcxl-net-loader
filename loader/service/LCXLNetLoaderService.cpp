@@ -99,8 +99,10 @@ void CNetLoaderService::IOCPEvent(IocpEventEnum EventType, CLLSockObj *SockObj, 
 
 bool CNetLoaderService::PreSerRun()
 {
+	//在locker生存周期中锁定
+	CCSLocker locker = m_Config.LockinLifeCycle();
 	//加载配置文件
-	if (!m_Config.LoadXMLFile(tstring_to_string(ExtractFilePath(GetAppFilePath())) + CONFIG_FILE_NAME)) {
+	if (!LoadXMLFile()) {
 		return false;
 	}
 	//获取网卡列表信息
@@ -146,50 +148,26 @@ miniport_net_luid=%I64x\n"),
 			);
 		OutputDebugStr(_T("APP:-----------------------------\n"));
 #endif
-		switch (sys_lcxl_role) {
-		case LCXL_ROLE_ROUTER:
-		{
-			vector<LCXL_SERVER> server_list;
-			DWORD server_list_count = 100;
-			server_list.resize(server_list_count);
-			if (!lnlGetServerList((*it).module.miniport_net_luid, &server_list[0], &server_list_count)) {
-				server_list.resize(server_list_count);
-			}
-			server_list.resize(server_list_count);
+		//设置虚拟IP地址
+		if (!lnlSetVirtualAddr((*it).module.miniport_net_luid, &(*it).module.virtual_addr)) {
+			OutputDebugStr(_T("lnlSetVirtualAddr(%I64d) failed:error code=%d\n"), (*it).module.miniport_net_luid, GetLastError());
 		}
-			break;
-		case LCXL_ROLE_SERVER:
-
-			break;
+		//设置负载均衡器的mac地址
+		if (!lnlSetRouterMacAddr((*it).module.miniport_net_luid, &(*it).module.router_mac_addr)) {
+			OutputDebugStr(_T("lnlSetRouterMacAddr(%I64d) failed:error code=%d\n"), (*it).module.miniport_net_luid, GetLastError());
 		}
 		
-#ifdef LCXL_SHADOW_SER_TEST
-		//启用虚拟IPv6
-		(*it).module.virtual_addr.status = SA_ENABLE_IPV6;
-		lnlSetVirtualAddr((*it).module.miniport_net_luid, &(*it).module.virtual_addr);
-
-
-		CONFIG_SERVER server;
-
-		server.server.status = SS_ONLINE;
-		server.server.ip_status = SA_ENABLE_IPV6;
-		wcscpy_s(server.comment, L"测试用");
-		server.server.mac_addr.Length = 6;
-		server.server.mac_addr.Address[0] = 0x00;
-		server.server.mac_addr.Address[1] = 0x0C;
-		server.server.mac_addr.Address[2] = 0x29;
-		server.server.mac_addr.Address[3] = 0x6F;
-		server.server.mac_addr.Address[4] = 0x05;
-		server.server.mac_addr.Address[5] = 0xCE;
-
-		(*it).server_list.push_back(server);
-#endif
-		//lnlAddServer((*it).miniport_net_luid, &server);
+		std::vector<CONFIG_SERVER>::iterator sit;
+		for (sit = (*it).server_list.begin(); sit != (*it).server_list.end(); sit++) {
+			//添加主机
+			if (!lnlAddServer((*it).module.miniport_net_luid, &(*sit).server)) {
+				OutputDebugStr(_T("lnlAddServer(%I64d) failed:error code=%d\n"), (*it).module.miniport_net_luid, GetLastError());
+			}
+		}
 	}
 	SetServiceName(LCXLSHADOW_SER_NAME);
 	SetListenPort(m_Config.GetPort());
-
-	m_Config.SaveXMLFile(tstring_to_string(ExtractFilePath(GetAppFilePath())) + CONFIG_FILE_NAME);
+	SaveXMLFile();
 	return true;
 }
 
@@ -207,7 +185,9 @@ void CNetLoaderService::RecvEvent(CLLSockObj *SockObj, PIOCPOverlapped Overlappe
 		Json::Value root;
 		
 		if (reader.parse(datastr, root)) {
-			ProcessJsonData(root, ret);
+			if (ProcessJsonData(root, ret)) {
+				SaveXMLFile();
+			}
 		}
 		
 	}
@@ -224,11 +204,12 @@ bool CNetLoaderService::ProcessJsonData(const Json::Value &root, Json::Value &re
 {
 	int code = root[JSON_CODE].asInt();
 	int status = JS_SUCCESS;
-	Json::Value data;
-	
+	//在locker生存周期中锁定
+	CCSLocker locker = m_Config.LockinLifeCycle();
 	switch (code) {
 	case JC_MODULE_LIST:
 	{
+		Json::Value module_list;
 		std::vector<CONFIG_MODULE>::iterator it;
 		for (it = m_Config.ModuleList().begin(); it != m_Config.ModuleList().end(); it++) {
 			Json::Value module;
@@ -267,16 +248,18 @@ bool CNetLoaderService::ProcessJsonData(const Json::Value &root, Json::Value &re
 			virtual_addr["ipv6"] = ipv6;
 			module["virtual_addr"] = virtual_addr;
 
-			data.append(module);
+			module_list.append(module);
 		}
+		ret[JSON_MODULE_LIST] = module_list;
 	}
 		
 		break;
 	case JC_SERVER_LIST:
 	{
 		NET_LUID luid;
+		Json::Value server_list;
 
-		luid.Value= root[JSON_DATA].asInt64();
+		luid.Value = root[JSON_MINIPORT_NET_LUID].asInt64();
 		status = JS_JSON_DATA_NOT_FOUND;
 		if (luid.Value != 0) {
 			PCONFIG_MODULE_INFO module = m_Config.FindModuleByLuid(luid);
@@ -298,8 +281,9 @@ bool CNetLoaderService::ProcessJsonData(const Json::Value &root, Json::Value &re
 						(*sit).server.mac_addr.Address[4],
 						(*sit).server.mac_addr.Address[5]).c_str();
 					server["comment"] = wstring_to_string(wstring((*sit).comment)).c_str();
-					data.append(server);
+					server_list.append(server);
 				}
+				ret[JSON_SERVER_LIST] = server_list;
 			}
 		}
 	}
@@ -309,19 +293,47 @@ bool CNetLoaderService::ProcessJsonData(const Json::Value &root, Json::Value &re
 		NET_LUID miniport_net_luid;
 		LCXL_ADDR_INFO addr;
 
-		const Json::Value &data = root[JSON_DATA];
-		const Json::Value &virtual_addr = data["virtual_addr"];
+		const Json::Value &virtual_addr = root["virtual_addr"];
 
-		miniport_net_luid.Value = data["miniport_net_luid"].asInt64();
+		miniport_net_luid.Value = root["miniport_net_luid"].asInt64();
 		addr.status = virtual_addr["status"].asInt();
-		inet_pton(AF_INET, virtual_addr["ipv4"].asCString(), &addr.ipv4);
-		inet_pton(AF_INET6, virtual_addr["ipv6"].asCString(), &addr.ipv6);
+		if (inet_pton(AF_INET, virtual_addr["ipv4"].asCString(), &addr.ipv4) != 1 || inet_pton(AF_INET6, virtual_addr["ipv6"].asCString(), &addr.ipv6) != 1) {
+			status = JS_JSON_CODE_IP_FORMAT_INVALID;
+			break;
+		}
 		if (lnlSetVirtualAddr(miniport_net_luid, &addr)){
 			PCONFIG_MODULE_INFO module = m_Config.FindModuleByLuid(miniport_net_luid);
 			if (module) {
 				module->module.virtual_addr = addr;
 			}
 		} else {
+			status = JS_FAIL;
+		}
+	}
+		break;
+	case JC_SET_ROUTER_MAC_ADDR:
+	{
+		NET_LUID miniport_net_luid;
+		IF_PHYSICAL_ADDRESS mac_addr;
+
+		miniport_net_luid.Value = root["miniport_net_luid"].asInt64();
+		mac_addr.Length = 6;
+		if (root["mac_addr"].isNull()) {
+			status = JS_JSON_INVALID;
+			break;
+		}
+		sscanf_s(
+			root["mac_addr"].asCString(),
+			"%02x-%02x-%02x-%02x-%02x-%02x",
+			&mac_addr.Address[0],
+			&mac_addr.Address[1],
+			&mac_addr.Address[2],
+			&mac_addr.Address[3],
+			&mac_addr.Address[4],
+			&mac_addr.Address[5]
+			);
+
+		if (!lnlSetRouterMacAddr(miniport_net_luid, &mac_addr)) {
 			status = JS_FAIL;
 		}
 	}
@@ -333,6 +345,16 @@ bool CNetLoaderService::ProcessJsonData(const Json::Value &root, Json::Value &re
 
 	ret[JSON_CODE] = code;
 	ret[JSON_STATUS] = status;
-	ret[JSON_DATA] = data;
+	
 	return code == JS_SUCCESS;
+}
+
+bool CNetLoaderService::LoadXMLFile()
+{
+	return m_Config.LoadXMLFile(tstring_to_string(ExtractFilePath(GetAppFilePath())) + CONFIG_FILE_NAME);
+}
+
+bool CNetLoaderService::SaveXMLFile()
+{
+	return m_Config.SaveXMLFile(tstring_to_string(ExtractFilePath(GetAppFilePath())) + CONFIG_FILE_NAME);
 }

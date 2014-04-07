@@ -11,6 +11,7 @@ void OutputDebugStr(const TCHAR fmt[], ...);
 
 bool CLCXLConfig::LoadXMLFile(std::string XmlFilePath)
 {
+	CCSLocker locker = LockinLifeCycle();
 	tinyxml2::XMLElement *root_element;
 	//加载文件
 	if (m_XmlDoc.LoadFile(XmlFilePath.c_str()) == 0) {
@@ -53,6 +54,7 @@ bool CLCXLConfig::LoadXMLFile(std::string XmlFilePath)
 
 bool CLCXLConfig::SaveXMLFile(std::string XmlFilePath)
 {
+	CCSLocker locker = LockinLifeCycle();
 	m_XmlDoc.Clear();
 	m_XmlDoc.InsertEndChild(m_XmlDoc.NewDeclaration());
 	m_XmlDoc.SetBOM(true);
@@ -195,13 +197,18 @@ tinyxml2::XMLElement * CLCXLConfig::WriteModule(tinyxml2::XMLElement *owner_elem
 	element = owner_element->GetDocument()->NewElement(ELEMENT_ROUTER_MAC_ADDR);
 	element->SetAttribute(CONFIG_VALUE, string_format(
 		"%02x-%02x-%02x-%02x-%02x-%02x",
-		module.router_mac_addr.Address[0],
-		module.router_mac_addr.Address[1],
-		module.router_mac_addr.Address[2],
-		module.router_mac_addr.Address[3],
-		module.router_mac_addr.Address[4],
-		module.router_mac_addr.Address[5]).c_str());
+		module.module.router_mac_addr.Address[0],
+		module.module.router_mac_addr.Address[1],
+		module.module.router_mac_addr.Address[2],
+		module.module.router_mac_addr.Address[3],
+		module.module.router_mac_addr.Address[4],
+		module.module.router_mac_addr.Address[5]).c_str());
 	owner_element->InsertEndChild(element);
+	//写入额外的一些信息
+	element = owner_element->GetDocument()->NewElement(ELEMENT_MINIPORT_FRIENDLY_NAME);
+	element->SetAttribute(CONFIG_VALUE, wstring_to_utf8string(std::wstring(module.module.miniport_friendly_name)).c_str());
+	owner_element->InsertEndChild(element);
+
 	return owner_element;
 }
 
@@ -253,7 +260,7 @@ tinyxml2::XMLElement * CLCXLConfig::WriteServer(tinyxml2::XMLElement *owner_elem
 
 	element = owner_element->GetDocument()->NewElement(ELEMENT_COMMENT);
 	std::wstring comment = server.comment;
-	element->SetAttribute(CONFIG_VALUE, wstring_to_string(comment).c_str());
+	element->SetAttribute(CONFIG_VALUE, wstring_to_utf8string(comment).c_str());
 	owner_element->InsertEndChild(element);
 
 	element = owner_element->GetDocument()->NewElement(ELEMENT_MAC_ADDR);
@@ -293,23 +300,27 @@ CONFIG_MODULE & CLCXLConfig::ReadModule(tinyxml2::XMLElement *owner_element, CON
 	//读取net_luid
 	element = owner_element->FirstChildElement(ELEMENT_MINIPORT_NET_LUID);
 	if (element != NULL) {
-		module.module.miniport_net_luid.Value = atol(element->Attribute(CONFIG_VALUE));
+		module.module.miniport_net_luid.Value = _atoi64(element->Attribute(CONFIG_VALUE));
 	}
 
 	//读取mac_addr
 	element = owner_element->FirstChildElement(ELEMENT_MAC_ADDR);
 	if (element != NULL) {
+		module.module.mac_addr.Length = string_to_mac(element->Attribute(CONFIG_VALUE), module.module.mac_addr.Address, sizeof(module.module.mac_addr.Address));
+		/*
+		//另一种读取方法
 		module.module.mac_addr.Length = 6;
 		sscanf_s(
-			element->Attribute(CONFIG_VALUE),
-			"%02x-%02x-%02x-%02x-%02x-%02x",
-			&module.module.mac_addr.Address[0],
-			&module.module.mac_addr.Address[1],
-			&module.module.mac_addr.Address[2],
-			&module.module.mac_addr.Address[3],
-			&module.module.mac_addr.Address[4],
-			&module.module.mac_addr.Address[5]
-			);
+		element->Attribute(CONFIG_VALUE),
+		"%02x-%02x-%02x-%02x-%02x-%02x",
+		&module.module.mac_addr.Address[0],
+		&module.module.mac_addr.Address[1],
+		&module.module.mac_addr.Address[2],
+		&module.module.mac_addr.Address[3],
+		&module.module.mac_addr.Address[4],
+		&module.module.mac_addr.Address[5]
+		);
+		*/
 	}
 	//读取virtual_addr
 	element = owner_element->FirstChildElement(ELEMENT_VIRTUAL_ADDR);
@@ -325,17 +336,7 @@ CONFIG_MODULE & CLCXLConfig::ReadModule(tinyxml2::XMLElement *owner_element, CON
 	//读取router_mac_addr
 	element = owner_element->FirstChildElement(ELEMENT_ROUTER_MAC_ADDR);
 	if (element != NULL) {
-		module.router_mac_addr.Length = 6;
-		sscanf_s(
-			element->Attribute(CONFIG_VALUE),
-			"%02x-%02x-%02x-%02x-%02x-%02x",
-			&module.router_mac_addr.Address[0],
-			&module.router_mac_addr.Address[1],
-			&module.router_mac_addr.Address[2],
-			&module.router_mac_addr.Address[3],
-			&module.router_mac_addr.Address[4],
-			&module.router_mac_addr.Address[5]
-			);
+		module.module.router_mac_addr.Length = string_to_mac(element->Attribute(CONFIG_VALUE), module.module.router_mac_addr.Address, sizeof(module.module.router_mac_addr.Address));
 	}
 	return module;
 }
@@ -397,17 +398,7 @@ CONFIG_SERVER & CLCXLConfig::ReadServer(tinyxml2::XMLElement *owner_element, CON
 	//读取mac_addr
 	element = owner_element->FirstChildElement(ELEMENT_MAC_ADDR);
 	if (element != NULL) {
-		server.server.mac_addr.Length = 6;
-		sscanf_s(
-			element->Attribute(CONFIG_VALUE),
-			"%02x-%02x-%02x-%02x-%02x-%02x",
-			&server.server.mac_addr.Address[0],
-			&server.server.mac_addr.Address[1],
-			&server.server.mac_addr.Address[2],
-			&server.server.mac_addr.Address[3],
-			&server.server.mac_addr.Address[4],
-			&server.server.mac_addr.Address[5]
-			);
+		server.server.mac_addr.Length = string_to_mac(element->Attribute(CONFIG_VALUE), server.server.mac_addr.Address, sizeof(server.server.mac_addr.Address));
 	}
 	return server;
 }
@@ -416,6 +407,9 @@ CLCXLConfig::CLCXLConfig()
 {
 	m_Port = CONFIG_PORT_DEFAULT;
 	SetRolename(CONFIG_ROLENAME_DEFAULT);
+
+	InitializeCriticalSection(&m_CriticalSection);
+
 }
 
 CONFIG_MODULE * CLCXLConfig::FindModuleByLuid(NET_LUID miniport_net_luid)
@@ -428,5 +422,16 @@ CONFIG_MODULE * CLCXLConfig::FindModuleByLuid(NET_LUID miniport_net_luid)
 	}
 	return NULL;
 }
+
+CLCXLConfig::~CLCXLConfig()
+{
+	DeleteCriticalSection(&m_CriticalSection);
+}
+
+CCSLocker CLCXLConfig::LockinLifeCycle()
+{
+	return CCSLocker(&m_CriticalSection);
+}
+
 
 

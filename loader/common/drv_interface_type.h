@@ -29,6 +29,8 @@ extern "C" {
 		WCHAR				miniport_friendly_name[MAX_INSTANCE_NAME_LENGTH];
 		//1094:小端口驱动名称
 		WCHAR				miniport_name[MAX_INSTANCE_NAME_LENGTH];
+		//驱动当前角色，有LCXL_ROLE_ROUTER和LCXL_ROLE_SERVER两种角色
+		INT					lcxl_role;
 		//1606
 		//------------------------LCXL_ROUTER角色------------------------
 		//服务器数量

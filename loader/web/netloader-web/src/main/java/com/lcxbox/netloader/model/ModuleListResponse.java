@@ -2,16 +2,21 @@ package com.lcxbox.netloader.model;
 
 import java.util.List;
 
+import org.codehaus.jackson.annotate.JsonProperty;
+
 public class ModuleListResponse extends CommonResponse {
-	private List<Module> data;
+	@JsonProperty("module_list")
+	private List<Module> moduleList;
 
-	public List<Module> getData() {
-		return data;
+	public List<Module> getModuleList() {
+		return moduleList;
 	}
 
-	public void setData(List<Module> data) {
-		this.data = data;
+	public void setModuleList(List<Module> moduleList) {
+		this.moduleList = moduleList;
 	}
+
+	
 	
 	
 }

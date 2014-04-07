@@ -47,7 +47,7 @@ public class NetLoaderController {
 			@RequestParam(value="enable-ipv4", required=false, defaultValue = "0") boolean enableIpv4,
 			@RequestParam(value="enable-ipv6", required=false, defaultValue = "0") boolean enableIpv6) throws UnknownHostException, IOException {
 		LcxlAddrInfo virtualAddr = new LcxlAddrInfo();
-		virtualAddr.setStatus((enableIpv4?0:LcxlAddrInfo.SA_ENABLE_IPV4) |(enableIpv6?0:LcxlAddrInfo.SA_ENABLE_IPV6));
+		virtualAddr.setStatus((enableIpv4?LcxlAddrInfo.SA_ENABLE_IPV4:0) |(enableIpv6?LcxlAddrInfo.SA_ENABLE_IPV6:0));
 		virtualAddr.setIpv4(ipv4);
 		virtualAddr.setIpv6(ipv6);
 		return routerService.setVirtualAddr(miniportNetLuid, virtualAddr);

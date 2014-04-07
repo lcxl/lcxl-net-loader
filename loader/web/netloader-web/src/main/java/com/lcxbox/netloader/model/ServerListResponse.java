@@ -2,16 +2,17 @@ package com.lcxbox.netloader.model;
 
 import java.util.List;
 
+import org.codehaus.jackson.annotate.JsonProperty;
+
 public class ServerListResponse extends CommonResponse {
-	private List<Server> data;
+	@JsonProperty("server_list")
+	private List<Server> serverList;
 
-	public List<Server> getData() {
-		return data;
+	public List<Server> getServerList() {
+		return serverList;
 	}
 
-	public void setData(List<Server> data) {
-		this.data = data;
+	public void setServerList(List<Server> serverList) {
+		this.serverList = serverList;
 	}
-	
-	
 }

@@ -1,6 +1,6 @@
 <div class="panel-group" class=".network-card-list">
-{{#if data}}
-{{#each data}}
+{{#if module_list}}
+{{#each module_list}}
 	<div class="panel panel-primary">
 		<div class="panel-heading">
 			<div class="panel-title">
@@ -32,14 +32,14 @@
 						</tr>
 						<tr>
 							<td>虚拟IPv4地址</td>
-							<td class="{{#ifEnableIpv4 virtual_addr.status}}success{{else}}danger{{/ifEnableIpv4}}">{{virtual_addr.ipv4}}<span
+							<td id="virtual-ipv4-td-{{miniport_net_luid}}" class="{{#ifEnableIpv4 virtual_addr.status}}success{{else}}danger{{/ifEnableIpv4}}"><span>{{virtual_addr.ipv4}}</span><span
 								class="badge pull-right">{{#ifEnableIpv4 virtual_addr.status}}已启用{{else}}已禁用{{/ifEnableIpv4}}</span></td>
 							<td rowspan="2"><a
 								class="btn btn-default btn-sm" id="virtual-addr-setting-{{miniport_net_luid}}">设置</a></td>
 						</tr>
 						<tr>
 							<td>虚拟IPv6地址</td>
-							<td class="{{#ifEnableIpv6 virtual_addr.status}}success{{else}}danger{{/ifEnableIpv6}}">{{virtual_addr.ipv6}}<span
+							<td id="virtual-ipv6-td-{{miniport_net_luid}}" class="{{#ifEnableIpv6 virtual_addr.status}}success{{else}}danger{{/ifEnableIpv6}}"><span>{{virtual_addr.ipv6}}</span><span
 								class="badge pull-right">{{#ifEnableIpv6 virtual_addr.status}}已启用{{else}}已禁用{{/ifEnableIpv6}}</span></td>
 						</tr>
 						<tr>

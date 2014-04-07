@@ -12,6 +12,8 @@ abstract:
 #define TAG_MODULE					'MODU'
 
 typedef struct _LCXL_MODULE_SETTING_INFO {
+	
+	//ifindex
 	NET_IFINDEX				miniport_ifindex;
 	//网卡本地唯一ID
 	NET_LUID				miniport_net_luid;
@@ -23,6 +25,8 @@ typedef struct _LCXL_MODULE_SETTING_INFO {
 	PNDIS_STRING			filter_module_name;
 	//MAC地址
 	IF_PHYSICAL_ADDRESS		mac_addr;
+	//驱动当前角色，有LCXL_ROLE_ROUTER和LCXL_ROLE_SERVER两种角色
+	INT						lcxl_role;
 	//虚拟地址IPv4/IPv6(非多线程安全)
 	LCXL_ADDR_INFO			virtual_addr;
 	//------------------------LCXL_ROUTER角色------------------------

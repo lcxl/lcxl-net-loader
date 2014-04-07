@@ -61,7 +61,17 @@ define(function(require, exports, module) {
 				//监听按钮点击事件
 				bsDialog.onButtonClick = function(html, data) {
 					if ($(html).attr("id")=="virtual-addr-setting-ok") {
-						virtualAddrSetting.ajaxSubmit("netloader/set_virtual_addr.do");
+						virtualAddrSetting.ajaxSubmit("netloader/set_virtual_addr.do").done(function(data){
+							//关闭对话框
+							bsDialog.modal("hide");
+							//将设置的结果同步到data中去
+							virtualAddrSetting.syncToData();
+							//刷新UI界面
+							moduleList.refreshUI(moduleData.miniport_net_luid);
+						}).fail(function (jqxhr, textStatus, error) {
+							//提示出错信息
+							bsDialog.errormsg("设置虚拟IP地址出错！");
+						});
 					}
 				};
 				bsDialog.modal("show");

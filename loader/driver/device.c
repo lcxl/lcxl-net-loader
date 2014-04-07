@@ -319,10 +319,6 @@ FilterDeviceIoControl(
 			}
 			break;
 		case IOCTL_ROUTER_GET_SERVER_LIST:
-			if (g_setting.lcxl_role != LCXL_ROLE_ROUTER) {
-				status = STATUS_INVALID_PARAMETER;
-				break;
-			}
 			if (input_buffer_length == sizeof(NET_LUID)) {
 				PLCXL_SERVER cur_buf;
 
@@ -357,10 +353,6 @@ FilterDeviceIoControl(
 			}
 			break;
 		case IOCTL_ROUTER_ADD_SERVER:
-			if (g_setting.lcxl_role != LCXL_ROLE_ROUTER) {
-				status = STATUS_INVALID_PARAMETER;
-				break;
-			}
 			if (sizeof(APP_ADD_SERVER) == input_buffer_length) {
 				PAPP_ADD_SERVER app_add_server;
 				
@@ -397,10 +389,6 @@ FilterDeviceIoControl(
 			}
 			break;
 		case IOCTL_ROUTER_DEL_SERVER:
-			if (g_setting.lcxl_role != LCXL_ROLE_ROUTER) {
-				status = STATUS_INVALID_PARAMETER;
-				break;
-			}
 			if (sizeof(APP_DEL_SERVER) == input_buffer_length) {
 				PAPP_DEL_SERVER app_del_server = (PAPP_DEL_SERVER)input_buffer;
 
@@ -436,10 +424,6 @@ FilterDeviceIoControl(
 			}
 			break;
 		case IOCTL_SERVER_SET_ROUTER_MAC_ADDR://服务器角色：设置负载均衡器的mac地址
-			if (g_setting.lcxl_role != LCXL_ROLE_SERVER) {
-				status = STATUS_INVALID_PARAMETER;
-				break;
-			}
 			if (sizeof(APP_SET_ROUTER_MAC_ADDR) == input_buffer_length) {
 				PAPP_SET_ROUTER_MAC_ADDR router_mac_addr = (PAPP_SET_ROUTER_MAC_ADDR)input_buffer;
 

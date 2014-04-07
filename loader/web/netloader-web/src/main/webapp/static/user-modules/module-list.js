@@ -34,36 +34,56 @@ define(function(require, exports, module){
 		});
 	function ModuleList(select, data) {
 		var context = this;
+		context._data_ = data;
+		
 		var tpl = require("text!template/module-list.htpl");
-			
 		var template = Handlebars.compile(tpl);
 		$(select).html(template(data));
 		$(select).on("click", "[id^=virtual-addr-setting-]", function(event) {
-			if (data.data ==null) {
+			if (context._data_.module_list ==null) {
 				return;
 			}
 			var luid = $(this).attr("id").substr(21);
-			for (var i = 0; i < data.data.length; i++) {
-				if (data.data[i].miniport_net_luid == luid) {
-					context.onVirtualAddrBtnClick(data.data[i]);
-					break;
-				}
+			var module = context.findModuleByLuid(luid);
+			if (module) {
+				context.onVirtualAddrBtnClick(module);
 			}
 		});
 		$(select).on("click", "[id^=server-list-setting-]", function(event) {
-			if (data.data ==null) {
+			if (context._data_.module_list ==null) {
 				return;
 			}
 			var luid = $(this).attr("id").substr(20);
-			for (var i = 0; i < data.data.length; i++) {
-				if (data.data[i].miniport_net_luid == luid) {
-					context.onServerListBtnClick(data.data[i]);
-					break;
-				}
+			var module = context.findModuleByLuid(luid);
+			
+			if (module) {
+				context.onServerListBtnClick(module);	
 			}
+			
 		});
 		
 	}
+	ModuleList.prototype._data_ = null;
+	ModuleList.prototype.findModuleByLuid = function(luid) {
+		for (var i = 0; i < this._data_.module_list.length; i++) {
+			if (this._data_.module_list[i].miniport_net_luid == luid) {
+				return this._data_.module_list[i];
+			}
+		}
+	};
+	ModuleList.prototype.refreshUI = function (luid) {
+		var module = this.findModuleByLuid(luid);
+		if (module) {
+			//设置ipv4
+			$("#virtual-ipv4-td-"+luid).attr("class", (module.virtual_addr.status&SA_ENABLE_IPV4)?"success":"danger");
+			$("#virtual-ipv4-td-"+luid+" span:first").html(module.virtual_addr.ipv4);
+			$("#virtual-ipv4-td-"+luid+" span:last").html((module.virtual_addr.status&SA_ENABLE_IPV4)?"已启用":"已禁用");
+			//设置ipv6
+			$("#virtual-ipv6-td-"+luid).attr("class", (module.virtual_addr.status&SA_ENABLE_IPV6)?"success":"danger");
+			$("#virtual-ipv6-td-"+luid+" span:first").html(module.virtual_addr.ipv6);
+			$("#virtual-ipv6-td-"+luid+" span:last").html((module.virtual_addr.status&SA_ENABLE_IPV6)?"已启用":"已禁用");
+		}
+	};
 	/**
 	 * 定义一个默认的服务列表按钮点击事件
 	 */
@@ -76,5 +96,7 @@ define(function(require, exports, module){
 	ModuleList.prototype.onVirtualAddrBtnClick = function (moduleData) {
 		console.log(moduleData);
 	};
+	
+	
 	module.exports = ModuleList;
 });

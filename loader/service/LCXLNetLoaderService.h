@@ -9,6 +9,8 @@
 class CNetLoaderService : public CNetServiceBase {
 private:
 	CLCXLConfig m_Config;
+	bool LoadXMLFile();
+	bool SaveXMLFile();
 protected:
 	virtual void IOCPEvent(IocpEventEnum EventType, CLLSockObj *SockObj, PIOCPOverlapped Overlapped);
 	virtual void RecvEvent(CLLSockObj *SockObj, PIOCPOverlapped Overlapped);
