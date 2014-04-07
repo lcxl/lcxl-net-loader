@@ -264,8 +264,8 @@ typedef struct _FILTER_REQUEST
 typedef struct _LCXL_FILTER
 {
     LIST_ENTRY						filter_module_link;
-
-	PNDIS_FILTER_ATTACH_PARAMETERS	attach_paramters;
+	//attach_paramters参数只有在attach的时候才能使用
+	//PNDIS_FILTER_ATTACH_PARAMETERS	attach_paramters;
 
     NDIS_HANDLE                     filter_handle;
 

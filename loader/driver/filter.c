@@ -315,7 +315,7 @@ N.B.:  FILTER can use NdisRegisterDeviceEx to create a device, so the upper
         }
 
         NdisZeroMemory(pFilter, sizeof(LCXL_FILTER));
-		pFilter->attach_paramters = AttachParameters;
+		//pFilter->attach_paramters = AttachParameters;
         
 		LoadModuleSetting(&pFilter->module, AttachParameters);
 		//初始化服务器列表
@@ -417,7 +417,7 @@ N.B.: When the filter is in Pausing state, it can still process OID requests,
     UNREFERENCED_PARAMETER(PauseParameters);
 
     DEBUGP(DL_TRACE, "===>NDISLWF FilterPause: FilterInstance %p\n", FilterModuleContext);
-	KdPrint(("SYS:FilterPause:miniport:%I64u %wZ %wZ %wZ\n", pFilter->module.miniport_net_luid.Value, pFilter->attach_paramters->FilterModuleGuidName, pFilter->attach_paramters->BaseMiniportInstanceName, pFilter->attach_paramters->BaseMiniportName));
+	KdPrint(("SYS:FilterPause:miniport:%I64u %wZ %wZ %wZ\n", pFilter->module.miniport_net_luid.Value, pFilter->module.filter_module_name, pFilter->module.miniport_friendly_name, pFilter->module.miniport_name));
 
     //
     // Set the flag that the filter is going to pause
@@ -483,7 +483,7 @@ Return Value:
     NDIS_CONFIGURATION_OBJECT        ConfigObject;
 
     DEBUGP(DL_TRACE, "===>FilterRestart:   FilterModuleContext %p\n", FilterModuleContext);
-	KdPrint(("SYS:FilterRestart:miniport:%I64u %wZ %wZ %wZ\n", pFilter->module.miniport_net_luid.Value, pFilter->attach_paramters->FilterModuleGuidName, pFilter->attach_paramters->BaseMiniportInstanceName, pFilter->attach_paramters->BaseMiniportName));
+	KdPrint(("SYS:FilterRestart:miniport:%I64u %wZ %wZ %wZ\n", pFilter->module.miniport_net_luid.Value, pFilter->module.filter_module_name, pFilter->module.miniport_friendly_name, pFilter->module.miniport_name));
 
     FILTER_ASSERT(pFilter->state == FilterPaused);
 
@@ -642,8 +642,7 @@ NOTE: Called at PASSIVE_LEVEL and the filter is in paused state
 
     DEBUGP(DL_TRACE, "===>FilterDetach:    FilterInstance %p\n", FilterModuleContext);
 
-	KdPrint(("SYS:FilterDetach:miniport:%I64u %wZ %wZ %wZ\n", pFilter->module.miniport_net_luid.Value, pFilter->attach_paramters->FilterModuleGuidName, pFilter->attach_paramters->BaseMiniportInstanceName, pFilter->attach_paramters->BaseMiniportName));
-
+	KdPrint(("SYS:FilterDetach:miniport:%I64u %wZ %wZ %wZ\n", pFilter->module.miniport_net_luid.Value, pFilter->module.filter_module_name, pFilter->module.miniport_friendly_name, pFilter->module.miniport_name));
 	//
     // Filter must be in paused state
     //
