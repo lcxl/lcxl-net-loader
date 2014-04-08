@@ -47,6 +47,7 @@ __inline VOID InitLCXLLockList(IN OUT PLCXL_LOCK_LIST lock_list, IN DEL_LIST_ENT
 	InitializeListHead(&lock_list->list);
 	InitializeListHead(&lock_list->to_be_add_list);
 	InitializeListHead(&lock_list->to_be_del_list);
+	lock_list->del_func = del_func;
 	KeInitializeSpinLock(&lock_list->lock);
 	ExInitializeNPagedLookasideList(&lock_list->to_be_mem_mgr, NULL, NULL, 0, sizeof(LCXL_TO_BE_LIST), TAG_TO_BE, 0);
 }
@@ -127,25 +128,39 @@ __inline VOID UnlockLCXLLockList(IN PLCXL_LOCK_LIST lock_list)
 
 	lock_list->lock_count--;
 	if (lock_list->lock_count == 0) {
-		PLCXL_TO_BE_LIST list_entry;
-		
-		while (list_entry = CONTAINING_RECORD(lock_list->to_be_del_list.Flink, LCXL_TO_BE_LIST, list_entry), &list_entry->list_entry != &lock_list->to_be_del_list) {
-			RemoveEntryList(&list_entry->list_entry);
+		//PLCXL_TO_BE_LIST list_entry;
+		PLIST_ENTRY list_entry;
+
+		list_entry = lock_list->to_be_del_list.Flink;
+		while (list_entry != &lock_list->to_be_del_list) {
+			PLCXL_TO_BE_LIST tobe_list_entry;
+			
+			tobe_list_entry = CONTAINING_RECORD(list_entry, LCXL_TO_BE_LIST, list_entry);
+			list_entry = list_entry->Flink;
+			
 			//从列表中删除待删除的项
 			lock_list->list_count--;
-			RemoveEntryList(list_entry->to_be_list_entry);
-			lock_list->del_func(list_entry->to_be_list_entry);
-			
-			ExFreeToNPagedLookasideList(&lock_list->to_be_mem_mgr, list_entry);
+			RemoveEntryList(tobe_list_entry->to_be_list_entry);
+			lock_list->del_func(tobe_list_entry->to_be_list_entry);
+			//移除本身
+			RemoveEntryList(&tobe_list_entry->list_entry);
+			ExFreeToNPagedLookasideList(&lock_list->to_be_mem_mgr, tobe_list_entry);
 		}
 
-		while (list_entry = CONTAINING_RECORD(lock_list->to_be_add_list.Flink, LCXL_TO_BE_LIST, list_entry), &list_entry->list_entry != &lock_list->to_be_add_list) {
-			RemoveEntryList(&list_entry->list_entry);
+		list_entry = lock_list->to_be_add_list.Flink;
+		while (list_entry != &lock_list->to_be_add_list) {
+
+			PLCXL_TO_BE_LIST tobe_list_entry;
+
+			tobe_list_entry = CONTAINING_RECORD(list_entry, LCXL_TO_BE_LIST, list_entry);
+			list_entry = list_entry->Flink;
+
 			//将待添加的项插入到列表中
 			lock_list->list_count++;
-			InsertTailList(&lock_list->list, list_entry->to_be_list_entry);
+			InsertTailList(&lock_list->list, tobe_list_entry->to_be_list_entry);
 			
-			ExFreeToNPagedLookasideList(&lock_list->to_be_mem_mgr, list_entry);
+			RemoveEntryList(&tobe_list_entry->list_entry);
+			ExFreeToNPagedLookasideList(&lock_list->to_be_mem_mgr, tobe_list_entry);
 		}
 	}
 	KeReleaseInStackQueuedSpinLock(&queue_handle);

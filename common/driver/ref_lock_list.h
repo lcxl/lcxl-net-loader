@@ -10,7 +10,11 @@ typedef struct _REF_LIST_ENTRY {
 	LONG		ref_count;
 } REF_LIST_ENTRY, *PREF_LIST_ENTRY;//带引用的列表项
 
-//LIST_ENTRY转换到REF_LIST_ENTRY
+//************************************
+// 简介: 将LIST_ENTRY转换到REF_LIST_ENTRY
+// 返回: PREF_LIST_ENTRY
+// 参数: IN PLIST_ENTRY list_entry
+//************************************
 __inline PREF_LIST_ENTRY GetRefListEntry(IN PLIST_ENTRY	list_entry)
 {
 	return CONTAINING_RECORD(list_entry, REF_LIST_ENTRY, list_entry);
@@ -18,7 +22,7 @@ __inline PREF_LIST_ENTRY GetRefListEntry(IN PLIST_ENTRY	list_entry)
 //增加列表项引用
 //参数：
 //list:LCXL锁列表
-//list_entry:列表项
+//list_entry:列表项，需要注意的是list_entry必须在list中
 __inline LONG IncRefListEntry(IN PLCXL_LOCK_LIST list, IN PREF_LIST_ENTRY list_entry)
 {
 	ASSERT(list != NULL);
@@ -28,7 +32,7 @@ __inline LONG IncRefListEntry(IN PLCXL_LOCK_LIST list, IN PREF_LIST_ENTRY list_e
 //减少列表项引用
 //参数：
 //list:LCXL锁列表
-//list_entry:列表项
+//list_entry:列表项，需要注意的是list_entry必须在list中
 //提示：当list_entry引用为0时，此列表项将被删除
 __inline LONG DecRefListEntry(IN PLCXL_LOCK_LIST list, IN PREF_LIST_ENTRY list_entry)
 {

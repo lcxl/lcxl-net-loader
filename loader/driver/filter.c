@@ -639,7 +639,7 @@ NOTE: Called at PASSIVE_LEVEL and the filter is in paused state
 --*/
 {
     PLCXL_FILTER                  pFilter = (PLCXL_FILTER)FilterModuleContext;
-
+	PLIST_ENTRY list_entry;
     DEBUGP(DL_TRACE, "===>FilterDetach:    FilterInstance %p\n", FilterModuleContext);
 
 	KdPrint(("SYS:FilterDetach:miniport:%I64u %wZ %wZ %wZ\n", pFilter->module.miniport_net_luid.Value, pFilter->module.filter_module_name, pFilter->module.miniport_friendly_name, pFilter->module.miniport_name));
@@ -658,6 +658,30 @@ NOTE: Called at PASSIVE_LEVEL and the filter is in paused state
     if (pFilter->send_net_buffer_list_pool!=NULL) {
         NdisFreeNetBufferListPool(pFilter->send_net_buffer_list_pool);
 	}
+	//删除路由表
+	list_entry = pFilter->route_list.Flink;
+	while (list_entry != &pFilter->route_list) {
+		PLCXL_ROUTE_LIST_ENTRY route_info;
+
+		route_info = CONTAINING_RECORD(list_entry, LCXL_ROUTE_LIST_ENTRY, list_entry);
+		list_entry = list_entry->Flink;
+		DeleteRouteListEntry(route_info, &pFilter->module.server_list);
+	}
+	
+	
+	//服务器列表每个服务器项引用-1
+	LockLCXLLockList(&pFilter->module.server_list);
+	list_entry = GetListofLCXLLockList(&pFilter->module.server_list)->Flink;
+	if (list_entry != GetListofLCXLLockList(&pFilter->module.server_list)) {
+		PSERVER_INFO_LIST_ENTRY server_info;
+		
+		server_info = GetServerbyListEntry(list_entry);
+		DecRefListEntry(&pFilter->module.server_list, &server_info->list_entry);
+		//此时引用计数应该为0
+		ASSERT(server_info->list_entry.ref_count == 0);
+		list_entry = list_entry->Flink;
+	}
+	UnlockLCXLLockList(&pFilter->module.server_list);
 	
 	DelLCXLLockList(&pFilter->module.server_list);
     //!添加代码!
@@ -2192,84 +2216,38 @@ PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER pFilter, IN INT ipMode, IN PV
 	return route_info;
 }
 
-VOID ProcessNBL(IN PLCXL_FILTER pFilter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PETHERNET_HEADER pEthHeader, IN UINT BufferLength, IN OUT PPROCESS_NBL_RESULT return_data)
+VOID ProcessNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PETHERNET_HEADER pEthHeader, IN UINT BufferLength, IN OUT PPROCESS_NBL_RESULT return_data)
 {
 	PVOID ethernet_data;
 	USHORT ethernet_type;
+	KLOCK_QUEUE_HANDLE lock_handle;
+	LCXL_ADDR_INFO virtual_addr;
 
-	ASSERT(return_data != NULL && pFilter != NULL && pEthHeader != NULL);
+	ASSERT(return_data != NULL && filter != NULL && pEthHeader != NULL);
 	RtlZeroMemory(return_data, sizeof(PROCESS_NBL_RESULT));
 	ethernet_data = GetEthernetData(pEthHeader, BufferLength, &ethernet_type, &BufferLength);
 	if (ethernet_data == NULL) {
 		return;
 	}
+
+	LockFilter(filter, &lock_handle);
+	virtual_addr = filter->module.virtual_addr;
+	UnlockFilter(&lock_handle);
+
 	switch (ethernet_type) {
 	case ETHERNET_TYPE_ARP:
 		//ARP_OPCODE  ARP_REQUEST  ARP_RESPONSE
 		if (BufferLength >= sizeof(ARP_HEADER)) {
+			
 			PARP_HEADER arp_header;
-			LCXL_ARP_ETHERNET lcxl_arp_ethernet;
 
 			arp_header = (PARP_HEADER)ethernet_data;
-			LCXLReadARPEthernet(arp_header, &lcxl_arp_ethernet);
 
-			KdPrint(("SYS:recv=%d, ARP:HAS=%d, \
-PAS=%d, \
-OC=%d, \
-SHA=%02x:%02x:%02x:%02x:%02x:%02x, \
-SPA=%d.%d.%d.%d, \
-THA=%02x:%02x:%02x:%02x:%02x:%02x, \
-TPA=%d.%d.%d.%d\n",
-				is_recv,
-				lcxl_arp_ethernet.HardwareAddressSpace,
-				lcxl_arp_ethernet.ProtocolAddressSpace,
-				lcxl_arp_ethernet.Opcode,
-				lcxl_arp_ethernet.SenderHardwareAddress.Address[0],
-				lcxl_arp_ethernet.SenderHardwareAddress.Address[1],
-				lcxl_arp_ethernet.SenderHardwareAddress.Address[2],
-				lcxl_arp_ethernet.SenderHardwareAddress.Address[3],
-				lcxl_arp_ethernet.SenderHardwareAddress.Address[4],
-				lcxl_arp_ethernet.SenderHardwareAddress.Address[5],
-				lcxl_arp_ethernet.SenderProtocolAddress.S_un.S_un_b.s_b1,
-				lcxl_arp_ethernet.SenderProtocolAddress.S_un.S_un_b.s_b2,
-				lcxl_arp_ethernet.SenderProtocolAddress.S_un.S_un_b.s_b3,
-				lcxl_arp_ethernet.SenderProtocolAddress.S_un.S_un_b.s_b4,
-				lcxl_arp_ethernet.TargetHardwareAddress.Address[0],
-				lcxl_arp_ethernet.TargetHardwareAddress.Address[1],
-				lcxl_arp_ethernet.TargetHardwareAddress.Address[2],
-				lcxl_arp_ethernet.TargetHardwareAddress.Address[3],
-				lcxl_arp_ethernet.TargetHardwareAddress.Address[4],
-				lcxl_arp_ethernet.TargetHardwareAddress.Address[5],
-				lcxl_arp_ethernet.TargetProtocolAddress.S_un.S_un_b.s_b1,
-				lcxl_arp_ethernet.TargetProtocolAddress.S_un.S_un_b.s_b2,
-				lcxl_arp_ethernet.TargetProtocolAddress.S_un.S_un_b.s_b3,
-				lcxl_arp_ethernet.TargetProtocolAddress.S_un.S_un_b.s_b4));
-			//如果不是针对IPv4的ARP协议，则跳过
-			if (lcxl_arp_ethernet.ProtocolAddressSpace != ETHERNET_TYPE_IPV4) {
-				return;
-			}
-
-			switch (lcxl_arp_ethernet.Opcode)
-			{
-			case ARP_REQUEST:
-
-				break;
-			case ARP_RESPONSE:
-
-				break;
-			default:
-				break;
-			}
+			ProcessARP(filter, is_recv, lcxl_role, arp_header, &virtual_addr, return_data);
 		}
 		break;
 	case ETHERNET_TYPE_IPV4://IPv4协议
 		if (BufferLength >= sizeof(IPV4_HEADER)){
-			KLOCK_QUEUE_HANDLE lock_handle;
-			LCXL_ADDR_INFO virtual_addr;
-
-			LockFilter(pFilter, &lock_handle);
-			virtual_addr = pFilter->module.virtual_addr;
-			UnlockFilter(&lock_handle);
 			//查看数据包的目标IP是否是虚拟IP
 			if (virtual_addr.status & SA_ENABLE_IPV4) {
 				PIPV4_HEADER ip_header;
@@ -2281,28 +2259,7 @@ TPA=%d.%d.%d.%d\n",
 
 					break;
 				case 0x06://TCP数据包
-					switch (lcxl_role)
-					{
-					case LCXL_ROLE_ROUTER:
-						if (is_recv) {
-							if (RtlCompareMemory(&ip_header->DestinationAddress, &virtual_addr.ipv4, sizeof(ip_header->DestinationAddress)) == sizeof(ip_header->DestinationAddress)) {
-								return_data->data.route = RouteTCPNBL(pFilter, IM_IPV4, ip_header);
-								if (return_data->data.route != NULL) {
-									return_data->code = PNRC_ROUTER;
-								}
-							}
-						}
-						break;
-					case LCXL_ROLE_SERVER:
-						if (!is_recv) {
-							//如果要发送的数据包的源IP地址是虚拟IP地址
-							if (RtlCompareMemory(&ip_header->SourceAddress, &virtual_addr.ipv4, sizeof(ip_header->SourceAddress)) == sizeof(ip_header->SourceAddress)) {
-								//更改此NBL
-								return_data->code = PNRC_MODIFY;
-							}
-						}
-						break;
-					}
+					ProcessTCP(filter, is_recv, lcxl_role, ip_header, IM_IPV4, &virtual_addr, return_data);
 					break;
 				case 0x11://PROT_UDP 数据包
 					break;
@@ -2315,12 +2272,6 @@ TPA=%d.%d.%d.%d\n",
 
 	case ETHERNET_TYPE_IPV6://IPv6协议
 		if (BufferLength >= sizeof(IPV6_HEADER)){
-			KLOCK_QUEUE_HANDLE lock_handle;
-			LCXL_ADDR_INFO virtual_addr;
-
-			LockFilter(pFilter, &lock_handle);
-			virtual_addr = pFilter->module.virtual_addr;
-			UnlockFilter(&lock_handle);
 			//虚拟IP是否启用
 			if (virtual_addr.status & SA_ENABLE_IPV6) {
 				PIPV6_HEADER ip_header;
@@ -2329,124 +2280,10 @@ TPA=%d.%d.%d.%d\n",
 
 				switch (ip_header->NextHeader) {
 				case 0x3A://ICMPv6数据包
-				{
-					PICMPV6_MESSAGE icmpv6_message = (PICMPV6_MESSAGE)((PUCHAR)ip_header + sizeof(IPV6_HEADER));
-					KdPrint(("SYS:recv=%d, ICMPv6:Type=%d, Code=%d, Checksum=%d, sa=%04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x, da=%04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x\n", 
-						is_recv,
-						icmpv6_message->Header.Type, 
-						icmpv6_message->Header.Code, 
-						icmpv6_message->Header.Checksum,
-
-						ntohs(ip_header->SourceAddress.u.Word[0]),
-						ntohs(ip_header->SourceAddress.u.Word[1]),
-						ntohs(ip_header->SourceAddress.u.Word[2]),
-						ntohs(ip_header->SourceAddress.u.Word[3]),
-						ntohs(ip_header->SourceAddress.u.Word[4]),
-						ntohs(ip_header->SourceAddress.u.Word[5]),
-						ntohs(ip_header->SourceAddress.u.Word[6]),
-						ntohs(ip_header->SourceAddress.u.Word[7]),
-
-						ntohs(ip_header->DestinationAddress.u.Word[0]),
-						ntohs(ip_header->DestinationAddress.u.Word[1]),
-						ntohs(ip_header->DestinationAddress.u.Word[2]),
-						ntohs(ip_header->DestinationAddress.u.Word[3]),
-						ntohs(ip_header->DestinationAddress.u.Word[4]),
-						ntohs(ip_header->DestinationAddress.u.Word[5]),
-						ntohs(ip_header->DestinationAddress.u.Word[6]),
-						ntohs(ip_header->DestinationAddress.u.Word[7])
-						));
-						
-					switch (lcxl_role) {
-					case LCXL_ROLE_SERVER:
-						//阻止服务器收到负载均衡器对虚拟IP的通告
-						switch (icmpv6_message->Header.Type) {
-						case 133://路由器请求（RS）
-							if (RtlCompareMemory(&ip_header->SourceAddress, &virtual_addr.ipv6, sizeof(ip_header->SourceAddress)) == sizeof(ip_header->SourceAddress)) {
-								//如果本机发送基于虚拟IPv6的请求，则拦截
-								if (!is_recv) {
-									return_data->code = PNRC_DROP;
-								}
-							}
-						case 135://邻居请求(NS)
-							//这里要处理请求节点多播地址(solicited-node multicast address) 
-							if (!is_recv) {
-								//如果要发送邻居请求
-								IN6_ADDR solicited_node_multicast_address;
-
-								RtlZeroMemory(&solicited_node_multicast_address, sizeof(solicited_node_multicast_address));
-								//计算虚拟IPv6地址的被请求-节点多播地址
-								//前缀为 FF02::1:FF00:0/104
-								solicited_node_multicast_address.u.Word[0] = ntohs(0xFF02);
-								solicited_node_multicast_address.u.Word[5] = ntohs(0x0001);
-								solicited_node_multicast_address.u.Word[6] = ntohs(0xFF00 | ntohs(virtual_addr.ipv6.u.Word[6]));
-								solicited_node_multicast_address.u.Word[7] = virtual_addr.ipv6.u.Word[7];
-								
-								
-								if (RtlCompareMemory(&ip_header->DestinationAddress, &solicited_node_multicast_address, sizeof(ip_header->DestinationAddress)) == sizeof(ip_header->DestinationAddress)) {
-									//如果请求多播地址是虚拟IPv6的多播地址，则禁止发送
-									return_data->code = PNRC_DROP;
-								}
-							} else {
-								//如果收到了别的主机邻居请求
-								IN6_ADDR solicited_node_multicast_address;
-
-								RtlZeroMemory(&solicited_node_multicast_address, sizeof(solicited_node_multicast_address));
-								//计算虚拟IPv6地址的被请求-节点多播地址
-								//前缀为 FF02::1:FF00:0/104
-								solicited_node_multicast_address.u.Word[0] = ntohs(0xFF02);
-								solicited_node_multicast_address.u.Word[5] = ntohs(0x0001);
-								solicited_node_multicast_address.u.Word[6] = ntohs(0xFF00 | ntohs(virtual_addr.ipv6.u.Word[6]));
-								solicited_node_multicast_address.u.Word[7] = virtual_addr.ipv6.u.Word[7];
-								if (RtlCompareMemory(&ip_header->DestinationAddress, &solicited_node_multicast_address, sizeof(ip_header->DestinationAddress)) == sizeof(ip_header->DestinationAddress)) {
-									//如果请求多播地址是虚拟IPv6的多播地址，则禁止接收
-									return_data->code = PNRC_DROP;
-								}
-							}
-							break;
-						case 136://邻居宣告（NA）
-							//如果发现有别的主机对虚拟IP进行宣告
-							if (RtlCompareMemory(&ip_header->SourceAddress, &virtual_addr.ipv6, sizeof(ip_header->SourceAddress)) == sizeof(ip_header->SourceAddress)) {
-								if (is_recv) {
-									//发现有别的主机对虚拟IP进行宣告，则阻止此数据包传达到系统中
-									return_data->code = PNRC_DROP;
-								} else {
-									//发现本机发送虚拟IP的宣告，则拦截
-									return_data->code = PNRC_DROP;
-								}
-							}
-							break;
-						
-						}
-						break;
-					}
-				}
+					ProcessICMPv6(filter, is_recv, lcxl_role, ip_header, &virtual_addr, return_data);
 					break;
 				case 0x06://TCP数据包
-					switch (lcxl_role) {
-					case LCXL_ROLE_ROUTER://如果角色是路由
-						
-						if (is_recv) {
-							//查看接收到的数据包的目标IP是否是虚拟IP
-							if (RtlCompareMemory(&ip_header->DestinationAddress, &virtual_addr.ipv6, sizeof(ip_header->DestinationAddress)) == sizeof(ip_header->DestinationAddress)) {
-								//路由此数据包
-								return_data->data.route = RouteTCPNBL(pFilter, IM_IPV4, ip_header);
-								if (return_data->data.route != NULL) {
-									return_data->code = PNRC_ROUTER;
-								}
-							}
-							
-						}
-						break;
-					case LCXL_ROLE_SERVER:
-						if (!is_recv) {
-							//如果要发送的数据包的源IP地址是虚拟IP地址
-							if (RtlCompareMemory(&ip_header->SourceAddress, &virtual_addr.ipv6, sizeof(ip_header->SourceAddress)) == sizeof(ip_header->SourceAddress)) {
-								//更改源MAC地址为router的mac地址
-								return_data->code = PNRC_MODIFY;
-							}
-						}
-						break;
-					}
+					ProcessTCP(filter, is_recv, lcxl_role, ip_header, IM_IPV6, &virtual_addr, return_data);
 					break;
 				case 0x11://PROT_UDP 数据包
 					break;
@@ -2455,6 +2292,227 @@ TPA=%d.%d.%d.%d\n",
 		}
 		break;
 	default:
+		break;
+	}
+}
+
+VOID ProcessARP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PARP_HEADER arp_header, IN PLCXL_ADDR_INFO virtual_addr, IN OUT PPROCESS_NBL_RESULT return_data)
+{
+	LCXL_ARP_ETHERNET lcxl_arp_ethernet;
+
+	UNREFERENCED_PARAMETER(virtual_addr);
+	UNREFERENCED_PARAMETER(return_data);
+	UNREFERENCED_PARAMETER(lcxl_role);
+	UNREFERENCED_PARAMETER(filter);
+	LCXLReadARPEthernet(arp_header, &lcxl_arp_ethernet);
+
+	//如果不是针对IPv4的ARP协议，则跳过
+	if (lcxl_arp_ethernet.ProtocolAddressSpace != ETHERNET_TYPE_IPV4) {
+		return;
+	}
+	KdPrint(("SYS:recv=%d, ARP:HAS=%d, \
+			 PAS=%d, \
+			 OC=%d, \
+			 SHA=%02x:%02x:%02x:%02x:%02x:%02x, \
+			 SPA=%d.%d.%d.%d, \
+			 THA=%02x:%02x:%02x:%02x:%02x:%02x, \
+			 TPA=%d.%d.%d.%d\n",
+			 is_recv,
+			 lcxl_arp_ethernet.HardwareAddressSpace,
+			 lcxl_arp_ethernet.ProtocolAddressSpace,
+			 lcxl_arp_ethernet.Opcode,
+			 lcxl_arp_ethernet.SenderHardwareAddress.Address[0],
+			 lcxl_arp_ethernet.SenderHardwareAddress.Address[1],
+			 lcxl_arp_ethernet.SenderHardwareAddress.Address[2],
+			 lcxl_arp_ethernet.SenderHardwareAddress.Address[3],
+			 lcxl_arp_ethernet.SenderHardwareAddress.Address[4],
+			 lcxl_arp_ethernet.SenderHardwareAddress.Address[5],
+			 lcxl_arp_ethernet.SenderProtocolAddress.S_un.S_un_b.s_b1,
+			 lcxl_arp_ethernet.SenderProtocolAddress.S_un.S_un_b.s_b2,
+			 lcxl_arp_ethernet.SenderProtocolAddress.S_un.S_un_b.s_b3,
+			 lcxl_arp_ethernet.SenderProtocolAddress.S_un.S_un_b.s_b4,
+			 lcxl_arp_ethernet.TargetHardwareAddress.Address[0],
+			 lcxl_arp_ethernet.TargetHardwareAddress.Address[1],
+			 lcxl_arp_ethernet.TargetHardwareAddress.Address[2],
+			 lcxl_arp_ethernet.TargetHardwareAddress.Address[3],
+			 lcxl_arp_ethernet.TargetHardwareAddress.Address[4],
+			 lcxl_arp_ethernet.TargetHardwareAddress.Address[5],
+			 lcxl_arp_ethernet.TargetProtocolAddress.S_un.S_un_b.s_b1,
+			 lcxl_arp_ethernet.TargetProtocolAddress.S_un.S_un_b.s_b2,
+			 lcxl_arp_ethernet.TargetProtocolAddress.S_un.S_un_b.s_b3,
+			 lcxl_arp_ethernet.TargetProtocolAddress.S_un.S_un_b.s_b4));
+	switch (lcxl_arp_ethernet.Opcode)
+	{
+	case ARP_REQUEST:
+
+		break;
+	case ARP_RESPONSE:
+
+		break;
+	default:
+		break;
+	}
+}
+
+VOID ProcessICMPv6(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PIPV6_HEADER ip_header, IN PLCXL_ADDR_INFO virtual_addr, IN OUT PPROCESS_NBL_RESULT return_data)
+{
+	PICMPV6_MESSAGE icmpv6_message = (PICMPV6_MESSAGE)((PUCHAR)ip_header + sizeof(IPV6_HEADER));
+
+	UNREFERENCED_PARAMETER(filter);
+	
+	KdPrint(("SYS:recv=%d, ICMPv6:Type=%d, Code=%d, Checksum=%d, sa=%04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x, da=%04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x\n",
+		is_recv,
+		icmpv6_message->Header.Type,
+		icmpv6_message->Header.Code,
+		icmpv6_message->Header.Checksum,
+
+		ntohs(ip_header->SourceAddress.u.Word[0]),
+		ntohs(ip_header->SourceAddress.u.Word[1]),
+		ntohs(ip_header->SourceAddress.u.Word[2]),
+		ntohs(ip_header->SourceAddress.u.Word[3]),
+		ntohs(ip_header->SourceAddress.u.Word[4]),
+		ntohs(ip_header->SourceAddress.u.Word[5]),
+		ntohs(ip_header->SourceAddress.u.Word[6]),
+		ntohs(ip_header->SourceAddress.u.Word[7]),
+
+		ntohs(ip_header->DestinationAddress.u.Word[0]),
+		ntohs(ip_header->DestinationAddress.u.Word[1]),
+		ntohs(ip_header->DestinationAddress.u.Word[2]),
+		ntohs(ip_header->DestinationAddress.u.Word[3]),
+		ntohs(ip_header->DestinationAddress.u.Word[4]),
+		ntohs(ip_header->DestinationAddress.u.Word[5]),
+		ntohs(ip_header->DestinationAddress.u.Word[6]),
+		ntohs(ip_header->DestinationAddress.u.Word[7])
+		));
+
+	switch (lcxl_role) {
+	case LCXL_ROLE_SERVER:
+		//阻止服务器收到负载均衡器对虚拟IP的通告
+		switch (icmpv6_message->Header.Type) {
+		case 133://路由器请求（RS）
+			if (RtlCompareMemory(&ip_header->SourceAddress, &virtual_addr->ipv6, sizeof(ip_header->SourceAddress)) == sizeof(ip_header->SourceAddress)) {
+				//如果本机发送基于虚拟IPv6的请求，则拦截
+				if (!is_recv) {
+					return_data->code = PNRC_DROP;
+					KdPrint(("SYS:ICMPv6 RS PNRC_DROP\n"));
+				}
+			}
+		case 135://邻居请求(NS)
+			//这里要处理请求节点多播地址(solicited-node multicast address) 
+			if (!is_recv) {
+				//如果要发送邻居请求
+				IN6_ADDR solicited_node_multicast_address;
+
+				RtlZeroMemory(&solicited_node_multicast_address, sizeof(solicited_node_multicast_address));
+				//计算虚拟IPv6地址的被请求-节点多播地址
+				//前缀为 FF02::1:FF00:0/104
+				solicited_node_multicast_address.u.Word[0] = ntohs(0xFF02);
+				solicited_node_multicast_address.u.Word[5] = ntohs(0x0001);
+				solicited_node_multicast_address.u.Word[6] = ntohs(0xFF00 | ntohs(virtual_addr->ipv6.u.Word[6]));
+				solicited_node_multicast_address.u.Word[7] = virtual_addr->ipv6.u.Word[7];
+
+
+				if (RtlCompareMemory(&ip_header->DestinationAddress, &solicited_node_multicast_address, sizeof(ip_header->DestinationAddress)) == sizeof(ip_header->DestinationAddress)) {
+					//如果请求多播地址是虚拟IPv6的多播地址，则禁止发送
+					return_data->code = PNRC_DROP;
+					KdPrint(("SYS:ICMPv6 NS PNRC_DROP\n"));
+				}
+			} else {
+				//如果收到了别的主机邻居请求
+				IN6_ADDR solicited_node_multicast_address;
+
+				RtlZeroMemory(&solicited_node_multicast_address, sizeof(solicited_node_multicast_address));
+				//计算虚拟IPv6地址的被请求-节点多播地址
+				//前缀为 FF02::1:FF00:0/104
+				solicited_node_multicast_address.u.Word[0] = ntohs(0xFF02);
+				solicited_node_multicast_address.u.Word[5] = ntohs(0x0001);
+				solicited_node_multicast_address.u.Word[6] = ntohs(0xFF00 | ntohs(virtual_addr->ipv6.u.Word[6]));
+				solicited_node_multicast_address.u.Word[7] = virtual_addr->ipv6.u.Word[7];
+				if (RtlCompareMemory(&ip_header->DestinationAddress, &solicited_node_multicast_address, sizeof(ip_header->DestinationAddress)) == sizeof(ip_header->DestinationAddress)) {
+					//如果请求多播地址是虚拟IPv6的多播地址，则禁止接收
+					return_data->code = PNRC_DROP;
+					KdPrint(("SYS:ICMPv6 NS PNRC_DROP\n"));
+				}
+			}
+			break;
+		case 136://邻居宣告（NA）
+			//如果发现有别的主机对虚拟IP进行宣告
+			if (RtlCompareMemory(&ip_header->SourceAddress, &virtual_addr->ipv6, sizeof(ip_header->SourceAddress)) == sizeof(ip_header->SourceAddress)) {
+				if (is_recv) {
+					//发现有别的主机对虚拟IP进行宣告，则阻止此数据包传达到系统中
+					return_data->code = PNRC_DROP;
+					KdPrint(("SYS:ICMPv6 NA PNRC_DROP\n"));
+				} else {
+					//发现本机发送虚拟IP的宣告，则拦截
+					return_data->code = PNRC_DROP;
+					KdPrint(("SYS:ICMPv6 NA PNRC_DROP\n"));
+				}
+			}
+			break;
+
+		}
+		break;
+	}
+}
+
+VOID ProcessTCP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PVOID ip_header, IN INT ipMode, IN PLCXL_ADDR_INFO virtual_addr, IN OUT PPROCESS_NBL_RESULT return_data)
+{
+	PVOID destination_address = NULL;
+	SIZE_T destination_address_len = 0;
+	PVOID source_address = NULL;
+	SIZE_T source_address_len = 0;
+
+	PVOID virtual_ip = NULL;
+
+	switch (ipMode)
+	{
+	case IM_IPV4:
+		destination_address = &((PIPV4_HEADER)ip_header)->DestinationAddress;
+		destination_address_len = sizeof(((PIPV4_HEADER)ip_header)->DestinationAddress);
+
+		source_address = &((PIPV4_HEADER)ip_header)->SourceAddress;
+		source_address_len = sizeof(((PIPV4_HEADER)ip_header)->SourceAddress);
+		virtual_ip = &virtual_addr->ipv4;
+		break;
+	case IM_IPV6:
+		destination_address = &((PIPV6_HEADER)ip_header)->DestinationAddress;
+		destination_address_len = sizeof(((PIPV6_HEADER)ip_header)->DestinationAddress);
+
+		source_address = &((PIPV6_HEADER)ip_header)->SourceAddress;
+		source_address_len = sizeof(((PIPV6_HEADER)ip_header)->SourceAddress);
+		virtual_ip = &virtual_addr->ipv6;
+		break;
+	default:
+		ASSERT(FALSE);
+		break;
+	}
+	switch (lcxl_role) {
+	case LCXL_ROLE_ROUTER://如果角色是路由
+
+		if (is_recv) {
+			//查看接收到的数据包的目标IP是否是虚拟IP
+			if (RtlCompareMemory(destination_address, virtual_ip, destination_address_len) == destination_address_len) {
+				// 创建路由表
+				return_data->data.route = RouteTCPNBL(filter, ipMode, ip_header);
+				// 如果路由表不为空
+				if (return_data->data.route != NULL) {
+					//设置此数据包状态为路由
+					return_data->code = PNRC_ROUTER;
+					KdPrint(("SYS:TCP PNRC_ROUTER\n"));
+				}
+			}
+
+		}
+		break;
+	case LCXL_ROLE_SERVER:
+		if (!is_recv) {
+			//如果要发送的数据包的源IP地址是虚拟IP地址
+			if (RtlCompareMemory(source_address, virtual_ip, source_address_len) == source_address_len) {
+				//更改源MAC地址为router的mac地址
+				return_data->code = PNRC_MODIFY;
+				KdPrint(("SYS:TCP PNRC_MODIFY\n"));
+			}
+		}
 		break;
 	}
 }

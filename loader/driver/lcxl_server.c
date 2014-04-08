@@ -46,7 +46,7 @@ PSERVER_INFO_LIST_ENTRY SelectBestServer(IN PLCXL_LOCK_LIST server_list, IN INT 
 	{
 		PSERVER_INFO_LIST_ENTRY server_info;
 		KLOCK_QUEUE_HANDLE lock_handle;
-
+		//获取server_info的地址
 		server_info = GetServerbyListEntry(Link);
 		LockServer(server_info, &lock_handle);
 		//检查服务器是否可用
@@ -58,16 +58,19 @@ PSERVER_INFO_LIST_ENTRY SelectBestServer(IN PLCXL_LOCK_LIST server_list, IN INT 
 			(server_info->info.status&SS_DELETED) == 0) {
 			if (best_server == NULL || best_server->performance.process_time > server_info->performance.process_time) {
 				if (best_server != NULL) {
-					//减少引用
+					//减少原来选出来的最好服务器的引用
 					DecRefListEntry(server_list, &best_server->list_entry);
 				}
 				best_server = server_info;
+				//增加引用
 				IncRefListEntry(server_list, &best_server->list_entry);
 			}
 		}
+		//解锁服务器
 		UnLockServer(&lock_handle);
 		Link = Link->Flink;
 	}
+	//解锁列表
 	UnlockLCXLLockList(server_list);
 	return best_server;
 }

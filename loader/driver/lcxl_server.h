@@ -64,18 +64,39 @@ __inline VOID FreeServer(PSERVER_INFO_LIST_ENTRY server)
 }
 #define DelServerMemMgr() ExDeleteNPagedLookasideList(&g_server_mem_mgr)
 
-//删除配置信息回调函数
+//************************************
+// 简介: 删除配置信息回调函数
+// 返回: VOID
+// 参数: PLIST_ENTRY server
+//************************************
 VOID DelServerCallBack(PLIST_ENTRY server);
+
+//************************************
+// 简介: 通过列表项获取服务器信息
+// 返回: PSERVER_INFO_LIST_ENTRY
+// 参数: PLIST_ENTRY server_list_entry
+//************************************
 __inline PSERVER_INFO_LIST_ENTRY GetServerbyListEntry(PLIST_ENTRY server_list_entry)
 {
 	return CONTAINING_RECORD(GetRefListEntry(server_list_entry), SERVER_INFO_LIST_ENTRY, list_entry);
 }
-//根据MAC地址寻找服务器
-//注意：使用FindServer之前需要锁定列表
+
+//************************************
+// 简介: 根据MAC地址寻找服务器，注意：使用FindServer之前需要锁定列表
+// 返回: PSERVER_INFO_LIST_ENTRY
+// 参数: IN PLCXL_LOCK_LIST server_list
+// 参数: IN PIF_PHYSICAL_ADDRESS mac_addr
+//************************************
 PSERVER_INFO_LIST_ENTRY FindServer(IN PLCXL_LOCK_LIST server_list, IN PIF_PHYSICAL_ADDRESS mac_addr);
-///<summary>
-//选择服务器
-///</summary>
+
+//************************************
+// 简介: 选择一台最适合的服务器
+// 返回: PSERVER_INFO_LIST_ENTRY
+// 参数: IN PLCXL_LOCK_LIST server_list
+// 参数: IN INT ipMode
+// 参数: IN PVOID pIPHeader
+// 参数: IN PTCP_HDR pTcpHeader
+//************************************
 PSERVER_INFO_LIST_ENTRY SelectBestServer(IN PLCXL_LOCK_LIST server_list, IN INT ipMode, IN PVOID pIPHeader, IN PTCP_HDR pTcpHeader);
 
 #endif

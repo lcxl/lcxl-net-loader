@@ -466,7 +466,32 @@ typedef struct _PROCESS_NBL_RESULT{
 // 参数: IN UINT BufferLength
 // 参数: IN OUT PROCESS_NBL_RETURN_DATA return_data 如果需要路由此NBL，返回路由信息，否则返回NULL。注意，只有当函数返回为FALSE时此值恒为NULL
 //************************************
-VOID ProcessNBL(IN PLCXL_FILTER pFilter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PETHERNET_HEADER pEthHeader, IN UINT BufferLength, IN OUT PPROCESS_NBL_RESULT return_data);
+VOID ProcessNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PETHERNET_HEADER pEthHeader, IN UINT BufferLength, IN OUT PPROCESS_NBL_RESULT return_data);
+
+VOID ProcessARP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PARP_HEADER arp_header, IN PLCXL_ADDR_INFO virtual_addr, IN OUT PPROCESS_NBL_RESULT return_data);
+//************************************
+// 简介: 处理ICMPv6数据包
+// 返回: VOID
+// 参数: IN PLCXL_FILTER filter
+// 参数: IN BOOLEAN is_recv
+// 参数: IN INT lcxl_role
+// 参数: IN PIPV6_HEADER ip_header
+// 参数: IN PLCXL_ADDR_INFO virtual_addr
+// 参数: IN OUT PPROCESS_NBL_RESULT return_data
+//************************************
+VOID ProcessICMPv6(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PIPV6_HEADER ip_header, IN PLCXL_ADDR_INFO virtual_addr, IN OUT PPROCESS_NBL_RESULT return_data);
+//************************************
+// 简介: 处理TCP数据包
+// 返回: VOID
+// 参数: IN PLCXL_FILTER filter
+// 参数: IN BOOLEAN is_recv
+// 参数: IN INT lcxl_role
+// 参数: IN PVOID ip_header
+// 参数: IN INT ipMode
+// 参数: IN PLCXL_ADDR_INFO virtual_addr
+// 参数: IN OUT PPROCESS_NBL_RESULT return_data
+//************************************
+VOID ProcessTCP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PVOID ip_header, IN INT ipMode, IN PLCXL_ADDR_INFO virtual_addr, IN OUT PPROCESS_NBL_RESULT return_data);
 
 //************************************
 // 简介: 寻找LCXL_FILTER结构，注意，需要锁定表之后才能使用
