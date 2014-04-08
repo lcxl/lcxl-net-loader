@@ -2170,8 +2170,10 @@ PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER pFilter, IN INT ipMode, IN PV
 	case IM_IPV4:
 		//ptcp_header = (PTCP_HDR)((PUCHAR)pIPHeader + sizeof(IPV4_HEADER));
 		ptcp_header = (PTCP_HDR)((PUCHAR)pIPHeader + Ip4HeaderLengthInBytes((PIPV4_HEADER)pIPHeader));
+		break;
 	case IM_IPV6:
 		ptcp_header = (PTCP_HDR)((PUCHAR)pIPHeader + sizeof(IPV6_HEADER));
+		break;
 	default:
 		ASSERT(FALSE);
 		break;
