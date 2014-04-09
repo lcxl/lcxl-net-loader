@@ -327,7 +327,9 @@ N.B.:  FILTER can use NdisRegisterDeviceEx to create a device, so the upper
         PoolParameters.Header.Revision = NET_BUFFER_LIST_POOL_PARAMETERS_REVISION_1;
 		PoolParameters.Header.Size = NDIS_SIZEOF_NET_BUFFER_LIST_POOL_PARAMETERS_REVISION_1;
         PoolParameters.ProtocolId = NDIS_PROTOCOL_ID_DEFAULT;
-        //PoolParameters.ContextSize = sizeof(NPROT_SEND_NETBUFLIST_RSVD);
+		//ContextSize必须是MEMORY_ALLOCATION_ALIGNMENT的倍数
+		ASSERT(sizeof(NPROT_SEND_NETBUFLIST_RSVD) % MEMORY_ALLOCATION_ALIGNMENT == 0);
+		PoolParameters.ContextSize = sizeof(NPROT_SEND_NETBUFLIST_RSVD);
         PoolParameters.fAllocateNetBuffer = TRUE;
         PoolParameters.PoolTag = TAG_SEND_NBL;
         pFilter->send_net_buffer_list_pool = NdisAllocateNetBufferListPool( NdisFilterHandle, &PoolParameters); 
@@ -1268,7 +1270,10 @@ Return Value:
     while (CurrNbl != NULL) {
         //如果是本驱动发出来的NBL，将此NBL脱离当前的NBL链
         if (CurrNbl->SourceHandle == pFilter->filter_handle) {
-            PNET_BUFFER_LIST pOwnerNBL;
+            PNET_BUFFER_LIST	pOwnerNBL;
+			PMDL                send_mdl = NULL;
+			PVOID			    send_buffer;
+			ULONG				buffer_length;
 
             pOwnerNBL = CurrNbl;
             //判断是否是链表头
@@ -1283,6 +1288,30 @@ Return Value:
             }
             //断开和原始链的关联
             NET_BUFFER_LIST_NEXT_NBL(pOwnerNBL) = NULL;
+			/*
+			PETHERNET_HEADER    send_buffer;
+			PMDL                send_mdl = NULL;
+			PNET_BUFFER_LIST    send_nbl;
+			ULONG               bytes_copied;
+
+			ASSERT(return_data.data.route != NULL);
+			//创建一个NBL
+			send_buffer = (PETHERNET_HEADER)FILTER_ALLOC_MEM(filter->filter_handle, buffer_length);
+			*/
+			send_mdl = NET_BUFFER_FIRST_MDL(NET_BUFFER_LIST_FIRST_NB(pOwnerNBL));
+			ASSERT(send_mdl != NULL);
+			//查询mdl
+			NdisQueryMdl(
+				send_mdl,
+				&send_buffer,
+				&buffer_length,
+				NormalPagePriority);
+
+			ASSERT(send_buffer != NULL);
+			//释放mdl
+			NdisFreeMdl(send_mdl);
+			//释放数据包内存
+			FILTER_FREE_MEM(send_buffer);
             //释放NBL
             NdisFreeNetBufferList(pOwnerNBL);
         } else {
@@ -1716,7 +1745,7 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 				send_mdl = NdisAllocateMdl(filter->filter_handle, send_buffer, buffer_length);
 				send_nbl = NdisAllocateNetBufferAndNetBufferList(
 					filter->send_net_buffer_list_pool,
-					0,                              // ContextSize
+					sizeof(NPROT_SEND_NETBUFLIST_RSVD),// ContextSize
 					0,                              // ContextBackfill
 					send_mdl,                           // MdlChain
 					0,                              // DataOffset

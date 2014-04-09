@@ -389,7 +389,7 @@ CONFIG_SERVER & CLCXLConfig::ReadServer(tinyxml2::XMLElement *owner_element, CON
 	}
 	element = owner_element->FirstChildElement(ELEMENT_IP_STATUS);
 	if (element != NULL) {
-		server.server.status = element->UnsignedAttribute(CONFIG_VALUE);
+		server.server.ip_status = element->UnsignedAttribute(CONFIG_VALUE);
 	}
 	element = owner_element->FirstChildElement(ELEMENT_COMMENT);
 	if (element != NULL) {

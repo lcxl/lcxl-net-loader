@@ -432,8 +432,10 @@ VOID DriverReinitialize(
 	_In_opt_  PVOID Context,
 	_In_      ULONG Count
 	);
-
-
+typedef struct _NPROT_SEND_NETBUFLIST_RSVD{
+	ULONG                  owner_packet;
+	NDIS_HANDLE            filter;
+} NPROT_SEND_NETBUFLIST_RSVD, *PNPROT_SEND_NETBUFLIST_RSVD;
 
 ///<summary>
 ///路由TCP数据包
