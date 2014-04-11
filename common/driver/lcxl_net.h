@@ -59,31 +59,30 @@ __inline VOID LCXLReadARPEthernet(IN PARP_HEADER arp_header, IN OUT PLCXL_ARP_ET
 // 参数: PNET_BUFFER_LIST nbl
 // 参数: UINT * buffer_length
 //************************************
-__inline PETHERNET_HEADER GetEthernetHeader(PNET_BUFFER_LIST nbl, UINT *buffer_length) 
+__inline PETHERNET_HEADER GetEthernetHeader(PNET_BUFFER_LIST nbl, UINT *data_length) 
 {
 	PMDL                current_mdl;
-	ULONG               total_length;
+	ULONG               buffer_length;
 	ULONG               offset;
 	PETHERNET_HEADER    ethernet_header = NULL;
 
-	ASSERT(buffer_length != NULL);
+	ASSERT(data_length != NULL);
 	ASSERT(nbl != NULL);
 
 	current_mdl = NET_BUFFER_CURRENT_MDL(NET_BUFFER_LIST_FIRST_NB(nbl));
-	total_length = NET_BUFFER_DATA_LENGTH(NET_BUFFER_LIST_FIRST_NB(nbl));
+	*data_length = NET_BUFFER_DATA_LENGTH(NET_BUFFER_LIST_FIRST_NB(nbl));
 	offset = NET_BUFFER_CURRENT_MDL_OFFSET(NET_BUFFER_LIST_FIRST_NB(nbl));
 	ASSERT(current_mdl != NULL);
 	NdisQueryMdl(
 		current_mdl,
 		&ethernet_header,
-		buffer_length,
+		&buffer_length,
 		NormalPagePriority);
 	//各种有效性判断
 	if (ethernet_header != NULL) {
 
-		ASSERT(*buffer_length > offset);
+		ASSERT(buffer_length > offset);
 		//获取真正的的包数据
-		*buffer_length -= offset;
 		//获取帧数据头
 		ethernet_header = (PETHERNET_HEADER)((PUCHAR)ethernet_header + offset);
 	}

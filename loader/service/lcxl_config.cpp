@@ -393,7 +393,7 @@ CONFIG_SERVER & CLCXLConfig::ReadServer(tinyxml2::XMLElement *owner_element, CON
 	}
 	element = owner_element->FirstChildElement(ELEMENT_COMMENT);
 	if (element != NULL) {
-		wcscpy_s(server.comment, sizeof(server.comment) / sizeof(server.comment[0]), string_to_wstring(std::string(element->Attribute(CONFIG_VALUE))).c_str());
+		wcscpy_s(server.comment, sizeof(server.comment) / sizeof(server.comment[0]), utf8string_to_wstring(std::string(element->Attribute(CONFIG_VALUE))).c_str());
 	}
 	//¶ÁÈ¡mac_addr
 	element = owner_element->FirstChildElement(ELEMENT_MAC_ADDR);

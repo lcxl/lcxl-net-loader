@@ -323,6 +323,7 @@ N.B.:  FILTER can use NdisRegisterDeviceEx to create a device, so the upper
 		//初始化路由列表
 		InitializeListHead(&pFilter->route_list);
         //初始化NBL发送池
+		NdisZeroMemory(&PoolParameters, sizeof(PoolParameters));
         PoolParameters.Header.Type = NDIS_OBJECT_TYPE_DEFAULT;
         PoolParameters.Header.Revision = NET_BUFFER_LIST_POOL_PARAMETERS_REVISION_1;
 		PoolParameters.Header.Size = NDIS_SIZEOF_NET_BUFFER_LIST_POOL_PARAMETERS_REVISION_1;
@@ -827,7 +828,23 @@ NOTE: Called at <= DISPATCH_LEVEL  (unlike a miniport's MiniportOidRequest)
 
         pFilter->pending_oid_request = ClonedRequest;
 
-
+		switch (ClonedRequest->RequestType) {
+		case NdisRequestSetInformation:
+			switch (ClonedRequest->DATA.SET_INFORMATION.Oid) {
+			case OID_GEN_CURRENT_PACKET_FILTER:
+				if (*(NDIS_OID*)ClonedRequest->DATA.SET_INFORMATION.InformationBuffer == NDIS_PACKET_TYPE_PROMISCUOUS) {
+					KdPrint(("SYS:FilterOidRequest:set NDIS_PACKET_TYPE_PROMISCUOUS\n"));
+				} else {
+					KdPrint(("SYS:FilterOidRequest:cancel NDIS_PACKET_TYPE_PROMISCUOUS\n"));
+				}
+				break;
+			default:
+				break;
+			}
+			break;
+		default:
+			break;
+		}
         Status = NdisFOidRequest(pFilter->filter_handle, ClonedRequest);
 
         if (Status != NDIS_STATUS_PENDING)
@@ -1270,35 +1287,28 @@ Return Value:
     while (CurrNbl != NULL) {
         //如果是本驱动发出来的NBL，将此NBL脱离当前的NBL链
         if (CurrNbl->SourceHandle == pFilter->filter_handle) {
-            PNET_BUFFER_LIST	pOwnerNBL;
-			PMDL                send_mdl = NULL;
-			PVOID			    send_buffer;
+            PNET_BUFFER_LIST	drop_nbl;
+			PMDL				send_mdl = NULL;
+			PVOID				send_buffer;
 			ULONG				buffer_length;
 
-            pOwnerNBL = CurrNbl;
+            drop_nbl = CurrNbl;
+			CurrNbl = NET_BUFFER_LIST_NEXT_NBL(drop_nbl);
             //判断是否是链表头
-            if (CurrNbl != NetBufferLists) {
+			if (drop_nbl != NetBufferLists) {
                 //不是链表头
-                CurrNbl = NET_BUFFER_LIST_NEXT_NBL(CurrNbl);
+				
                 ASSERT(PrepNbl!=NULL);
                 NET_BUFFER_LIST_NEXT_NBL(PrepNbl) = CurrNbl;
             } else {
                 //是链表头
-                NetBufferLists = NET_BUFFER_LIST_NEXT_NBL(CurrNbl);
+				NetBufferLists = CurrNbl;
+				
             }
             //断开和原始链的关联
-            NET_BUFFER_LIST_NEXT_NBL(pOwnerNBL) = NULL;
-			/*
-			PETHERNET_HEADER    send_buffer;
-			PMDL                send_mdl = NULL;
-			PNET_BUFFER_LIST    send_nbl;
-			ULONG               bytes_copied;
+            NET_BUFFER_LIST_NEXT_NBL(drop_nbl) = NULL;
 
-			ASSERT(return_data.data.route != NULL);
-			//创建一个NBL
-			send_buffer = (PETHERNET_HEADER)FILTER_ALLOC_MEM(filter->filter_handle, buffer_length);
-			*/
-			send_mdl = NET_BUFFER_FIRST_MDL(NET_BUFFER_LIST_FIRST_NB(pOwnerNBL));
+			send_mdl = NET_BUFFER_FIRST_MDL(NET_BUFFER_LIST_FIRST_NB(drop_nbl));
 			ASSERT(send_mdl != NULL);
 			//查询mdl
 			NdisQueryMdl(
@@ -1313,7 +1323,7 @@ Return Value:
 			//释放数据包内存
 			FILTER_FREE_MEM(send_buffer);
             //释放NBL
-            NdisFreeNetBufferList(pOwnerNBL);
+            NdisFreeNetBufferList(drop_nbl);
         } else {
             PrepNbl = CurrNbl;
             CurrNbl = NET_BUFFER_LIST_NEXT_NBL(CurrNbl);
@@ -1701,19 +1711,19 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 	//添加代码
 	current_nbl = NetBufferLists;
 	while (current_nbl != NULL) {
-		UINT					buffer_length = 0;
+		UINT					data_length = 0;
 		PETHERNET_HEADER		ethernet_header = NULL;
 		//是否此数据包已处理
 		
 		PROCESS_NBL_RESULT	return_data = { 0 };
-		ethernet_header = GetEthernetHeader(current_nbl, &buffer_length);
+		ethernet_header = GetEthernetHeader(current_nbl, &data_length);
 		
 		//各种有效性判断
 		if (ethernet_header != NULL) {
 			INT lcxl_role;
 			
 			lcxl_role  = g_setting.lcxl_role;
-			ProcessNBL(filter, TRUE, lcxl_role, ethernet_header, buffer_length, &return_data);
+			ProcessNBL(filter, TRUE, lcxl_role, ethernet_header, data_length, &return_data);
 		}
 		switch (return_data.code) {
 		case PNRC_DROP:case PNRC_ROUTER:
@@ -1738,35 +1748,48 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 				PMDL                send_mdl = NULL;
 				PNET_BUFFER_LIST    send_nbl;
 				ULONG               bytes_copied;
-
+				NDIS_STATUS			status;
 				ASSERT(return_data.data.route != NULL);
 				//创建一个NBL
-				send_buffer = (PETHERNET_HEADER)FILTER_ALLOC_MEM(filter->filter_handle, buffer_length);
-				send_mdl = NdisAllocateMdl(filter->filter_handle, send_buffer, buffer_length);
+				send_buffer = (PETHERNET_HEADER)FILTER_ALLOC_MEM(filter->filter_handle, data_length);
+				
+
+				send_mdl = NdisAllocateMdl(filter->filter_handle, send_buffer, data_length);
 				send_nbl = NdisAllocateNetBufferAndNetBufferList(
 					filter->send_net_buffer_list_pool,
 					sizeof(NPROT_SEND_NETBUFLIST_RSVD),// ContextSize
 					0,                              // ContextBackfill
 					send_mdl,                           // MdlChain
 					0,                              // DataOffset
-					buffer_length);                   // DataLength
-				NdisCopyFromNetBufferToNetBuffer(
+					data_length);                   // DataLength
+				
+				status = NdisCopyFromNetBufferToNetBuffer(
 					NET_BUFFER_LIST_FIRST_NB(send_nbl),
 					0,
-					buffer_length,
+					data_length,
 					NET_BUFFER_LIST_FIRST_NB(current_nbl),
 					0,
 					&bytes_copied);
+					
+				if (!NT_SUCCESS(status)) {
+					KdPrint(("NdisCopyFromNetBufferToNetBuffer failed.error code=%08x\n", status));
+				} else {
+					ASSERT(bytes_copied == data_length);
+				}
+				
+				//NdisMoveMemory(send_buffer, ethernet_header, data_length);
 				//设置SourceHandle
 				//A filter driver must set the SourceHandle member of each NET_BUFFER_LIST structure that it originates to the same value that it passes to the NdisFilterHandle parameter
 
 				send_nbl->SourceHandle = filter->filter_handle;
 				//修改目标MAC地址
-				RtlCopyMemory(&send_buffer->Destination, return_data.data.route->dst_server->info.mac_addr.Address, sizeof(ethernet_header->Destination));
+				//RtlCopyMemory(&send_buffer->Source, &send_buffer->Destination, sizeof(ethernet_header->Source));
+				NdisMoveMemory(&send_buffer->Destination, return_data.data.route->dst_server->info.mac_addr.Address, sizeof(send_buffer->Destination));
+				
 				//
 				// The other members of NET_BUFFER_DATA structure are already initialized properly during allocation.
 				//
-				NET_BUFFER_DATA_LENGTH(NET_BUFFER_LIST_FIRST_NB(send_nbl)) = bytes_copied;
+				NET_BUFFER_DATA_LENGTH(NET_BUFFER_LIST_FIRST_NB(send_nbl)) = data_length;
 				//插入到转发队列中
 				if (send_nbl_head == NULL) {
 					send_nbl_head = send_nbl;
@@ -1826,7 +1849,7 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 	//转发数据包给真实的服务器
 	if (NULL != send_nbl_head) {
 		NET_BUFFER_LIST_NEXT_NBL(send_nbl_tail) = NULL;
-		NdisFSendNetBufferLists(filter->filter_handle, send_nbl_head, PortNumber, send_flags);
+		NdisFSendNetBufferLists(filter->filter_handle, send_nbl_head, /*NDIS_DEFAULT_PORT_NUMBER*/PortNumber, send_flags);
 	}
 	//
 	if (filter->track_receives)
@@ -2247,7 +2270,7 @@ PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER pFilter, IN INT ipMode, IN PV
 	return route_info;
 }
 
-VOID ProcessNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PETHERNET_HEADER pEthHeader, IN UINT BufferLength, IN OUT PPROCESS_NBL_RESULT return_data)
+VOID ProcessNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PETHERNET_HEADER pEthHeader, IN UINT data_length, IN OUT PPROCESS_NBL_RESULT return_data)
 {
 	PVOID ethernet_data;
 	USHORT ethernet_type;
@@ -2256,7 +2279,33 @@ VOID ProcessNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN
 
 	ASSERT(return_data != NULL && filter != NULL && pEthHeader != NULL);
 	RtlZeroMemory(return_data, sizeof(PROCESS_NBL_RESULT));
-	ethernet_data = GetEthernetData(pEthHeader, BufferLength, &ethernet_type, &BufferLength);
+	if (is_recv) {
+		if (RtlCompareMemory(pEthHeader->Destination.Byte, filter->module.mac_addr.Address, sizeof(pEthHeader->Destination.Byte)) < sizeof(pEthHeader->Destination.Byte)) {
+			KdPrint((
+				"SYS:ProcessNBL recv pEthHeader->Destination(%02x:%02x:%02x:%02x:%02x:%02x) != filter->module.mac_addr.Address\n",
+				pEthHeader->Destination.Byte[0],
+				pEthHeader->Destination.Byte[1],
+				pEthHeader->Destination.Byte[2],
+				pEthHeader->Destination.Byte[3],
+				pEthHeader->Destination.Byte[4],
+				pEthHeader->Destination.Byte[5]));
+			return;
+		}
+	} else {
+		if (RtlCompareMemory(pEthHeader->Source.Byte, filter->module.mac_addr.Address, sizeof(pEthHeader->Source.Byte)) < sizeof(pEthHeader->Source.Byte)) {
+			KdPrint((
+				"SYS:ProcessNBL send pEthHeader->Source(%02x:%02x:%02x:%02x:%02x:%02x) != filter->module.mac_addr.Address\n",
+				pEthHeader->Destination.Byte[0],
+				pEthHeader->Destination.Byte[1],
+				pEthHeader->Destination.Byte[2],
+				pEthHeader->Destination.Byte[3],
+				pEthHeader->Destination.Byte[4],
+				pEthHeader->Destination.Byte[5]));
+			return;
+		}
+	}
+	
+	ethernet_data = GetEthernetData(pEthHeader, data_length, &ethernet_type, &data_length);
 	if (ethernet_data == NULL) {
 		return;
 	}
@@ -2268,7 +2317,7 @@ VOID ProcessNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN
 	switch (ethernet_type) {
 	case ETHERNET_TYPE_ARP:
 		//ARP_OPCODE  ARP_REQUEST  ARP_RESPONSE
-		if (BufferLength >= sizeof(ARP_HEADER)) {
+		if (data_length >= sizeof(ARP_HEADER)) {
 			
 			PARP_HEADER arp_header;
 
@@ -2278,7 +2327,7 @@ VOID ProcessNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN
 		}
 		break;
 	case ETHERNET_TYPE_IPV4://IPv4协议
-		if (BufferLength >= sizeof(IPV4_HEADER)){
+		if (data_length >= sizeof(IPV4_HEADER)){
 			//查看数据包的目标IP是否是虚拟IP
 			if (virtual_addr.status & SA_ENABLE_IPV4) {
 				PIPV4_HEADER ip_header;
@@ -2302,7 +2351,7 @@ VOID ProcessNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN
 		break;
 
 	case ETHERNET_TYPE_IPV6://IPv6协议
-		if (BufferLength >= sizeof(IPV6_HEADER)){
+		if (data_length >= sizeof(IPV6_HEADER)){
 			//虚拟IP是否启用
 			if (virtual_addr.status & SA_ENABLE_IPV6) {
 				PIPV6_HEADER ip_header;

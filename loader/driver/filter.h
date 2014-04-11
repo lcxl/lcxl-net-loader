@@ -468,7 +468,7 @@ typedef struct _PROCESS_NBL_RESULT{
 // 参数: IN UINT BufferLength
 // 参数: IN OUT PROCESS_NBL_RETURN_DATA return_data 如果需要路由此NBL，返回路由信息，否则返回NULL。注意，只有当函数返回为FALSE时此值恒为NULL
 //************************************
-VOID ProcessNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PETHERNET_HEADER pEthHeader, IN UINT BufferLength, IN OUT PPROCESS_NBL_RESULT return_data);
+VOID ProcessNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PETHERNET_HEADER pEthHeader, IN UINT data_length, IN OUT PPROCESS_NBL_RESULT return_data);
 
 VOID ProcessARP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PARP_HEADER arp_header, IN PLCXL_ADDR_INFO virtual_addr, IN OUT PPROCESS_NBL_RESULT return_data);
 //************************************
