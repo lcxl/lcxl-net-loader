@@ -116,8 +116,8 @@ void CLCXLConfig::UpdateModuleList(const std::vector<APP_MODULE> &module_list)
 	std::vector<CONFIG_MODULE>::iterator cit;
 	std::vector<APP_MODULE>::const_iterator ait;
 
-	for (cit = m_ModuleList.begin(); cit != m_ModuleList.end(); ) {
-		bool isexist = false;
+	for (cit = m_ModuleList.begin(); cit != m_ModuleList.end(); cit++) {
+		(*cit).isexist = false;
 		for (ait = module_list.cbegin(); ait != module_list.cend(); ait++) {
 			if ((*ait).miniport_net_luid.Value == (*cit).module.miniport_net_luid.Value) {
 				//更新CONFIG_MODULE中的数据，以下数据以系统为准
@@ -126,14 +126,9 @@ void CLCXLConfig::UpdateModuleList(const std::vector<APP_MODULE> &module_list)
 				wcscpy_s((*cit).module.miniport_friendly_name, sizeof((*cit).module.miniport_friendly_name) / sizeof(WCHAR), (*ait).miniport_friendly_name);
 				wcscpy_s((*cit).module.miniport_name, sizeof((*cit).module.miniport_name) / sizeof(WCHAR), (*ait).miniport_name);
 				wcscpy_s((*cit).module.filter_module_name, sizeof((*cit).module.filter_module_name) / sizeof(WCHAR), (*ait).filter_module_name);
-				isexist = true;
+				(*cit).isexist = true;
 				break;
 			}
-		}
-		if (!isexist) {
-			cit = m_ModuleList.erase(cit);
-		} else {
-			cit++;
 		}
 	}
 
@@ -148,6 +143,7 @@ void CLCXLConfig::UpdateModuleList(const std::vector<APP_MODULE> &module_list)
 		if (!isexist) {
 			CONFIG_MODULE module;
 
+			module.isexist = true;
 			module.module = (*ait);
 			m_ModuleList.push_back(module);
 		}

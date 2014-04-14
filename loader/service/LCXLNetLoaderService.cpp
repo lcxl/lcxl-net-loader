@@ -148,6 +148,9 @@ miniport_net_luid=%I64x\n"),
 			);
 		OutputDebugStr(_T("APP:-----------------------------\n"));
 #endif
+		if (!(*it).isexist) {
+			continue;
+		}
 		//设置虚拟IP地址
 		if (!lnlSetVirtualAddr((*it).module.miniport_net_luid, &(*it).module.virtual_addr)) {
 			OutputDebugStr(_T("lnlSetVirtualAddr(%I64d) failed:error code=%d\n"), (*it).module.miniport_net_luid, GetLastError());
@@ -164,6 +167,21 @@ miniport_net_luid=%I64x\n"),
 				OutputDebugStr(_T("lnlAddServer(%I64d) failed:error code=%d\n"), (*it).module.miniport_net_luid, GetLastError());
 			}
 		}
+		//设置IP地址
+		/*
+		PMIB_IPADDRTABLE	pIPAddrTable = NULL;
+		DWORD				dwSize = sizeof(MIB_IPADDRTABLE)* 10;
+		DWORD				dwError;
+		do {
+			pIPAddrTable = (PMIB_IPADDRTABLE)realloc(pIPAddrTable, dwSize);
+			dwError = CreateUnicastIpAddressEntry(pIPAddrTable, &dwSize, 0);
+		} while (dwError == ERROR_INSUFFICIENT_BUFFER);
+		if (dwError == NO_ERROR) {
+			
+		}
+		free(pIPAddrTable);
+		//AddIPAddress()
+		*/
 	}
 	SetServiceName(LCXLSHADOW_SER_NAME);
 	SetListenPort(m_Config.GetPort());

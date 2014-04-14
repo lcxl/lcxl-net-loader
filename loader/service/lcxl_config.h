@@ -42,11 +42,15 @@
 //#define ELEMENT_MAC_ADDR "mac_addr"
 
 typedef struct _CONFIG_SERVER {
+	//服务器信息
 	LCXL_SERVER server;
-	WCHAR		comment[256];//备注名
+	//备注名
+	WCHAR		comment[256];
 } CONFIG_SERVER, *PCONFIG_SERVER;
 
 typedef struct _CONFIG_MODULE{
+	//网卡是否存在，如果不存在，则表明可能被禁用或者从系统中移除
+	bool						isexist;
 	//驱动模块列表
 	APP_MODULE					module;
 	//------------------------LCXL_ROUTER角色------------------------

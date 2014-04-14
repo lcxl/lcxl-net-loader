@@ -22,6 +22,7 @@ VOID InitRouteListEntry(IN OUT PLCXL_ROUTE_LIST_ENTRY route_info, IN INT ipMode,
 	ASSERT(pTcpHeader != NULL);
 	ASSERT(server_info != NULL);
 
+	route_info->src_ip.ip_mode = ipMode;
 	route_info->status = RS_NORMAL;
 	route_info->dst_server = server_info;
 	route_info->dst_port = pTcpHeader->th_dport;
@@ -40,23 +41,23 @@ VOID InitRouteListEntry(IN OUT PLCXL_ROUTE_LIST_ENTRY route_info, IN INT ipMode,
 	}
 }
 
-PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry(IN PLIST_ENTRY route_list, IN INT ipMode, IN PVOID pIPHeader, IN PTCP_HDR pTcpHeader)
+PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry(IN PLIST_ENTRY route_list, IN INT ip_mode, IN PVOID ip_header, IN PTCP_HDR tcp_header)
 {
 	union {
 		PIPV4_HEADER ipv4_header;
 		PIPV6_HEADER ipv6_header;
-	} ip_header = { 0 };
+	} ip_header_union = { 0 };
 	//pFilter->route_list.
 	PLIST_ENTRY Link = route_list->Flink;
-	PLCXL_ROUTE_LIST_ENTRY route_info;
+	
 
-	switch (ipMode) {
+	switch (ip_mode) {
 	case IM_IPV4:
-		ip_header.ipv4_header = (PIPV4_HEADER)pIPHeader;
+		ip_header_union.ipv4_header = (PIPV4_HEADER)ip_header;
 
 		break;
 	case IM_IPV6:
-		ip_header.ipv6_header = (PIPV6_HEADER)pIPHeader;
+		ip_header_union.ipv6_header = (PIPV6_HEADER)ip_header;
 		break;
 	default:
 		ASSERT(FALSE);
@@ -64,20 +65,21 @@ PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry(IN PLIST_ENTRY route_list, IN INT ipMod
 
 
 	//遍历列表
-	while (Link != route_list)
-	{
+	while (Link != route_list) {
+		PLCXL_ROUTE_LIST_ENTRY route_info;
+
 		route_info = CONTAINING_RECORD(Link, LCXL_ROUTE_LIST_ENTRY, list_entry);
-		if (ipMode == route_info->src_ip.ip_mode && route_info->src_port == pTcpHeader->th_sport && route_info->dst_port == pTcpHeader->th_dport) {
-			switch (ipMode)
+		if (ip_mode == route_info->src_ip.ip_mode && route_info->src_port == tcp_header->th_sport && route_info->dst_port == tcp_header->th_dport) {
+			switch (ip_mode)
 			{
 			case IM_IPV4:
 				//查看是否匹配
-				if (RtlCompareMemory(&route_info->src_ip.addr.ip_4, &ip_header.ipv4_header->SourceAddress, sizeof(ip_header.ipv4_header->SourceAddress)) == sizeof(ip_header.ipv4_header->SourceAddress)) {
+				if (RtlCompareMemory(&route_info->src_ip.addr.ip_4, &ip_header_union.ipv4_header->SourceAddress, sizeof(ip_header_union.ipv4_header->SourceAddress)) == sizeof(ip_header_union.ipv4_header->SourceAddress)) {
 					return route_info;
 				}
 				break;
 			case IM_IPV6:
-				if (RtlCompareMemory(&route_info->src_ip.addr.ip_6, &ip_header.ipv6_header->SourceAddress, sizeof(ip_header.ipv6_header->SourceAddress)) == sizeof(ip_header.ipv6_header->SourceAddress)) {
+				if (RtlCompareMemory(&route_info->src_ip.addr.ip_6, &ip_header_union.ipv6_header->SourceAddress, sizeof(ip_header_union.ipv6_header->SourceAddress)) == sizeof(ip_header_union.ipv6_header->SourceAddress)) {
 					return route_info;
 				}
 				break;
