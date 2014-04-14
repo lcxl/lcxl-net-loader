@@ -441,7 +441,17 @@ typedef struct _NPROT_SEND_NETBUFLIST_RSVD{
 ///路由TCP数据包
 ///返回路由信息
 ///</summary>
-PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER pFilter, IN INT ipMode, IN PVOID pIPHeader);
+PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER filter, IN INT ipMode, IN PVOID pIPHeader);
+
+//************************************
+// 简介: 检查TCP数据包的mac地址是不是我们所关心的地址
+// 返回: BOOLEAN
+// 参数: IN PIF_PHYSICAL_ADDRESS mac_addr
+// 参数: IN BOOLEAN is_recv
+// 参数: IN PETHERNET_HEADER pEthHeader
+//************************************
+BOOLEAN CheckTCPNBLMacAddr(IN PIF_PHYSICAL_ADDRESS mac_addr, IN BOOLEAN is_recv, IN PETHERNET_HEADER pEthHeader);
+
 typedef enum _PROCESS_NBL_RESULT_CODE {
 	//数据包可以通过
 	PNRC_PASS = 0,
@@ -452,6 +462,8 @@ typedef enum _PROCESS_NBL_RESULT_CODE {
 	//要路由此数据包
 	PNRC_ROUTER = 3
 } PROCESS_NBL_RESULT_CODE, *PPROCESS_NBL_RESULT_CODE;
+
+
 typedef struct _PROCESS_NBL_RESULT{
 	PROCESS_NBL_RESULT_CODE code;
 	union {
@@ -460,6 +472,7 @@ typedef struct _PROCESS_NBL_RESULT{
 		PLCXL_ROUTE_LIST_ENTRY	route;
 	} data;
 } PROCESS_NBL_RESULT, *PPROCESS_NBL_RESULT;
+
 //************************************
 // 简介: 处理此NBL
 // 返回: BOOLEAN TRUE:已处理，不要交给上层驱动程序；FALSE:未处理，交给上层处理程序

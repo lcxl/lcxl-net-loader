@@ -20,5 +20,6 @@ VOID LoadModuleSetting(IN OUT PLCXL_MODULE_SETTING_INFO module, IN PNDIS_FILTER_
 	module->miniport_name = LCXLNewString(attach_paramters->BaseMiniportName);
 	LCXLFreeString(module->filter_module_name);
 	module->filter_module_name = LCXLNewString(attach_paramters->FilterModuleGuidName);
-
+	//设置路由项超时时间
+	module->route_timeout = 600;
 }

@@ -173,7 +173,7 @@ Return Value:
             break;
         }
 
-
+		KeQueryPerformanceCounter(&g_setting.frequency);
     }
     while(bFalse);
 	//注册系统初始化完成事件
@@ -2214,7 +2214,7 @@ VOID DriverReinitialize(
 	KdPrint(("SYS:DriverReinitialize end\n"));
 }
 
-PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER pFilter, IN INT ipMode, IN PVOID pIPHeader) 
+PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER filter, IN INT ipMode, IN PVOID pIPHeader) 
 {
 	PTCP_HDR ptcp_header = NULL;
 	PLCXL_ROUTE_LIST_ENTRY route_info;
@@ -2231,23 +2231,23 @@ PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER pFilter, IN INT ipMode, IN PV
 		ASSERT(FALSE);
 		break;
 	}
-	route_info = GetRouteListEntry(&pFilter->route_list, ipMode, pIPHeader, ptcp_header);
+	route_info = GetRouteListEntry(&filter->route_list, filter->module.route_timeout, &filter->module.server_list, ipMode, pIPHeader, ptcp_header);
 	//建立连接的阶段
 	//有TH_SYN的阶段是建立连接的阶段，这个时候就得选择路由信息
 	if ((ptcp_header->th_flags & TH_SYN) != 0) {
 		PSERVER_INFO_LIST_ENTRY server;
 
 		//选择一个服务器
-		server = SelectBestServer(&pFilter->module.server_list, ipMode, pIPHeader, ptcp_header);
+		server = SelectBestServer(&filter->module.server_list, ipMode, pIPHeader, ptcp_header);
 		if (server == NULL) {
 			KdPrint(("SYS:route_info TH_SYN server = NULL, return\n"));
 			return NULL;
 		}
 		if (route_info == NULL) {
-			route_info = CreateRouteListEntry(&pFilter->route_list);
+			route_info = CreateRouteListEntry(&filter->route_list);
 			KdPrint(("SYS:create route_info\n"));
 		} else {
-			DecRefListEntry(&pFilter->module.server_list, &route_info->dst_server->list_entry);
+			DecRefListEntry(&filter->module.server_list, &route_info->dst_server->list_entry);
 			KdPrint(("SYS:reuse route_info\n"));
 		}
 		//初始化路由信息

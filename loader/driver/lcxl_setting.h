@@ -32,13 +32,16 @@ typedef struct _LCXL_MODULE_SETTING_INFO {
 	//------------------------LCXL_ROUTER角色------------------------
 	//服务器列表，SERVER_INFO_LIST_ENTRY
 	LCXL_LOCK_LIST			server_list;
+	//路由表超时时间，默认为10分钟，以秒为单位
+	INT						route_timeout;
 	//------------------------LCXL_SERVER角色------------------------
 	//负载均衡器的mac地址
 	IF_PHYSICAL_ADDRESS		router_mac_addr;
 } LCXL_MODULE_SETTING_INFO, *PLCXL_MODULE_SETTING_INFO;//配置模块数据结构
 
 typedef struct _LCXL_SETTING{
-	INT					lcxl_role;//驱动当前角色，有LCXL_ROLE_ROUTER和LCXL_ROLE_SERVER两种角色d
+	INT					lcxl_role;//!!此角色不应该放在全局变量中，应该放在模块变量中，驱动当前角色，有LCXL_ROLE_ROUTER和LCXL_ROLE_SERVER两种角色
+	LARGE_INTEGER		frequency;//KeQueryPerformanceCounter的每秒时钟频率，用于计算路由表的生存周期
 } LCXL_SETTING, *PLCXL_SETTING;//驱动设置
 
 //删除路由信息

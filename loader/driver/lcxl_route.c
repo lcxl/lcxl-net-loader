@@ -1,6 +1,6 @@
 ﻿#include "precomp.h"
 #include "lcxl_route.h"
-
+#include "lcxl_setting.h"
 NPAGED_LOOKASIDE_LIST  g_route_mem_mgr;
 
 PLCXL_ROUTE_LIST_ENTRY CreateRouteListEntry(IN PLIST_ENTRY route_list)
@@ -41,7 +41,7 @@ VOID InitRouteListEntry(IN OUT PLCXL_ROUTE_LIST_ENTRY route_info, IN INT ipMode,
 	}
 }
 
-PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry(IN PLIST_ENTRY route_list, IN INT ip_mode, IN PVOID ip_header, IN PTCP_HDR tcp_header)
+PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry(IN PLIST_ENTRY route_list, IN INT route_timeout, IN PLCXL_LOCK_LIST server_list, IN INT ip_mode, IN PVOID ip_header, IN PTCP_HDR tcp_header)
 {
 	union {
 		PIPV4_HEADER ipv4_header;
@@ -63,7 +63,9 @@ PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry(IN PLIST_ENTRY route_list, IN INT ip_mo
 		ASSERT(FALSE);
 	}
 
-
+	LARGE_INTEGER timestamp;
+	//获取时间戳
+	timestamp = KeQueryPerformanceCounter(NULL);
 	//遍历列表
 	while (Link != route_list) {
 		PLCXL_ROUTE_LIST_ENTRY route_info;
@@ -75,19 +77,31 @@ PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry(IN PLIST_ENTRY route_list, IN INT ip_mo
 			case IM_IPV4:
 				//查看是否匹配
 				if (RtlCompareMemory(&route_info->src_ip.addr.ip_4, &ip_header_union.ipv4_header->SourceAddress, sizeof(ip_header_union.ipv4_header->SourceAddress)) == sizeof(ip_header_union.ipv4_header->SourceAddress)) {
+					//更新时间戳
+					route_info->timestamp = timestamp;
 					return route_info;
 				}
 				break;
 			case IM_IPV6:
 				if (RtlCompareMemory(&route_info->src_ip.addr.ip_6, &ip_header_union.ipv6_header->SourceAddress, sizeof(ip_header_union.ipv6_header->SourceAddress)) == sizeof(ip_header_union.ipv6_header->SourceAddress)) {
+					//更新时间戳
+					route_info->timestamp = timestamp;
 					return route_info;
 				}
 				break;
 			default:
+				ASSERT(FALSE);
 				break;
 			}
 		}
 		Link = Link->Flink;
+		//如果路由表项超时
+		if ((timestamp.QuadPart - route_info->timestamp.QuadPart) > route_timeout*g_setting.frequency.QuadPart) {
+			KdPrint(("SYS:GetRouteListEntry route timeout\n"));
+			//删除超时的路由表项
+			DeleteRouteListEntry(route_info, server_list);
+		}
+		
 	}
 	return NULL;
 }

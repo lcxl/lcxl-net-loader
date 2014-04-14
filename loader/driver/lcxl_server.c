@@ -34,7 +34,7 @@ PSERVER_INFO_LIST_ENTRY SelectBestServer(IN PLCXL_LOCK_LIST server_list, IN INT 
 {
 	PLIST_ENTRY Link;
 	PSERVER_INFO_LIST_ENTRY best_server = NULL;
-
+	
 	ASSERT(server_list != NULL);
 	UNREFERENCED_PARAMETER(pIPHeader);
 	UNREFERENCED_PARAMETER(pTcpHeader);
@@ -56,7 +56,8 @@ PSERVER_INFO_LIST_ENTRY SelectBestServer(IN PLCXL_LOCK_LIST server_list, IN INT 
 				(server_info->info.ip_status&SA_ENABLE_IPV4) && (ipMode == IM_IPV4)
 			)&& 
 			(server_info->info.status&SS_DELETED) == 0) {
-			if (best_server == NULL || best_server->performance.process_time > server_info->performance.process_time) {
+			//按照最小连接数来获取服务器（ref_count=路由表项数量+1）
+			if (best_server == NULL || best_server->list_entry.ref_count > server_info->list_entry.ref_count) {
 				if (best_server != NULL) {
 					//减少原来选出来的最好服务器的引用
 					DecRefListEntry(server_list, &best_server->list_entry);

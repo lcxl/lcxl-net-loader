@@ -35,6 +35,8 @@ extern "C" {
 		//------------------------LCXL_ROUTER角色------------------------
 		//服务器数量
 		INT					server_count;
+		//路由表项超时时间
+		INT					route_timeout;
 		//------------------------LCXL_SERVER角色------------------------	
 		//负载均衡器的mac地址
 		IF_PHYSICAL_ADDRESS	router_mac_addr;

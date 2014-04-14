@@ -277,6 +277,8 @@ FilterDeviceIoControl(
 					RtlCopyMemory(cur_buf->miniport_name, module->miniport_name->Buffer, buflen);
 					cur_buf->miniport_name[buflen / sizeof(WCHAR)] = L'\0';
 
+					//原子数据
+					cur_buf->route_timeout = module->route_timeout;
 					//需要线程保护的数据
 					
 					LockFilter(filter, &lock_handle);

@@ -20,11 +20,11 @@ typedef struct _LCXL_ROUTE_LIST_ENTRY
 #define RS_LAST_ACK 0x02					//正在等待最后一个ACK包
 #define RS_CLOSED   0x03					//连接已关闭
 	int                     status;         //连接状态
-	LCXL_IP					src_ip;
-	//TCP
+	LCXL_IP					src_ip;			//源IP地址
 	unsigned short	        src_port;		//源端口号
 	unsigned short	        dst_port;		//目的端口号
 	PSERVER_INFO_LIST_ENTRY dst_server;	    //目标服务器
+	LARGE_INTEGER			timestamp;		//时间戳，使用KeQueryPerformanceCounter
 } LCXL_ROUTE_LIST_ENTRY, *PLCXL_ROUTE_LIST_ENTRY;
 
 extern NPAGED_LOOKASIDE_LIST  g_route_mem_mgr;
@@ -57,6 +57,6 @@ VOID InitRouteListEntry(IN OUT PLCXL_ROUTE_LIST_ENTRY route_info, IN INT ipMode,
 ///<summary>
 ///获取路由信息项
 ///</summary>
-PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry(IN PLIST_ENTRY route_list, IN INT ip_mode, IN PVOID ip_header, IN PTCP_HDR tcp_header);
+PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry(IN PLIST_ENTRY route_list, IN INT route_timeout, IN PLCXL_LOCK_LIST server_list, IN INT ip_mode, IN PVOID ip_header, IN PTCP_HDR tcp_header);
 
 #endif
