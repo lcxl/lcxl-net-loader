@@ -27,6 +27,7 @@ __inline LONG IncRefListEntry(IN PLCXL_LOCK_LIST list, IN PREF_LIST_ENTRY list_e
 {
 	ASSERT(list != NULL);
 	ASSERT(list_entry != NULL);
+	UNREFERENCED_PARAMETER(list);
 	return InterlockedIncrement(&list_entry->ref_count);
 }
 //减少列表项引用

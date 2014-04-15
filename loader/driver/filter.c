@@ -2416,6 +2416,7 @@ VOID ProcessARP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN
 	UNREFERENCED_PARAMETER(return_data);
 	UNREFERENCED_PARAMETER(lcxl_role);
 	UNREFERENCED_PARAMETER(filter);
+	UNREFERENCED_PARAMETER(is_recv);
 	LCXLReadARPEthernet(arp_header, &lcxl_arp_ethernet);
 
 	//如果不是针对IPv4的ARP协议，则跳过
