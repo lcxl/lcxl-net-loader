@@ -15,6 +15,7 @@ protected:
 	int m_ListenPort;
 	virtual void IOCPEvent(IocpEventEnum EventType, CLLSockObj *SockObj, PIOCPOverlapped Overlapped) = 0;
 	virtual bool PreSerRun() = 0;
+	virtual void PostSerRun() = 0;
 protected:
 	virtual DWORD SerHandler(DWORD dwControl, DWORD dwEventType, LPVOID lpEventData);
 	virtual void SerRun();

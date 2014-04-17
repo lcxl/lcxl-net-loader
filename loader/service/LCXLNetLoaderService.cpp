@@ -97,6 +97,8 @@ void CNetLoaderService::IOCPEvent(IocpEventEnum EventType, CLLSockObj *SockObj, 
 	}
 }
 
+
+
 bool CNetLoaderService::PreSerRun()
 {
 	//在locker生存周期中锁定
@@ -129,6 +131,12 @@ bool CNetLoaderService::PreSerRun()
 			lnlSetLcxlRole(m_Config.GetRole());
 		}
 	}
+	m_NotifyEvent = NULL;
+	// Use NotifyUnicastIpAddressChange to determine when the address is ready
+	if (NO_ERROR != NotifyUnicastIpAddressChange(AF_UNSPEC, &CallCompleted, NULL, FALSE, &m_NotifyEvent)) {
+		return false;
+	}
+
 	//开始进行设置
 	std::vector<CONFIG_MODULE>::iterator it;
 	for (it = m_Config.ModuleList().begin(); it != m_Config.ModuleList().end(); it++) {
@@ -167,26 +175,22 @@ miniport_net_luid=%I64x\n"),
 				OutputDebugStr(_T("lnlAddServer(%I64d) failed:error code=%d\n"), (*it).module.miniport_net_luid, GetLastError());
 			}
 		}
-		//设置IP地址
-		/*
-		PMIB_IPADDRTABLE	pIPAddrTable = NULL;
-		DWORD				dwSize = sizeof(MIB_IPADDRTABLE)* 10;
-		DWORD				dwError;
-		do {
-			pIPAddrTable = (PMIB_IPADDRTABLE)realloc(pIPAddrTable, dwSize);
-			dwError = CreateUnicastIpAddressEntry(pIPAddrTable, &dwSize, 0);
-		} while (dwError == ERROR_INSUFFICIENT_BUFFER);
-		if (dwError == NO_ERROR) {
-			
-		}
-		free(pIPAddrTable);
-		//AddIPAddress()
-		*/
+		
+		SetIpAddress((*it).module.miniport_net_luid, &(*it).module.virtual_addr);
 	}
+
 	SetServiceName(LCXLSHADOW_SER_NAME);
 	SetListenPort(m_Config.GetPort());
 	SaveXMLFile();
 	return true;
+}
+
+void CNetLoaderService::PostSerRun()
+{
+	if (m_NotifyEvent != NULL) {
+		CancelMibChangeNotify2(m_NotifyEvent);
+	}
+	
 }
 
 void CNetLoaderService::RecvEvent(CLLSockObj *SockObj, PIOCPOverlapped Overlapped)
@@ -375,4 +379,126 @@ bool CNetLoaderService::LoadXMLFile()
 bool CNetLoaderService::SaveXMLFile()
 {
 	return m_Config.SaveXMLFile(tstring_to_string(ExtractFilePath(GetAppFilePath())) + CONFIG_FILE_NAME);
+}
+
+unsigned long CNetLoaderService::SetIpAddress(NET_LUID miniport_net_luid, PLCXL_ADDR_INFO virtual_addr)
+{
+	//设置IP地址
+	unsigned long status = 0;
+	if (virtual_addr->status & SA_ENABLE_IPV6) {
+		//(*it).module.virtual_addr
+		MIB_UNICASTIPADDRESS_ROW ipRow;
+		// Initialize the row
+		InitializeUnicastIpAddressEntry(&ipRow);
+		ipRow.InterfaceLuid = miniport_net_luid;
+		ipRow.Address.Ipv6.sin6_addr = virtual_addr->ipv6;
+		ipRow.Address.Ipv6.sin6_family = AF_INET6;
+		//ipv6,前缀;ipv4:子网掩码长度
+		ipRow.OnLinkPrefixLength = 64;
+
+		
+		status = CreateUnicastIpAddressEntry(&ipRow);
+		if (status != NO_ERROR)
+		{
+			switch (status)
+			{
+			case ERROR_INVALID_PARAMETER:
+				OutputDebugStr(_T("Error: CreateUnicastIpAddressEntry returned ERROR_INVALID_PARAMETER\n"));
+				break;
+			case ERROR_NOT_FOUND:
+				OutputDebugStr(_T("Error: CreateUnicastIpAddressEntry returned ERROR_NOT_FOUND\n"));
+				break;
+			case ERROR_NOT_SUPPORTED:
+				OutputDebugStr(_T("Error: CreateUnicastIpAddressEntry returned ERROR_NOT_SUPPORTED\n"));
+				break;
+			case ERROR_OBJECT_ALREADY_EXISTS:
+				OutputDebugStr(_T("Error: CreateUnicastIpAddressEntry returned ERROR_OBJECT_ALREADY_EXISTS\n"));
+				break;
+			default:
+				//NOTE: Is this case needed? If not, we can remove the ErrorExit() function
+				OutputDebugStr(_T("CreateUnicastIpAddressEntry returned error: %d\n"), status);
+				break;
+			}
+		} else {
+			OutputDebugStr(_T("CreateUnicastIpAddressEntry succeeded\n"));
+		}
+	}
+
+	if (virtual_addr->status & SA_ENABLE_IPV4) {
+		//(*it).module.virtual_addr
+		MIB_UNICASTIPADDRESS_ROW ipRow;
+		// Initialize the row
+		InitializeUnicastIpAddressEntry(&ipRow);
+		ipRow.InterfaceLuid = miniport_net_luid;
+		ipRow.Address.Ipv4.sin_addr = virtual_addr->ipv4;
+		ipRow.Address.Ipv4.sin_family = AF_INET;
+
+		//ipv6,前缀;ipv4:子网掩码长度
+		ipRow.OnLinkPrefixLength = 24;
+
+		status = CreateUnicastIpAddressEntry(&ipRow);
+		if (status != NO_ERROR)
+		{
+			switch (status)
+			{
+			case ERROR_INVALID_PARAMETER:
+				OutputDebugStr(_T("Error: CreateUnicastIpAddressEntry returned ERROR_INVALID_PARAMETER\n"));
+				break;
+			case ERROR_NOT_FOUND:
+				OutputDebugStr(_T("Error: CreateUnicastIpAddressEntry returned ERROR_NOT_FOUND\n"));
+				break;
+			case ERROR_NOT_SUPPORTED:
+				OutputDebugStr(_T("Error: CreateUnicastIpAddressEntry returned ERROR_NOT_SUPPORTED\n"));
+				break;
+			case ERROR_OBJECT_ALREADY_EXISTS:
+				OutputDebugStr(_T("Error: CreateUnicastIpAddressEntry returned ERROR_OBJECT_ALREADY_EXISTS\n"));
+				break;
+			default:
+				//NOTE: Is this case needed? If not, we can remove the ErrorExit() function
+				OutputDebugStr(_T("CreateUnicastIpAddressEntry returned error: %d\n"), status);
+				break;
+			}
+		} else {
+			OutputDebugStr(_T("CreateUnicastIpAddressEntry succeeded\n"));
+
+			//SetIpForwardEntry2
+		}
+	}
+	return status;
+}
+
+
+
+void CALLBACK CallCompleted(PVOID callerContext, PMIB_UNICASTIPADDRESS_ROW row, MIB_NOTIFICATION_TYPE notificationType)
+{
+
+	ADDRESS_FAMILY addressFamily;
+	SOCKADDR_IN sockv4addr;
+	struct in_addr ipv4addr;
+
+	// Ensure that this is the correct notification before setting gCallbackComplete
+	// NOTE: Is there a stronger way to do this?
+	if (notificationType == MibAddInstance) {
+		OutputDebugStr(_T("NotifyUnicastIpAddressChange received an Add instance\n"));
+		addressFamily = (ADDRESS_FAMILY)row->Address.si_family;
+		switch (addressFamily) {
+		case AF_INET:
+			OutputDebugStr(_T("\tAddressFamily: AF_INET\n"));
+			break;
+		case AF_INET6:
+			OutputDebugStr(_T("\tAddressFamily: AF_INET6\n"));
+			break;
+		default:
+			OutputDebugStr(_T("\tAddressFamily: %d\n"), addressFamily);
+			break;
+		}
+		if (addressFamily == AF_INET) {
+			sockv4addr = row->Address.Ipv4;
+			ipv4addr = sockv4addr.sin_addr;
+			OutputDebugStr(_T("IPv4 address:  %s\n"), string_to_tstring(std::string(inet_ntoa(ipv4addr))).c_str());
+		}
+		if (callerContext != NULL)
+			OutputDebugStr(_T("Received a CallerContext value\n"));
+	}
+	return;
 }

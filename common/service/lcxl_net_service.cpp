@@ -62,6 +62,9 @@ void CNetServiceBase::SerRun()
 
 	mSerList = NULL;
 	mIOCPMgr = NULL;
+
+	PostSerRun();
+
 }
 
 void CNetServiceBase::SetExitEvent()

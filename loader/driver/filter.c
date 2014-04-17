@@ -2221,7 +2221,6 @@ PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER filter, IN INT ipMode, IN PVO
 
 	switch (ipMode) {
 	case IM_IPV4:
-		//ptcp_header = (PTCP_HDR)((PUCHAR)pIPHeader + sizeof(IPV4_HEADER));
 		ptcp_header = (PTCP_HDR)((PUCHAR)pIPHeader + Ip4HeaderLengthInBytes((PIPV4_HEADER)pIPHeader));
 		break;
 	case IM_IPV6:
@@ -2253,7 +2252,7 @@ PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER filter, IN INT ipMode, IN PVO
 		//初始化路由信息
 		InitRouteListEntry(route_info, ipMode, pIPHeader, ptcp_header, server);
 		KdPrint((
-			"SYS:init route_info(%02x:%02x:%02x:%02x:%02x:%02x)\n",
+			"SYS:init route_info tomac=%02x:%02x:%02x:%02x:%02x:%02x\n",
 			route_info->dst_server->info.mac_addr.Address[0],
 			route_info->dst_server->info.mac_addr.Address[1],
 			route_info->dst_server->info.mac_addr.Address[2],
@@ -2276,7 +2275,7 @@ PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER filter, IN INT ipMode, IN PVO
 			else if ((ptcp_header->th_flags & TH_RST) != 0) {
 				//如果连接重置，直接关闭连接
 				route_info->status = RS_CLOSED;
-				KdPrint(("SYS:route_info RS_CLOSED\n"));
+				KdPrint(("SYS:route_info RS_CLOSED TH_RST\n"));
 			}
 		} else {
 			KdPrint(("SYS:route_info(No TH_SYN) == NULL\n"));
@@ -2345,12 +2344,13 @@ VOID ProcessNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN
 	case ETHERNET_TYPE_ARP:
 		//ARP_OPCODE  ARP_REQUEST  ARP_RESPONSE
 		if (data_length >= sizeof(ARP_HEADER)) {
-			
-			PARP_HEADER arp_header;
+			if (virtual_addr.status & SA_ENABLE_IPV4) {
+				PARP_HEADER arp_header;
 
-			arp_header = (PARP_HEADER)ethernet_data;
+				arp_header = (PARP_HEADER)ethernet_data;
 
-			ProcessARP(filter, is_recv, lcxl_role, arp_header, &virtual_addr, return_data);
+				ProcessARP(filter, is_recv, lcxl_role, arp_header, &virtual_addr, return_data);
+			}
 		}
 		break;
 	case ETHERNET_TYPE_IPV4://IPv4协议
@@ -2398,6 +2398,7 @@ VOID ProcessNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN
 					}
 					break;
 				case 0x11://PROT_UDP 数据包
+					ProcessUDP(filter, is_recv, lcxl_role, ip_header, IM_IPV6, &virtual_addr, return_data);
 					break;
 				}
 			}
@@ -2412,6 +2413,7 @@ VOID ProcessARP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN
 {
 	LCXL_ARP_ETHERNET lcxl_arp_ethernet;
 
+	ASSERT(virtual_addr->status && SA_ENABLE_IPV4);
 	UNREFERENCED_PARAMETER(virtual_addr);
 	UNREFERENCED_PARAMETER(return_data);
 	UNREFERENCED_PARAMETER(lcxl_role);
@@ -2423,13 +2425,14 @@ VOID ProcessARP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN
 	if (lcxl_arp_ethernet.ProtocolAddressSpace != ETHERNET_TYPE_IPV4) {
 		return;
 	}
+	
 	KdPrint(("SYS:recv=%d, ARP:HAS=%d, \
-			 PAS=%d, \
-			 OC=%d, \
-			 SHA=%02x:%02x:%02x:%02x:%02x:%02x, \
-			 SPA=%d.%d.%d.%d, \
-			 THA=%02x:%02x:%02x:%02x:%02x:%02x, \
-			 TPA=%d.%d.%d.%d\n",
+PAS=%d, \
+OC=%d, \
+SHA=%02x:%02x:%02x:%02x:%02x:%02x, \
+SPA=%d.%d.%d.%d, \
+THA=%02x:%02x:%02x:%02x:%02x:%02x, \
+TPA=%d.%d.%d.%d\n",
 			 is_recv,
 			 lcxl_arp_ethernet.HardwareAddressSpace,
 			 lcxl_arp_ethernet.ProtocolAddressSpace,
@@ -2454,13 +2457,56 @@ VOID ProcessARP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN
 			 lcxl_arp_ethernet.TargetProtocolAddress.S_un.S_un_b.s_b2,
 			 lcxl_arp_ethernet.TargetProtocolAddress.S_un.S_un_b.s_b3,
 			 lcxl_arp_ethernet.TargetProtocolAddress.S_un.S_un_b.s_b4));
-	switch (lcxl_arp_ethernet.Opcode)
-	{
-	case ARP_REQUEST:
+	switch (lcxl_role) {
+	case LCXL_ROLE_SERVER:
+		switch (lcxl_arp_ethernet.Opcode)
+		{
+		case ARP_REQUEST:
+			if (is_recv) {
+				//如果收到虚拟ipv4的请求
+				if (RtlCompareMemory(&lcxl_arp_ethernet.TargetProtocolAddress, &virtual_addr->ipv4, sizeof(virtual_addr->ipv4)) == sizeof(virtual_addr->ipv4)) {
+					KdPrint(("SYS:recv ARP ARP_REQUEST TargetProtocolAddress PNRC_DROP\n"));
+					return_data->code = PNRC_DROP;
+				}
 
+				if (RtlCompareMemory(&lcxl_arp_ethernet.SenderProtocolAddress, &virtual_addr->ipv4, sizeof(virtual_addr->ipv4)) == sizeof(virtual_addr->ipv4)) {
+					KdPrint(("SYS:recv ARP ARP_REQUEST SenderProtocolAddress PNRC_DROP\n"));
+					return_data->code = PNRC_DROP;
+				}
+
+			} else {
+				//如果发送虚拟ipv4请求
+				if (RtlCompareMemory(&lcxl_arp_ethernet.TargetProtocolAddress, &virtual_addr->ipv4, sizeof(virtual_addr->ipv4)) == sizeof(virtual_addr->ipv4)) {
+					KdPrint(("SYS:send ARP ARP_REQUEST TargetProtocolAddress PNRC_DROP\n"));
+					return_data->code = PNRC_DROP;
+				}
+
+				if (RtlCompareMemory(&lcxl_arp_ethernet.SenderProtocolAddress, &virtual_addr->ipv4, sizeof(virtual_addr->ipv4)) == sizeof(virtual_addr->ipv4)) {
+					KdPrint(("SYS:send ARP ARP_REQUEST SenderProtocolAddress PNRC_DROP\n"));
+					return_data->code = PNRC_DROP;
+				}
+			}
+			break;
+		case ARP_RESPONSE:
+			if (is_recv) {
+				//如果收到虚拟ipv4的回复
+				if (RtlCompareMemory(&lcxl_arp_ethernet.SenderProtocolAddress, &virtual_addr->ipv4, sizeof(virtual_addr->ipv4)) == sizeof(virtual_addr->ipv4)) {
+					KdPrint(("SYS:recv ARP ARP_RESPONSE PNRC_DROP\n"));
+					return_data->code = PNRC_DROP;
+				}
+			} else {
+				//如果发送虚拟ipv4回复
+				if (RtlCompareMemory(&lcxl_arp_ethernet.SenderProtocolAddress, &virtual_addr->ipv4, sizeof(virtual_addr->ipv4)) == sizeof(virtual_addr->ipv4)) {
+					KdPrint(("SYS:send ARP ARP_RESPONSE PNRC_DROP\n"));
+					return_data->code = PNRC_DROP;
+				}
+			}
+			break;
+		default:
+			break;
+		}
 		break;
-	case ARP_RESPONSE:
-
+	case LCXL_ROLE_ROUTER:
 		break;
 	default:
 		break;
@@ -2472,7 +2518,7 @@ VOID ProcessICMPv6(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role,
 	PICMPV6_MESSAGE icmpv6_message = (PICMPV6_MESSAGE)((PUCHAR)ip_header + sizeof(IPV6_HEADER));
 
 	UNREFERENCED_PARAMETER(filter);
-	
+	ASSERT(virtual_addr->status && SA_ENABLE_IPV6);
 	KdPrint(("SYS:recv=%d, ICMPv6:Type=%d, Code=%d, Checksum=%d, sa=%04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x, da=%04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x\n",
 		is_recv,
 		icmpv6_message->Header.Type,
@@ -2613,7 +2659,7 @@ VOID ProcessTCP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN
 				if (return_data->data.route != NULL) {
 					//设置此数据包状态为路由
 					return_data->code = PNRC_ROUTER;
-					KdPrint(("SYS:TCP PNRC_ROUTER\n"));
+					//KdPrint(("SYS:TCP PNRC_ROUTER\n"));
 				}
 			}
 
@@ -2625,7 +2671,62 @@ VOID ProcessTCP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN
 			if (RtlCompareMemory(source_address, virtual_ip, source_address_len) == source_address_len) {
 				//更改源MAC地址为router的mac地址
 				return_data->code = PNRC_MODIFY;
-				KdPrint(("SYS:TCP PNRC_MODIFY\n"));
+				//KdPrint(("SYS:TCP PNRC_MODIFY\n"));
+			}
+		}
+		break;
+	}
+}
+
+VOID ProcessUDP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PVOID ip_header, IN INT ipMode, IN PLCXL_ADDR_INFO virtual_addr, IN OUT PPROCESS_NBL_RESULT return_data)
+{
+	PVOID destination_address = NULL;
+	SIZE_T destination_address_len = 0;
+	PVOID source_address = NULL;
+	SIZE_T source_address_len = 0;
+
+	PVOID virtual_ip = NULL;
+
+	UNREFERENCED_PARAMETER(filter);
+	switch (ipMode)
+	{
+	case IM_IPV4:
+		destination_address = &((PIPV4_HEADER)ip_header)->DestinationAddress;
+		destination_address_len = sizeof(((PIPV4_HEADER)ip_header)->DestinationAddress);
+
+		source_address = &((PIPV4_HEADER)ip_header)->SourceAddress;
+		source_address_len = sizeof(((PIPV4_HEADER)ip_header)->SourceAddress);
+		virtual_ip = &virtual_addr->ipv4;
+		break;
+	case IM_IPV6:
+		destination_address = &((PIPV6_HEADER)ip_header)->DestinationAddress;
+		destination_address_len = sizeof(((PIPV6_HEADER)ip_header)->DestinationAddress);
+
+		source_address = &((PIPV6_HEADER)ip_header)->SourceAddress;
+		source_address_len = sizeof(((PIPV6_HEADER)ip_header)->SourceAddress);
+		virtual_ip = &virtual_addr->ipv6;
+		break;
+	default:
+		ASSERT(FALSE);
+		break;
+	}
+	switch (lcxl_role) {
+	case LCXL_ROLE_ROUTER://如果角色是路由
+		break;
+	case LCXL_ROLE_SERVER:
+		if (!is_recv) {
+			//如果要发送的数据包的源IP地址是虚拟IP地址
+			if (RtlCompareMemory(source_address, virtual_ip, source_address_len) == source_address_len) {
+				//更改源MAC地址为router的mac地址
+				return_data->code = PNRC_DROP;
+				KdPrint(("SYS:send UDP PNRC_DROP\n"));
+			}
+		} else {
+			//如果要接受的数据包的目标IP地址是虚拟IP地址
+			if (RtlCompareMemory(destination_address, virtual_ip, destination_address_len) == destination_address_len) {
+				//更改源MAC地址为router的mac地址
+				return_data->code = PNRC_DROP;
+				KdPrint(("SYS:recv UDP PNRC_DROP\n"));
 			}
 		}
 		break;

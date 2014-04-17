@@ -509,6 +509,18 @@ VOID ProcessICMPv6(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role,
 VOID ProcessTCP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PVOID ip_header, IN INT ipMode, IN PLCXL_ADDR_INFO virtual_addr, IN OUT PPROCESS_NBL_RESULT return_data);
 
 //************************************
+// 简介: 处理UDP包
+// 返回: VOID
+// 参数: IN PLCXL_FILTER filter
+// 参数: IN BOOLEAN is_recv
+// 参数: IN INT lcxl_role
+// 参数: IN PVOID ip_header
+// 参数: IN INT ipMode
+// 参数: IN PLCXL_ADDR_INFO virtual_addr
+// 参数: IN OUT PPROCESS_NBL_RESULT return_data
+//************************************
+VOID ProcessUDP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PVOID ip_header, IN INT ipMode, IN PLCXL_ADDR_INFO virtual_addr, IN OUT PPROCESS_NBL_RESULT return_data);
+//************************************
 // 简介: 寻找LCXL_FILTER结构，注意，需要锁定表之后才能使用
 // 返回: PLCXL_FILTER
 // 参数: IN NET_LUID miniport_net_luid 网卡的LUID
