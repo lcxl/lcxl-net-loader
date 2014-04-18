@@ -127,4 +127,33 @@ __inline PVOID GetEthernetData(IN PETHERNET_HEADER eth_header, IN UINT buffer_le
 	return data;
 }
 
+//************************************
+// 简介: 计算ICMP，IP等数据包的校验和
+// 返回: UINT16
+// 参数: PVOID * addr
+// 参数: int count
+//************************************
+__inline UINT16 checksum(PUINT16 addr, int count){
+	/* Compute Internet Checksum for "count" bytes
+	*         beginning at location "addr".
+	*/
+	register long sum = 0;
+
+	while (count > 1)  {
+		/*  This is the inner loop */
+		sum += *addr++;
+		count -= 2;
+	}
+
+	/*  Add left-over byte, if any */
+	if (count > 0)
+		sum += *(unsigned char *)addr;
+
+	/*  Fold 32-bit sum to 16 bits */
+	while (sum >> 16)
+		sum = (sum & 0xffff) + (sum >> 16);
+
+	return ~(UINT16)sum;
+}
+
 #endif

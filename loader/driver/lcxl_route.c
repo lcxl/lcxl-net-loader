@@ -77,8 +77,7 @@ PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry(IN PLIST_ENTRY route_list, IN INT route
 
 		route_info = CONTAINING_RECORD(Link, LCXL_ROUTE_LIST_ENTRY, list_entry);
 		if (ip_mode == route_info->src_ip.ip_mode && route_info->src_port == tcp_header->th_sport && route_info->dst_port == tcp_header->th_dport) {
-			switch (ip_mode)
-			{
+			switch (ip_mode) {
 			case IM_IPV4:
 				//查看是否匹配
 				if (RtlCompareMemory(&route_info->src_ip.addr.ip_4, &ip_header_union.ipv4_header->SourceAddress, sizeof(ip_header_union.ipv4_header->SourceAddress)) == sizeof(ip_header_union.ipv4_header->SourceAddress)) {
