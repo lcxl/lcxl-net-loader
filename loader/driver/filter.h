@@ -461,8 +461,10 @@ typedef enum _PROCESS_NBL_RESULT_CODE {
 	PNRC_MODIFY = 2,
 	//要路由此数据包
 	PNRC_ROUTER = 3,
-	//处理ICMP数据包
-	PNRC_ICMP_NS = 4
+	//处理ICMP NS数据包
+	PNRC_ICMP_NS = 4,
+	//处理ICMP NA数据包
+	PNRC_ICMP_NA = 5
 } PROCESS_NBL_RESULT_CODE, *PPROCESS_NBL_RESULT_CODE;
 
 
@@ -471,6 +473,7 @@ typedef struct _PROCESS_NBL_RESULT{
 	union {
 		//路由信息
 		PLCXL_ROUTE_LIST_ENTRY	route;
+		/*
 		//ss
 		struct {
 			//IP头
@@ -485,6 +488,8 @@ typedef struct _PROCESS_NBL_RESULT{
 			} na;
 			
 		} icmpns;
+		*/
+		LCXL_IP			modifyip;//PNRC_MODIFY
 	} data;
 } PROCESS_NBL_RESULT, *PPROCESS_NBL_RESULT;
 
@@ -538,7 +543,7 @@ VOID ProcessUDP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN
 
 NTSTATUS CreateNBL(IN PLCXL_FILTER filter, IN PETHERNET_HEADER send_buffer, IN UINT datalen, OUT PNET_BUFFER_LIST *nbl);
 
-VOID DropOwnerNBL(IN PLCXL_FILTER filter, IN PNET_BUFFER_LIST NetBufferLists);
+PNET_BUFFER_LIST DropOwnerNBL(IN PLCXL_FILTER filter, IN PNET_BUFFER_LIST NetBufferLists);
 //************************************
 // 简介: 寻找LCXL_FILTER结构，注意，需要锁定表之后才能使用
 // 返回: PLCXL_FILTER

@@ -39,3 +39,8 @@
 /component/jsoncpp/makefiles/vs120/bin
 /loader/service/Debug-Test
 /loader/web/Servers
+/loader/driver/Win7Release
+/loader/driver/Package/Win7Release
+/loader/dll/Win7Release
+/component/jsoncpp/makefiles/vs120/Release
+/loader/service/Release

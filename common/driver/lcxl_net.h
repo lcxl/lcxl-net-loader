@@ -2,6 +2,7 @@
 #define _LCXL_NET_H_
 
 #include <netioddk.h>
+#include <netioapi.h>
 //author:LCXL
 //abstract:驱动共用的自定义数据包有关结构数据头文件
 //#include <ws2def.h>
@@ -127,33 +128,83 @@ __inline PVOID GetEthernetData(IN PETHERNET_HEADER eth_header, IN UINT buffer_le
 	return data;
 }
 
-//************************************
-// 简介: 计算ICMP，IP等数据包的校验和
-// 返回: UINT16
-// 参数: PVOID * addr
-// 参数: int count
-//************************************
-__inline UINT16 checksum(PUINT16 addr, int count){
-	/* Compute Internet Checksum for "count" bytes
-	*         beginning at location "addr".
-	*/
-	register long sum = 0;
+/** Types of Next header (Protocols) */
+#define IP_PROTO_ICMP6              58  /** ICMPv6 header */
 
-	while (count > 1)  {
-		/*  This is the inner loop */
-		sum += *addr++;
-		count -= 2;
+/**
+Calculate sum of a series of data.
+@param[in] sum The seperated number to be added in the calculation.
+@param[in] data The pointer to the data.
+@param[in] len The length of the data in bytes.
+@return The checksum in host byte order.
+*/
+__inline  UINT16 calc_sum(UINT16 sum, const UINT8 *data, UINT16 len)
+{
+	UINT16 t;
+	const UINT8 *dataptr;
+	const UINT8 *last_byte;
+
+	dataptr = data;
+	last_byte = data + len - 1;
+
+	while (dataptr < last_byte)
+	{
+		/* At least two more bytes */
+		t = (dataptr[0] << 8) + dataptr[1];
+		sum += t;
+		if (sum < t)
+		{
+			++sum; /* Carry */
+		}
+		dataptr += 2;
 	}
 
-	/*  Add left-over byte, if any */
-	if (count > 0)
-		sum += *(unsigned char *)addr;
-
-	/*  Fold 32-bit sum to 16 bits */
-	while (sum >> 16)
-		sum = (sum & 0xffff) + (sum >> 16);
-
-	return ~(UINT16)sum;
+	if (dataptr == last_byte)
+	{
+		t = (dataptr[0] << 8) + 0;
+		sum += t;
+		if (sum < t)
+		{
+			++sum; /* carry */
+		}
+	}
+	return sum;
 }
+
+/**
+Calculate upper layer checksum according to rfc 2460 section 8.1.
+@param[in] hdr The ip header of the packet to be calculated.
+@param[in] proto The upper layer protocol.
+@return The upper layer checksum in host byte order.
+*/
+__inline  UINT16 calc_upper_layer_chksum(PIPV6_HEADER hdr, UINT8 proto)
+{
+	UINT16 sum = 0;
+	UINT16 upper_layer_len;
+
+	upper_layer_len = ntohs(hdr->PayloadLength);
+
+	/* First sum pseudoheader. */
+	sum = upper_layer_len + proto;
+	sum = calc_sum(sum, (UINT8 *)&hdr->SourceAddress, 2 * sizeof(IN6_ADDR));
+
+	/* Sum upper layer header and data. */
+	sum = calc_sum(sum, (UINT8 *)(hdr + 1), upper_layer_len);
+
+	return(0xffff - sum);
+}
+
+/**
+Calculate icmp packet checksum.
+@param[in] hdr The pointer to packet.
+*/
+__inline UINT16 calc_icmp_chksum(PIPV6_HEADER hdr)
+{
+	PICMPV6_MESSAGE icmp = (PICMPV6_MESSAGE)(hdr + 1);
+	icmp->icmp6_cksum = 0;
+
+	return calc_upper_layer_chksum(hdr, IP_PROTO_ICMP6);
+}
+
 
 #endif
