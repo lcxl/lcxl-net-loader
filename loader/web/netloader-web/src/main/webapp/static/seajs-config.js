@@ -5,18 +5,27 @@ seajs.config({
       "seajs-text":"sea-plugins/seajs-text.js",
       
       "jquery": "sea-modules/jquery/jquery-1.10.1.js",
+      "history": "sea-modules/history/jquery.history.js",
 	  "bootstrap": "sea-modules/bootstrap/bootstrap.js",
 	  "bootstrap-css": "sea-modules/bootstrap/css/bootstrap.css",
 	  "bootstrap-theme-css": "sea-modules/bootstrap/css/bootstrap-theme.css",
 	  "handlebars":"sea-modules/handlebars/handlebars-v1.3.0.js",
 	  
 	  //"catalog":"user-modules/catalog.js",
+	  
 	  "navbar":"user-modules/navbar.js",
-	  "module-list":"user-modules/module-list.js",
 	  "bs-dialog":"user-modules/bs-dialog.js",
-	  "virtual-addr-setting":"user-modules/virtual-addr-setting.js",
 	  
 	  "index":"html/index.js",
+	  
+	  "module-page":"user-modules/module-page.js",
+	  "module-list":"user-modules/module-list.js",
+	  "virtual-addr-setting":"user-modules/virtual-addr-setting.js",
+	  
+	  "server-page":"user-modules/server-page.js",
+	  "server-list":"user-modules/server-list.js",
+	  
+	  
 	  //"mysql-cluster":"html/mysql-cluster.js",
 	  //"qingcloud":"html/qingcloud.js",
 	  

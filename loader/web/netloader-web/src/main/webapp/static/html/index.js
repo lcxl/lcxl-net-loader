@@ -2,11 +2,10 @@
 define(function(require, exports, module) {
 	require("jquery");
 	var $=jQuery;
+	require("history");
 	require("bootstrap");
 	var Narbar = require("navbar");
-	var ModuleList = require("module-list");
-	var BsDialog = require("bs-dialog");
-	var VirtualAddrSetting = require("virtual-addr-setting");
+	
 	//生成导航栏
 	new Narbar(".my-narbar", {
 		title : "LCXL Net Loader",
@@ -15,72 +14,44 @@ define(function(require, exports, module) {
 			url : "index.html",
 			name : "首页"
 		}, {
-			url : "mysql-cluster.html",
-			name : "MySQL集群"
+			url : "setting.html",
+			name : "设置"
 		}, {
-			url : "warning-system.html",
-			name : "告警系统"
+			url : "about.html",
+			name : "关于"
 		}, ]
 	});
-	
-	
-	//获取网卡列表
-	$.getJSON("netloader/module_list.do").done(
-		function(data) {
-			//生成网卡列表
-			var moduleList = new ModuleList(".module-list", data);
-			//注册响应事件
-			moduleList.onServerListBtnClick=function (moduleData) {
-				//生成模态对话框
-				var bsDialog = new BsDialog(".bs-dialog", {
-					id:"myModal",
-					title:"服务器列表 - "+moduleData.miniport_friendly_name,
-					body:"",
-				});
-				bsDialog.modal("show");
-			};
-			moduleList.onVirtualAddrBtnClick=function (moduleData) {
-				//生成模态对话框
-				var bsDialog = new BsDialog(".bs-dialog", {
-					id:"myModal",
-					title:"虚拟IP设置 - "+moduleData.miniport_friendly_name,
-					body:"",
-					buttons:[ {
-						dismiss:true,
-						text:"关闭",
-					},{
-						id:"virtual-addr-setting-ok",
-						text:"确定",
-						btncls:"btn-primary",
-					},],
-				});
-				var virtualAddrSetting = new VirtualAddrSetting(bsDialog.bodytag, {
-					miniport_net_luid:	moduleData.miniport_net_luid,
-					virtual_addr:moduleData.virtual_addr,
-				});
-				//监听按钮点击事件
-				bsDialog.onButtonClick = function(html, data) {
-					if ($(html).attr("id")=="virtual-addr-setting-ok") {
-						virtualAddrSetting.ajaxSubmit("netloader/set_virtual_addr.do").done(function(data){
-							//关闭对话框
-							bsDialog.modal("hide");
-							//将设置的结果同步到data中去
-							virtualAddrSetting.syncToData();
-							//刷新UI界面
-							moduleList.refreshUI(moduleData.miniport_net_luid);
-						}).fail(function (jqxhr, textStatus, error) {
-							//提示出错信息
-							bsDialog.errormsg("设置虚拟IP地址出错！");
-						});
-					}
-				};
-				bsDialog.modal("show");
-				
-			};
-		}).fail(function( jqxhr, textStatus, error ) {
-			var err = textStatus + ", " + error;
-			console.log( "Request Failed: " + err );
-		});
-	
+	//his is the same as the onpopstate event except it does not fire for traditional anchors
+	$(window).on('statechange',function(){
+		// Do something, inspect History.getState() to decide what
+		var state = History.getState();
+		var modulestate = History.normalizeState({url:"?module"});
+		var serverstate = History.normalizeState({url:"?server"});
+		//
+		if (state.url == modulestate.url) {
+			var ModulePage = require("module-page");
+			new ModulePage(".lcxlpage");
+		} else	if (state.url == serverstate.url) {
+			if (state.data.luid == null) {
+				console.log('获取luid失败！');
+				//回退
+				History.back();
+				return;
+			}
+			var ServerPage = require("server-page");
+			new ServerPage(".lcxlpage", state.data);
+		} else {
+			//默认，跳转到网卡列表
+			History.replaceState(null, "网卡列表", "?module");
+		}
+		console.log("statechange");
+	});
+	//this is the same as the onhashchange event except it does not fire for states
+	$(window).on('anchorchange',function(){
+		// Do something, inspect History.getState() to decide what
+		var state = History.getState();
+		console.log("anchorchange");
+	});
+	$(window).trigger('statechange');
 	
 });

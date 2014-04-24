@@ -20,12 +20,18 @@ public class LcxlNetCode {
 	 * 设置虚拟IP地址
 	 */
 	public final static int JC_SET_VIRTUAL_ADDR = 0x04;
-
 	/**
-	 * 设置负载均衡器的mac地址
+	 * 添加服务器
 	 */
-	public final static int JC_SET_ROUTER_MAC_ADDR = 0x05;
-
+	public final static int JC_ADD_SERVER  = 0x05;
+	/**
+	 * 设置服务器
+	 */
+	public final static int JC_SET_SERVER  = 0x06;
+	/**
+	 * 删除服务器
+	 */
+	public final static int JC_DEL_SERVER = 0x07;
 	
 	public final static String JSON_DATA = "data";
 	public final static String JSON_MODULE_LIST = "module_list";

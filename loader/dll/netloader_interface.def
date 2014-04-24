@@ -7,4 +7,3 @@ EXPORTS
 	lnlGetServerList
 	lnlAddServer
 	lnlDelServer
-	lnlSetRouterMacAddr

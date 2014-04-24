@@ -283,7 +283,7 @@ FilterDeviceIoControl(
 					
 					LockFilter(filter, &lock_handle);
 					cur_buf->virtual_addr = module->virtual_addr;
-					cur_buf->router_mac_addr = module->router_mac_addr;
+					//cur_buf->router_mac_addr = module->router_mac_addr;
 					LockLCXLLockList(&module->server_list);
 					cur_buf->server_count = GetListCountofLCXLLockList(&module->server_list);
 					UnlockLCXLLockList(&module->server_list);
@@ -425,6 +425,7 @@ FilterDeviceIoControl(
 				status = STATUS_INFO_LENGTH_MISMATCH;
 			}
 			break;
+			/*
 		case IOCTL_SERVER_SET_ROUTER_MAC_ADDR://服务器角色：设置负载均衡器的mac地址
 			if (sizeof(APP_SET_ROUTER_MAC_ADDR) == input_buffer_length) {
 				PAPP_SET_ROUTER_MAC_ADDR router_mac_addr = (PAPP_SET_ROUTER_MAC_ADDR)input_buffer;
@@ -441,6 +442,7 @@ FilterDeviceIoControl(
 				UnlockLCXLLockList(&g_filter_list);
 			}
 			break;
+			*/
 		//!添加代码!
         default:
 			status = STATUS_INVALID_PARAMETER;

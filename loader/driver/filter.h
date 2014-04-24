@@ -441,7 +441,7 @@ typedef struct _NPROT_SEND_NETBUFLIST_RSVD{
 ///路由TCP数据包
 ///返回路由信息
 ///</summary>
-PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER filter, IN INT ipMode, IN PVOID pIPHeader);
+PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER filter, IN INT ip_mode, IN PVOID ip_header);
 
 //************************************
 // 简介: 检查TCP数据包的mac地址是不是我们所关心的地址
@@ -450,7 +450,7 @@ PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER filter, IN INT ipMode, IN PVO
 // 参数: IN BOOLEAN is_recv
 // 参数: IN PETHERNET_HEADER pEthHeader
 //************************************
-BOOLEAN CheckTCPNBLMacAddr(IN PIF_PHYSICAL_ADDRESS mac_addr, IN BOOLEAN is_recv, IN PETHERNET_HEADER pEthHeader);
+BOOLEAN CheckTCPNBLMacAddr(IN PIF_PHYSICAL_ADDRESS mac_addr, IN BOOLEAN is_recv, IN PETHERNET_HEADER eth_header);
 
 typedef enum _PROCESS_NBL_RESULT_CODE {
 	//数据包可以通过
@@ -462,9 +462,9 @@ typedef enum _PROCESS_NBL_RESULT_CODE {
 	//要路由此数据包
 	PNRC_ROUTER = 3,
 	//处理ICMP NS数据包
-	PNRC_ICMP_NS = 4,
+	PNRC_ICMPV6_NS = 4,
 	//处理ICMP NA数据包
-	PNRC_ICMP_NA = 5
+	PNRC_ICMPV6_NA = 5
 } PROCESS_NBL_RESULT_CODE, *PPROCESS_NBL_RESULT_CODE;
 
 
@@ -501,7 +501,7 @@ typedef struct _PROCESS_NBL_RESULT{
 // 参数: IN UINT BufferLength
 // 参数: IN OUT PROCESS_NBL_RETURN_DATA return_data 如果需要路由此NBL，返回路由信息，否则返回NULL。注意，只有当函数返回为FALSE时此值恒为NULL
 //************************************
-VOID ProcessNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PETHERNET_HEADER pEthHeader, IN UINT data_length, IN OUT PPROCESS_NBL_RESULT return_data);
+VOID ProcessNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PETHERNET_HEADER eth_header, IN UINT data_length, IN OUT PPROCESS_NBL_RESULT return_data);
 
 VOID ProcessARP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PARP_HEADER arp_header, IN PLCXL_ADDR_INFO virtual_addr, IN OUT PPROCESS_NBL_RESULT return_data);
 //************************************
@@ -526,7 +526,7 @@ VOID ProcessICMPv6(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role,
 // 参数: IN PLCXL_ADDR_INFO virtual_addr
 // 参数: IN OUT PPROCESS_NBL_RESULT return_data
 //************************************
-VOID ProcessTCP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PVOID ip_header, IN INT ipMode, IN PLCXL_ADDR_INFO virtual_addr, IN OUT PPROCESS_NBL_RESULT return_data);
+VOID ProcessTCP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PVOID ip_header, IN INT ip_mode, IN PLCXL_ADDR_INFO virtual_addr, IN OUT PPROCESS_NBL_RESULT return_data);
 
 //************************************
 // 简介: 处理UDP包
@@ -539,7 +539,7 @@ VOID ProcessTCP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN
 // 参数: IN PLCXL_ADDR_INFO virtual_addr
 // 参数: IN OUT PPROCESS_NBL_RESULT return_data
 //************************************
-VOID ProcessUDP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PVOID ip_header, IN INT ipMode, IN PLCXL_ADDR_INFO virtual_addr, IN OUT PPROCESS_NBL_RESULT return_data);
+VOID ProcessUDP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PVOID ip_header, IN INT ip_mode, IN PLCXL_ADDR_INFO virtual_addr, IN OUT PPROCESS_NBL_RESULT return_data);
 
 NTSTATUS CreateNBL(IN PLCXL_FILTER filter, IN PETHERNET_HEADER send_buffer, IN UINT datalen, OUT PNET_BUFFER_LIST *nbl);
 

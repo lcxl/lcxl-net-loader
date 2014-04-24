@@ -163,11 +163,12 @@ miniport_net_luid=%I64x\n"),
 		if (!lnlSetVirtualAddr((*it).module.miniport_net_luid, &(*it).module.virtual_addr)) {
 			OutputDebugStr(_T("lnlSetVirtualAddr(%I64d) failed:error code=%d\n"), (*it).module.miniport_net_luid, GetLastError());
 		}
+		/*
 		//设置负载均衡器的mac地址
 		if (!lnlSetRouterMacAddr((*it).module.miniport_net_luid, &(*it).module.router_mac_addr)) {
 			OutputDebugStr(_T("lnlSetRouterMacAddr(%I64d) failed:error code=%d\n"), (*it).module.miniport_net_luid, GetLastError());
 		}
-		
+		*/
 		std::vector<CONFIG_SERVER>::iterator sit;
 		for (sit = (*it).server_list.begin(); sit != (*it).server_list.end(); sit++) {
 			//添加主机
@@ -250,6 +251,7 @@ bool CNetLoaderService::ProcessJsonData(const Json::Value &root, Json::Value &re
 			module["miniport_name"] = wstring_to_string(wstring((*it).module.miniport_name)).c_str();
 			module["miniport_net_luid"] = (*it).module.miniport_net_luid.Value;
 			module["server_count"] = (*it).module.server_count;
+			/*
 			module["router_mac_addr"] = string_format(
 				"%02x-%02x-%02x-%02x-%02x-%02x",
 				(*it).module.router_mac_addr.Address[0],
@@ -258,7 +260,7 @@ bool CNetLoaderService::ProcessJsonData(const Json::Value &root, Json::Value &re
 				(*it).module.router_mac_addr.Address[3],
 				(*it).module.router_mac_addr.Address[4],
 				(*it).module.router_mac_addr.Address[5]).c_str();
-
+				*/
 			Json::Value virtual_addr;
 			char ipv4[16];
 			inet_ntop(AF_INET, const_cast<IN_ADDR*>(&(*it).module.virtual_addr.ipv4), ipv4, sizeof(ipv4) / sizeof(ipv4[0]));
@@ -302,7 +304,7 @@ bool CNetLoaderService::ProcessJsonData(const Json::Value &root, Json::Value &re
 						(*sit).server.mac_addr.Address[3],
 						(*sit).server.mac_addr.Address[4],
 						(*sit).server.mac_addr.Address[5]).c_str();
-					server["comment"] = wstring_to_string(wstring((*sit).comment)).c_str();
+					server["comment"] = wstring_to_utf8string(wstring((*sit).comment)).c_str();
 					server_list.append(server);
 				}
 				ret[JSON_SERVER_LIST] = server_list;
@@ -333,6 +335,7 @@ bool CNetLoaderService::ProcessJsonData(const Json::Value &root, Json::Value &re
 		}
 	}
 		break;
+		/*
 	case JC_SET_ROUTER_MAC_ADDR:
 	{
 		NET_LUID miniport_net_luid;
@@ -358,7 +361,7 @@ bool CNetLoaderService::ProcessJsonData(const Json::Value &root, Json::Value &re
 		if (!lnlSetRouterMacAddr(miniport_net_luid, &mac_addr)) {
 			status = JS_FAIL;
 		}
-	}
+	}*/
 		break;
 	default:
 		status = JS_JSON_CODE_NOT_FOUND;

@@ -10,6 +10,8 @@ public class Server {
 	
 	@JsonProperty("mac_addr")
 	private String macAddr;
+	
+	private String comment;
 
 	public Integer getStatus() {
 		return status;
@@ -33,6 +35,14 @@ public class Server {
 
 	public void setMacAddr(String macAddr) {
 		this.macAddr = macAddr;
+	}
+
+	public String getComment() {
+		return comment;
+	}
+
+	public void setComment(String comment) {
+		this.comment = comment;
 	}
 	
 	

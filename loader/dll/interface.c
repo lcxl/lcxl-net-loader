@@ -121,7 +121,7 @@ BOOL WINAPI lnlDelServer(IN NET_LUID miniport_net_luid, IN PIF_PHYSICAL_ADDRESS 
 	
 	return lnlDeviceIoControl(IOCTL_ROUTER_DEL_SERVER, &del_server, sizeof(del_server), NULL, 0, &data_size);
 }
-
+/*
 BOOL WINAPI lnlSetRouterMacAddr(IN NET_LUID miniport_net_luid, PIF_PHYSICAL_ADDRESS mac_addr)
 {
 	DWORD data_size = 0;
@@ -132,3 +132,4 @@ BOOL WINAPI lnlSetRouterMacAddr(IN NET_LUID miniport_net_luid, PIF_PHYSICAL_ADDR
 
 	return lnlDeviceIoControl(IOCTL_SERVER_SET_ROUTER_MAC_ADDR, &router_mac_addr, sizeof(router_mac_addr), NULL, 0, &data_size);
 }
+*/

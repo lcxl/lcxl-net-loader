@@ -9,8 +9,15 @@
 #define JC_SERVER_LIST 0x03
 //设置虚拟IP地址
 #define JC_SET_VIRTUAL_ADDR 0x04
+//添加服务器
+#define JC_ADD_SERVER 0x05
+//设置服务器
+#define JC_SET_SERVER 0x06
+//删除服务器
+#define JC_DEL_SERVER 0x07
+
 //设置负载均衡器的mac地址
-#define JC_SET_ROUTER_MAC_ADDR 0x05
+//#define JC_SET_ROUTER_MAC_ADDR 0x05
 
 #define JSON_DATA "data"
 #define JSON_MODULE_LIST "module_list"

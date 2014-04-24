@@ -12,8 +12,7 @@ abstract:
 
 #define TAG_ROUTE       'ROUT'
 //路由信息
-typedef struct _LCXL_ROUTE_LIST_ENTRY
-{
+typedef struct _LCXL_ROUTE_LIST_ENTRY {
 	LIST_ENTRY		        list_entry;		//列表项
 #define RS_NONE     0x00
 #define RS_NORMAL   0x01					//正常

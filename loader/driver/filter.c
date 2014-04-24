@@ -1428,7 +1428,7 @@ Arguments:
 				*/
 			}
 			break;
-		case PNRC_DROP:case PNRC_ICMP_NS:
+		case PNRC_DROP:case PNRC_ICMPV6_NS:
 			//拦截此NBL
 			if (drop_nbl_head == NULL) {
 				drop_nbl_head = current_nbl;
@@ -1437,7 +1437,7 @@ Arguments:
 				NET_BUFFER_LIST_NEXT_NBL(drop_nbl_tail) = current_nbl;
 				drop_nbl_tail = current_nbl;
 			}
-			if (return_data.code == PNRC_ICMP_NS) {
+			if (return_data.code == PNRC_ICMPV6_NS) {
 				PETHERNET_HEADER    send_buffer;
 				UINT				send_buffer_length;
 				PNET_BUFFER_LIST    send_nbl;
@@ -1771,7 +1771,7 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 			ProcessNBL(filter, TRUE, lcxl_role, ethernet_header, data_length, &return_data);
 		}
 		switch (return_data.code) {
-		case PNRC_DROP:case PNRC_ROUTER:case PNRC_ICMP_NA:
+		case PNRC_DROP:case PNRC_ROUTER:case PNRC_ICMPV6_NA:
 			//如果要拦截此NBL
 			//是否可以Pend
 			if (NDIS_TEST_RECEIVE_CANNOT_PEND(ReceiveFlags)) {
@@ -1817,7 +1817,7 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 				}
 			}
 				break;
-			case PNRC_ICMP_NA://如果需要修改此NA数据包
+			case PNRC_ICMPV6_NA://如果需要修改此NA数据包
 			{
 				PETHERNET_HEADER    recv_buffer;
 				PNET_BUFFER_LIST    recv_nbl;
@@ -2268,30 +2268,30 @@ VOID DriverReinitialize(
 	KdPrint(("SYS:DriverReinitialize end\n"));
 }
 
-PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER filter, IN INT ipMode, IN PVOID pIPHeader) 
+PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER filter, IN INT ip_mode, IN PVOID ip_header) 
 {
 	PTCP_HDR ptcp_header = NULL;
 	PLCXL_ROUTE_LIST_ENTRY route_info;
 
-	switch (ipMode) {
+	switch (ip_mode) {
 	case IM_IPV4:
-		ptcp_header = (PTCP_HDR)((PUCHAR)pIPHeader + Ip4HeaderLengthInBytes((PIPV4_HEADER)pIPHeader));
+		ptcp_header = (PTCP_HDR)((PUCHAR)ip_header + Ip4HeaderLengthInBytes((PIPV4_HEADER)ip_header));
 		break;
 	case IM_IPV6:
-		ptcp_header = (PTCP_HDR)((PUCHAR)pIPHeader + sizeof(IPV6_HEADER));
+		ptcp_header = (PTCP_HDR)((PUCHAR)ip_header + sizeof(IPV6_HEADER));
 		break;
 	default:
 		ASSERT(FALSE);
 		break;
 	}
-	route_info = GetRouteListEntry(&filter->route_list, filter->module.route_timeout, &filter->module.server_list, ipMode, pIPHeader, ptcp_header);
+	route_info = GetRouteListEntry(&filter->route_list, filter->module.route_timeout, &filter->module.server_list, ip_mode, ip_header, ptcp_header);
 	//建立连接的阶段
 	//有TH_SYN的阶段是建立连接的阶段，这个时候就得选择路由信息
 	if (ptcp_header->th_flags == TH_SYN) {
 		PSERVER_INFO_LIST_ENTRY server;
 
 		//选择一个服务器
-		server = SelectBestServer(&filter->module.server_list, ipMode, pIPHeader, ptcp_header);
+		server = SelectBestServer(&filter->module.server_list, ip_mode, ip_header, ptcp_header);
 		if (server == NULL) {
 			KdPrint(("SYS:route_info TH_SYN server = NULL, return\n"));
 			return NULL;
@@ -2304,7 +2304,7 @@ PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER filter, IN INT ipMode, IN PVO
 			KdPrint(("SYS:reuse route_info\n"));
 		}
 		//初始化路由信息
-		InitRouteListEntry(route_info, ipMode, pIPHeader, ptcp_header, server);
+		InitRouteListEntry(route_info, ip_mode, ip_header, ptcp_header, server);
 		KdPrint((
 			"SYS:init route_info tomac=%02x:%02x:%02x:%02x:%02x:%02x\n",
 			route_info->dst_server->info.mac_addr.Address[0],
@@ -2343,49 +2343,49 @@ static DL_EUI48 AnycastMacAddr = {
 	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
 };
 
-BOOLEAN CheckTCPNBLMacAddr(IN PIF_PHYSICAL_ADDRESS mac_addr, IN BOOLEAN is_recv, IN PETHERNET_HEADER pEthHeader)
+BOOLEAN CheckTCPNBLMacAddr(IN PIF_PHYSICAL_ADDRESS mac_addr, IN BOOLEAN is_recv, IN PETHERNET_HEADER eth_header)
 {
 	if (is_recv) {
-		if (RtlCompareMemory(pEthHeader->Destination.Byte, mac_addr->Address, sizeof(pEthHeader->Destination.Byte)) < sizeof(pEthHeader->Destination.Byte) &&
-			RtlCompareMemory(pEthHeader->Destination.Byte, AnycastMacAddr.Byte, sizeof(pEthHeader->Destination.Byte)) < sizeof(pEthHeader->Destination.Byte)){
+		if (RtlCompareMemory(eth_header->Destination.Byte, mac_addr->Address, sizeof(eth_header->Destination.Byte)) < sizeof(eth_header->Destination.Byte) &&
+			RtlCompareMemory(eth_header->Destination.Byte, AnycastMacAddr.Byte, sizeof(eth_header->Destination.Byte)) < sizeof(eth_header->Destination.Byte)){
 			KdPrint((
 				"SYS:CheckTCPNBLMacAddr recv pEthHeader->Destination(%02x:%02x:%02x:%02x:%02x:%02x) != filter->module.mac_addr.Address\n",
-				pEthHeader->Destination.Byte[0],
-				pEthHeader->Destination.Byte[1],
-				pEthHeader->Destination.Byte[2],
-				pEthHeader->Destination.Byte[3],
-				pEthHeader->Destination.Byte[4],
-				pEthHeader->Destination.Byte[5]));
+				eth_header->Destination.Byte[0],
+				eth_header->Destination.Byte[1],
+				eth_header->Destination.Byte[2],
+				eth_header->Destination.Byte[3],
+				eth_header->Destination.Byte[4],
+				eth_header->Destination.Byte[5]));
 			return FALSE;
 		}
 	} else {
-		if (RtlCompareMemory(pEthHeader->Source.Byte, mac_addr->Address, sizeof(pEthHeader->Source.Byte)) < sizeof(pEthHeader->Source.Byte) &&
-			RtlCompareMemory(pEthHeader->Source.Byte, AnycastMacAddr.Byte, sizeof(pEthHeader->Source.Byte)) < sizeof(pEthHeader->Source.Byte)) {
+		if (RtlCompareMemory(eth_header->Source.Byte, mac_addr->Address, sizeof(eth_header->Source.Byte)) < sizeof(eth_header->Source.Byte) &&
+			RtlCompareMemory(eth_header->Source.Byte, AnycastMacAddr.Byte, sizeof(eth_header->Source.Byte)) < sizeof(eth_header->Source.Byte)) {
 			KdPrint((
 				"SYS:CheckTCPNBLMacAddr send pEthHeader->Source(%02x:%02x:%02x:%02x:%02x:%02x) != filter->module.mac_addr.Address\n",
-				pEthHeader->Source.Byte[0],
-				pEthHeader->Source.Byte[1],
-				pEthHeader->Source.Byte[2],
-				pEthHeader->Source.Byte[3],
-				pEthHeader->Source.Byte[4],
-				pEthHeader->Source.Byte[5]));
+				eth_header->Source.Byte[0],
+				eth_header->Source.Byte[1],
+				eth_header->Source.Byte[2],
+				eth_header->Source.Byte[3],
+				eth_header->Source.Byte[4],
+				eth_header->Source.Byte[5]));
 			return FALSE;
 		}
 	}
 	return TRUE;
 }
 
-VOID ProcessNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PETHERNET_HEADER pEthHeader, IN UINT data_length, IN OUT PPROCESS_NBL_RESULT return_data)
+VOID ProcessNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PETHERNET_HEADER eth_header, IN UINT data_length, IN OUT PPROCESS_NBL_RESULT return_data)
 {
 	PVOID ethernet_data;
 	USHORT ethernet_type;
 	KLOCK_QUEUE_HANDLE lock_handle;
 	LCXL_ADDR_INFO virtual_addr;
 
-	ASSERT(return_data != NULL && filter != NULL && pEthHeader != NULL);
+	ASSERT(return_data != NULL && filter != NULL && eth_header != NULL);
 	RtlZeroMemory(return_data, sizeof(PROCESS_NBL_RESULT));
 	
-	ethernet_data = GetEthernetData(pEthHeader, data_length, &ethernet_type, &data_length);
+	ethernet_data = GetEthernetData(eth_header, data_length, &ethernet_type, &data_length);
 	if (ethernet_data == NULL) {
 		return;
 	}
@@ -2420,7 +2420,7 @@ VOID ProcessNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN
 
 					break;
 				case 0x06://TCP数据包
-					if (CheckTCPNBLMacAddr(&filter->module.mac_addr, is_recv, pEthHeader)) {
+					if (CheckTCPNBLMacAddr(&filter->module.mac_addr, is_recv, eth_header)) {
 						ProcessTCP(filter, is_recv, lcxl_role, ip_header, IM_IPV4, &virtual_addr, return_data);
 					} else {
 						return_data->code = PNRC_DROP;
@@ -2449,7 +2449,7 @@ VOID ProcessNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN
 					ProcessICMPv6(filter, is_recv, lcxl_role, ip_header, &virtual_addr, return_data);
 					break;
 				case 0x06://TCP数据包
-					if (CheckTCPNBLMacAddr(&filter->module.mac_addr, is_recv, pEthHeader)) {
+					if (CheckTCPNBLMacAddr(&filter->module.mac_addr, is_recv, eth_header)) {
 						ProcessTCP(filter, is_recv, lcxl_role, ip_header, IM_IPV6, &virtual_addr, return_data);
 					} else {
 						return_data->code = PNRC_DROP;
@@ -2606,7 +2606,7 @@ VOID ProcessICMPv6(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role,
 	case LCXL_ROLE_SERVER:
 		//阻止服务器收到负载均衡器对虚拟IP的通告
 		switch (icmpv6_message->Header.Type) {
-		case 133://路由器请求（RS）
+		case 133://路由器请求（Router Solicitation，RS）
 			if (RtlCompareMemory(&ip_header->SourceAddress, &virtual_addr->ipv6, sizeof(ip_header->SourceAddress)) == sizeof(ip_header->SourceAddress)) {
 				//如果本机发送基于虚拟IPv6的请求，则拦截
 				if (!is_recv) {
@@ -2614,17 +2614,14 @@ VOID ProcessICMPv6(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role,
 					KdPrint(("SYS:ICMPv6 RS PNRC_DROP\n"));
 				}
 			}
-		case 135://邻居请求(NS)
+		case 135://邻居请求(Neighbor Solicitation，NS)
 			//这里要处理请求节点多播地址(solicited-node multicast address) 
-		{
-			//PND_NEIGHBOR_SOLICIT_HEADER ns = (PND_NEIGHBOR_SOLICIT_HEADER)icmpv6_message;
 			if (!is_recv) {
 				//如果要发送邻居请求
 				IN6_ADDR solicited_node_multicast_address;
-
-				RtlZeroMemory(&solicited_node_multicast_address, sizeof(solicited_node_multicast_address));
 				//计算虚拟IPv6地址的被请求-节点多播地址
 				//前缀为 FF02::1:FF00:0/104
+				RtlZeroMemory(&solicited_node_multicast_address, sizeof(solicited_node_multicast_address));
 				solicited_node_multicast_address.u.Word[0] = ntohs(0xFF02);
 				solicited_node_multicast_address.u.Word[5] = ntohs(0x0001);
 				solicited_node_multicast_address.u.Word[6] = ntohs(0xFF00 | ntohs(virtual_addr->ipv6.u.Word[6]));
@@ -2640,28 +2637,7 @@ VOID ProcessICMPv6(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role,
 					//http://tools.ietf.org/html/rfc4861 邻居发现协议
 					//如果以虚拟IPv6地址进行地址请求，则自己处理
 					if (RtlCompareMemory(&ip_header->SourceAddress, &virtual_addr->ipv6, sizeof(ip_header->SourceAddress)) == sizeof(ip_header->SourceAddress)) {
-						/*
-						//模拟NA请求
-						return_data->data.icmpns.ip_header.VersionClassFlow = IPV6_VERSION;
-						//https://tools.ietf.org/html/rfc2460#section-8.3
-						ASSERT(sizeof(ND_NEIGHBOR_ADVERT_HEADER)+sizeof(ND_OPTION_HDR)+sizeof(DL_EUI48)==32);
-						return_data->data.icmpns.ip_header.PayloadLength = ntohs(32);//有效载荷的长度，扩展报头也算在Payload长度里
-						return_data->data.icmpns.ip_header.HopLimit = 255;
-						return_data->data.icmpns.ip_header.NextHeader = 58;//ICMPv6
-						return_data->data.icmpns.ip_header.DestinationAddress = ip_header->SourceAddress;
-						return_data->data.icmpns.ip_header.SourceAddress = ns->nd_ns_target;
-
-						return_data->data.icmpns.na.neighber_advert.nd_na_type = 136;//NA请求
-						return_data->data.icmpns.na.neighber_advert.nd_na_code = 0;//
-						return_data->data.icmpns.na.neighber_advert.nd_na_cksum = 0;//进行反码加运算RFC1071
-						return_data->data.icmpns.na.neighber_advert.nd_na_flags_reserved = ND_NA_FLAG_OVERRIDE;
-						return_data->data.icmpns.na.neighber_advert.nd_na_target = ns->nd_ns_target;
-						return_data->data.icmpns.na.option.nd_opt_type = ND_OPT_TARGET_LINKADDR;// Target link - layer address
-						return_data->data.icmpns.na.option.nd_opt_len = 1;
-
-						//return_data->data.icmpns.target = XXX需要设置
-						*/
-						return_data->code = PNRC_ICMP_NS;
+						return_data->code = PNRC_ICMPV6_NS;
 						KdPrint(("SYS:ICMPv6 NS PNRC_ICMP_NS\n"));
 					}
 				}
@@ -2683,9 +2659,8 @@ VOID ProcessICMPv6(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role,
 					KdPrint(("SYS:ICMPv6 NS PNRC_DROP\n"));
 				}
 			}
-		}
 			break;
-		case 136://邻居宣告（NA）
+		case 136://邻居宣告（Neighbor Advertisement，NA）
 			//如果发现有别的主机对虚拟IP进行宣告
 			if (RtlCompareMemory(&ip_header->SourceAddress, &virtual_addr->ipv6, sizeof(ip_header->SourceAddress)) == sizeof(ip_header->SourceAddress)) {
 				if (is_recv) {
@@ -2702,7 +2677,7 @@ VOID ProcessICMPv6(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role,
 				if (RtlCompareMemory(&ip_header->DestinationAddress, &virtual_addr->ipv6, sizeof(ip_header->DestinationAddress)) == sizeof(ip_header->DestinationAddress)) {
 					if (is_recv) {
 						//如果接收到别的主机给虚拟IP的宣告，则模拟接收
-						return_data->code = PNRC_ICMP_NA;
+						return_data->code = PNRC_ICMPV6_NA;
 						KdPrint(("SYS:ICMPv6 recv NA PNRC_ICMP_NA\n"));
 					}
 				}
@@ -2720,7 +2695,7 @@ VOID ProcessICMPv6(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role,
 	}
 }
 
-VOID ProcessTCP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PVOID ip_header, IN INT ipMode, IN PLCXL_ADDR_INFO virtual_addr, IN OUT PPROCESS_NBL_RESULT return_data)
+VOID ProcessTCP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PVOID ip_header, IN INT ip_mode, IN PLCXL_ADDR_INFO virtual_addr, IN OUT PPROCESS_NBL_RESULT return_data)
 {
 	PVOID destination_address = NULL;
 	SIZE_T destination_address_len = 0;
@@ -2729,7 +2704,7 @@ VOID ProcessTCP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN
 
 	PVOID virtual_ip = NULL;
 
-	switch (ipMode)
+	switch (ip_mode)
 	{
 	case IM_IPV4:
 		destination_address = &((PIPV4_HEADER)ip_header)->DestinationAddress;
@@ -2758,7 +2733,7 @@ VOID ProcessTCP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN
 			//查看接收到的数据包的目标IP是否是虚拟IP
 			if (RtlCompareMemory(destination_address, virtual_ip, destination_address_len) == destination_address_len) {
 				// 创建路由表
-				return_data->data.route = RouteTCPNBL(filter, ipMode, ip_header);
+				return_data->data.route = RouteTCPNBL(filter, ip_mode, ip_header);
 				// 如果路由表不为空
 				if (return_data->data.route != NULL) {
 					//设置此数据包状态为路由
@@ -2775,7 +2750,7 @@ VOID ProcessTCP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN
 			if (RtlCompareMemory(source_address, virtual_ip, source_address_len) == source_address_len) {
 				//更改目标MAC地址为client的mac地址(是否必要？)
 				return_data->code = PNRC_MODIFY;
-				return_data->data.modifyip.ip_mode = ipMode;
+				return_data->data.modifyip.ip_mode = ip_mode;
 				NdisMoveMemory(&return_data->data.modifyip.addr, destination_address, destination_address_len);
 				//KdPrint(("SYS:TCP PNRC_MODIFY\n"));
 			}
@@ -2784,7 +2759,7 @@ VOID ProcessTCP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN
 	}
 }
 
-VOID ProcessUDP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PVOID ip_header, IN INT ipMode, IN PLCXL_ADDR_INFO virtual_addr, IN OUT PPROCESS_NBL_RESULT return_data)
+VOID ProcessUDP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PVOID ip_header, IN INT ip_mode, IN PLCXL_ADDR_INFO virtual_addr, IN OUT PPROCESS_NBL_RESULT return_data)
 {
 	PVOID destination_address = NULL;
 	SIZE_T destination_address_len = 0;
@@ -2794,7 +2769,7 @@ VOID ProcessUDP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN
 	PVOID virtual_ip = NULL;
 
 	UNREFERENCED_PARAMETER(filter);
-	switch (ipMode)
+	switch (ip_mode)
 	{
 	case IM_IPV4:
 		destination_address = &((PIPV4_HEADER)ip_header)->DestinationAddress;
