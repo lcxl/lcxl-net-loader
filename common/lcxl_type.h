@@ -30,7 +30,9 @@ extern "C" {
 #define SA_ENABLE_IPV6	0x02//服务器启用了IPV6协议
 		UCHAR				status;//服务器IP地址情况，有SA_ENABLE_IPV4，和SA_ENABLE_IPV6，可以同时使用
 		IN_ADDR				ipv4;//IPv4地址
+		UINT8				ipv4_onlink_prefix_length;//IPv4子网掩码长度，在驱动层不使用
 		IN6_ADDR			ipv6;//IPv6地址
+		UINT8				ipv6_onlink_prefix_length;//IPv6前缀长度，在驱动层不使用
 	} LCXL_ADDR_INFO, *PLCXL_ADDR_INFO;//IP地址和MAC地址结构信息
 
 	typedef struct _LCXL_SERVER_PERFORMANCE {
@@ -42,9 +44,10 @@ extern "C" {
 	
 	typedef struct _LCXL_SERVER {
 #define SS_ONLINE	0x01//服务器在线
+#define SS_CHECKING	0x02//正在检测服务器的可用性
 #define SS_DELETED	0x80//服务器已被删除
-		UCHAR				status;//服务器状态
-		UCHAR				ip_status;//IP协议启用状态
+		UCHAR				status;//服务器状态，SS_...
+		UCHAR				ip_status;//IP协议启用状态，SA_ENABLE_IPV...
 		IF_PHYSICAL_ADDRESS mac_addr;//服务器MAC地址
 	} LCXL_SERVER, *PLCXL_SERVER;//服务器信息
 

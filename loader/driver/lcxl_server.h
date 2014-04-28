@@ -14,12 +14,14 @@ typedef struct _SERVER_INFO_LIST_ENTRY
 {
 	//列表项
 	REF_LIST_ENTRY			list_entry;
-	//锁
+	//服务器锁
 	KSPIN_LOCK				lock;
-	//服务器状态
-	LCXL_SERVER		info;
-	//服务器性能状态
+	//服务器信息
+	LCXL_SERVER				info;
+	//服务器性能信息
 	LCXL_SERVER_PERFORMANCE	performance;
+	//时间戳，服务器可用性检测，使用KeQueryPerformanceCounter
+	LARGE_INTEGER			timestamp;	
 } SERVER_INFO_LIST_ENTRY, *PSERVER_INFO_LIST_ENTRY;
 
 extern NPAGED_LOOKASIDE_LIST  g_server_mem_mgr;

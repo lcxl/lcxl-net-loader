@@ -1,7 +1,7 @@
 ﻿/*++
 
 Copyright (c) Microsoft Corporation
-
+Modify by LCXL
 Module Name:
 
     Filter.c
@@ -1442,24 +1442,7 @@ Arguments:
 				UINT				send_buffer_length;
 				PNET_BUFFER_LIST    send_nbl;
 				PIPV6_HEADER		ip_header;
-				//UINT				data_length = 0;
-				/*
-				//修改
-				return_data.data.icmpns.na.target = eth_header->Source;
-				//计算校验值
-				return_data.data.icmpns.na.neighber_advert.nd_na_cksum = ntohs(checksum((PUINT16)&return_data.data.icmpns.na, sizeof(return_data.data.icmpns.na)));
-
 				
-				data_length = sizeof(ETHERNET_HEADER)+sizeof(return_data.data.icmpns);
-
-				send_buffer = (PETHERNET_HEADER)FILTER_ALLOC_MEM(filter->filter_handle, data_length);
-				//构造NA请求
-				send_buffer->Source = eth_header->Destination;
-				send_buffer->Destination = eth_header->Source;
-				send_buffer->Type = eth_header->Type;
-				//复制ICMP NA数据
-				NdisMoveMemory((PETHERNET_HEADER)send_buffer + 1, &return_data.data.icmpns, data_length - sizeof(ETHERNET_HEADER));
-				*/
 				//构造NS请求，源地址设置为[::]，没有NS数据包option选项
 				send_buffer_length = buffer_length - sizeof(ND_OPTION_HDR)-sizeof(DL_EUI48);
 				send_buffer = (PETHERNET_HEADER)FILTER_ALLOC_MEM(filter->filter_handle, send_buffer_length);
@@ -2621,7 +2604,9 @@ VOID ProcessICMPv6(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role,
 				IN6_ADDR solicited_node_multicast_address;
 				//计算虚拟IPv6地址的被请求-节点多播地址
 				//前缀为 FF02::1:FF00:0/104
+				//请求节点多播地址清零
 				RtlZeroMemory(&solicited_node_multicast_address, sizeof(solicited_node_multicast_address));
+				//计算请求节点多播地址
 				solicited_node_multicast_address.u.Word[0] = ntohs(0xFF02);
 				solicited_node_multicast_address.u.Word[5] = ntohs(0x0001);
 				solicited_node_multicast_address.u.Word[6] = ntohs(0xFF00 | ntohs(virtual_addr->ipv6.u.Word[6]));

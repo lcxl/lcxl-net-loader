@@ -113,6 +113,9 @@ void CLCXLConfig::SetRolename(const std::string val)
 
 void CLCXLConfig::UpdateModuleList(const std::vector<APP_MODULE> &module_list)
 {
+	//在locker生存周期中锁定
+	CCSLocker locker = LockinLifeCycle();
+
 	std::vector<CONFIG_MODULE>::iterator cit;
 	std::vector<APP_MODULE>::const_iterator ait;
 
@@ -143,8 +146,10 @@ void CLCXLConfig::UpdateModuleList(const std::vector<APP_MODULE> &module_list)
 		if (!isexist) {
 			CONFIG_MODULE module;
 
-			module.isexist = true;
 			module.module = (*ait);
+			module.isexist = true;
+			module.exit_event = NULL;
+			module.thread_handle = NULL;
 			m_ModuleList.push_back(module);
 		}
 	}
@@ -294,6 +299,9 @@ CONFIG_MODULE & CLCXLConfig::ReadModule(tinyxml2::XMLElement *owner_element, CON
 	tinyxml2::XMLElement * element;
 
 	ZeroMemory(&module.module, sizeof(module.module));
+	module.isexist = false;
+	module.exit_event = NULL;
+	module.thread_handle = NULL;
 	//读取net_luid
 	element = owner_element->FirstChildElement(ELEMENT_MINIPORT_NET_LUID);
 	if (element != NULL) {

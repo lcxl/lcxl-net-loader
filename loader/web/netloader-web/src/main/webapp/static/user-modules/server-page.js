@@ -7,6 +7,8 @@ define(function(require, exports, module) {
 	require("history");
 	var BsDialog = require("bs-dialog");
 	
+	var ServerList = require("server-list");
+	
 	function ServerPage(select, data) {
 		$(select).html('<div class="server-list"></div>');
 		

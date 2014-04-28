@@ -56,8 +56,11 @@ typedef struct _CONFIG_MODULE{
 	//------------------------LCXL_ROUTER角色------------------------
 	//服务器列表
 	std::vector<CONFIG_SERVER>	server_list;
+	HANDLE						thread_handle;
+	HANDLE						exit_event;
 	//------------------------LCXL_SERVER角色------------------------
-} CONFIG_MODULE, *PCONFIG_MODULE_INFO;
+} CONFIG_MODULE, *PCONFIG_MODULE;
+
 
 class CLCXLConfig {
 private:

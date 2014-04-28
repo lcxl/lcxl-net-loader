@@ -263,42 +263,37 @@ typedef struct _FILTER_REQUEST
 //
 typedef struct _LCXL_FILTER
 {
-    LIST_ENTRY						filter_module_link;
+    LIST_ENTRY					filter_module_link;
 	//attach_paramters参数只有在attach的时候才能使用
 	//PNDIS_FILTER_ATTACH_PARAMETERS	attach_paramters;
 
-    NDIS_HANDLE                     filter_handle;
+    NDIS_HANDLE					filter_handle;
 
-    NDIS_STATUS                     status;
-    NDIS_EVENT                      event;
-    ULONG                           back_fill_size;
-    KSPIN_LOCK                     lock;    // Lock for protection of state and outstanding sends and recvs
-	//过滤驱动当前状态
-    volatile FILTER_STATE           state; 
-    ULONG                           outstanding_sends;
-    ULONG                           outstanding_request;
-    ULONG                           outstanding_rcvs;
-    FILTER_LOCK                     send_lock;
-    FILTER_LOCK                     rcv_lock;
-    QUEUE_HEADER                    send_nbl_queue;
-    QUEUE_HEADER                    rcv_nbl_queue;
+    NDIS_STATUS					status;
+    NDIS_EVENT					event;
+    ULONG						back_fill_size;
+    KSPIN_LOCK					lock;    // Lock for protection of state and outstanding sends and recvs
+    volatile FILTER_STATE		state; //过滤驱动当前状态
+    ULONG						outstanding_sends;
+    ULONG						outstanding_request;
+    ULONG						outstanding_rcvs;
+    FILTER_LOCK					send_lock;
+    FILTER_LOCK					rcv_lock;
+    QUEUE_HEADER				send_nbl_queue;
+    QUEUE_HEADER				rcv_nbl_queue;
 
-    ULONG                           calls_restart;
-    BOOLEAN                         track_receives;
-    BOOLEAN                         track_sends;
+    ULONG						calls_restart;
+    BOOLEAN						track_receives;
+    BOOLEAN						track_sends;
 #if DBG
-    BOOLEAN                         bIndicating;
+    BOOLEAN						bIndicating;
 #endif
 
-    PNDIS_OID_REQUEST               pending_oid_request;
-    //添加的代码
-    //存储模块指针
-	LCXL_MODULE_SETTING_INFO		module;
-	//路由信息
-	LIST_ENTRY						route_list;//LCXL_ROUTE_LIST_ENTRY
-    //NBL发送池
-    NDIS_HANDLE                     send_net_buffer_list_pool;
-    //!添加的代码!
+    PNDIS_OID_REQUEST			pending_oid_request;
+
+	LCXL_MODULE_SETTING_INFO	module;//存储模块
+	LIST_ENTRY					route_list;//LCXL_ROUTE_LIST_ENTRY，路由信息
+    NDIS_HANDLE					send_net_buffer_list_pool;//NBL发送池
 }LCXL_FILTER, *PLCXL_FILTER;
 
 typedef struct _FILTER_DEVICE_EXTENSION
@@ -465,33 +460,16 @@ typedef enum _PROCESS_NBL_RESULT_CODE {
 	PNRC_ICMPV6_NS = 4,
 	//处理ICMP NA数据包
 	PNRC_ICMPV6_NA = 5
-} PROCESS_NBL_RESULT_CODE, *PPROCESS_NBL_RESULT_CODE;
+} PROCESS_NBL_RESULT_CODE, *PPROCESS_NBL_RESULT_CODE;//数据包处理结果代码
 
 
 typedef struct _PROCESS_NBL_RESULT{
-	PROCESS_NBL_RESULT_CODE code;
+	PROCESS_NBL_RESULT_CODE code;//返回值
 	union {
-		//路由信息
-		PLCXL_ROUTE_LIST_ENTRY	route;
-		/*
-		//ss
-		struct {
-			//IP头
-			IPV6_HEADER ip_header;
-			//邻居发现协议头
-			struct {
-				ND_NEIGHBOR_ADVERT_HEADER neighber_advert;
-				//option
-				ND_OPTION_HDR option;
-				//目标
-				DL_EUI48 target;
-			} na;
-			
-		} icmpns;
-		*/
-		LCXL_IP			modifyip;//PNRC_MODIFY
-	} data;
-} PROCESS_NBL_RESULT, *PPROCESS_NBL_RESULT;
+		PLCXL_ROUTE_LIST_ENTRY	route;//路由信息
+		LCXL_IP					modifyip;//PNRC_MODIFY
+	} data;//返回数据
+} PROCESS_NBL_RESULT, *PPROCESS_NBL_RESULT;//数据包处理结果
 
 //************************************
 // 简介: 处理此NBL

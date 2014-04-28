@@ -8,6 +8,7 @@
 #include "lcxl_func.h"
 #include "lcxl_net_code.h"
 #include <Ws2tcpip.h>
+#include <process.h>
 
 TCHAR LCXLSHADOW_SER_NAME[] = _T("LCXLNetLoaderService");
 
@@ -35,7 +36,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	//初始化一个分配表  
 	printf("%s\n", "输入任意字符开始");
 	_getch();
-	
+	printf("%s\n", "服务开始");
 	g_NetLoadSer.Run();
 	return 0;
 }
@@ -101,25 +102,12 @@ void CNetLoaderService::IOCPEvent(IocpEventEnum EventType, CLLSockObj *SockObj, 
 
 bool CNetLoaderService::PreSerRun()
 {
-	//在locker生存周期中锁定
-	CCSLocker locker = m_Config.LockinLifeCycle();
+	
 	//加载配置文件
 	if (!LoadXMLFile()) {
 		return false;
 	}
-	//获取网卡列表信息
-	DWORD module_count = 20;
-	std::vector<APP_MODULE> module_list;
 
-	module_list.resize(module_count);
-	if (!lnlGetModuleList(&module_list[0], &module_count)) {
-		OutputDebugStr(_T("lnlGetModuleList failed.Error Code=%d\n"), GetLastError());
-		module_list.resize(module_count);
-		//return false;
-	}
-	module_list.resize(module_count);
-	//更新到配置文件中
-	m_Config.UpdateModuleList(module_list);
 	//设置
 	//获取角色信息
 	INT sys_lcxl_role = lnlGetLcxlRole();
@@ -131,54 +119,33 @@ bool CNetLoaderService::PreSerRun()
 			lnlSetLcxlRole(m_Config.GetRole());
 		}
 	}
-	m_NotifyEvent = NULL;
-	// Use NotifyUnicastIpAddressChange to determine when the address is ready
-	if (NO_ERROR != NotifyUnicastIpAddressChange(AF_UNSPEC, &CallCompleted, NULL, FALSE, &m_NotifyEvent)) {
-		return false;
-	}
+
+	//在locker生存周期中锁定
+	CCSLocker locker = m_Config.LockinLifeCycle();
+
+	UpdateModuleList();
 
 	//开始进行设置
 	std::vector<CONFIG_MODULE>::iterator it;
 	for (it = m_Config.ModuleList().begin(); it != m_Config.ModuleList().end(); it++) {
-#ifdef _DEBUG
-		OutputDebugStr(_T("APP:-----------------------------\n"));
-		OutputDebugStr(_T(
-"mac_addr=%02x-%02x-%02x-%02x-%02x-%02x\n\
-filter_module_name=%ws\n\
-miniport_friendly_name=%ws\n\
-miniport_name=%ws\n\
-miniport_net_luid=%I64x\n"), 
-(*it).module.mac_addr.Address[0], (*it).module.mac_addr.Address[1], (*it).module.mac_addr.Address[2], (*it).module.mac_addr.Address[3], (*it).module.mac_addr.Address[4], (*it).module.mac_addr.Address[5],
-(*it).module.filter_module_name,
-(*it).module.miniport_friendly_name,
-(*it).module.miniport_name,
-(*it).module.miniport_net_luid
-			);
-		OutputDebugStr(_T("APP:-----------------------------\n"));
-#endif
 		if (!(*it).isexist) {
 			continue;
 		}
-		//设置虚拟IP地址
-		if (!lnlSetVirtualAddr((*it).module.miniport_net_luid, &(*it).module.virtual_addr)) {
-			OutputDebugStr(_T("lnlSetVirtualAddr(%I64d) failed:error code=%d\n"), (*it).module.miniport_net_luid, GetLastError());
-		}
-		/*
-		//设置负载均衡器的mac地址
-		if (!lnlSetRouterMacAddr((*it).module.miniport_net_luid, &(*it).module.router_mac_addr)) {
-			OutputDebugStr(_T("lnlSetRouterMacAddr(%I64d) failed:error code=%d\n"), (*it).module.miniport_net_luid, GetLastError());
-		}
-		*/
-		std::vector<CONFIG_SERVER>::iterator sit;
-		for (sit = (*it).server_list.begin(); sit != (*it).server_list.end(); sit++) {
-			//添加主机
-			if (!lnlAddServer((*it).module.miniport_net_luid, &(*sit).server)) {
-				OutputDebugStr(_T("lnlAddServer(%I64d) failed:error code=%d\n"), (*it).module.miniport_net_luid, GetLastError());
-			}
-		}
-		
-		SetIpAddress((*it).module.miniport_net_luid, &(*it).module.virtual_addr);
+		//设置模块信息
+		SetModuleInfo(&(*it));
 	}
+
+	m_NotifyEvent = NULL;
+	m_IpInterfaceNotifyEvent = NULL;
+	// Use NotifyUnicastIpAddressChange to determine when the address is ready
+	if (NO_ERROR != NotifyUnicastIpAddressChange(AF_UNSPEC, &IpAddressChangeEvent, this, FALSE, &m_NotifyEvent)) {
+		return false;
+	}
+	if (NO_ERROR != NotifyIpInterfaceChange(AF_UNSPEC, &IpInterfaceChangeEvent, this, FALSE, &m_IpInterfaceNotifyEvent)) {
+		return false;
+	}
+	
+	
 
 	SetServiceName(LCXLSHADOW_SER_NAME);
 	SetListenPort(m_Config.GetPort());
@@ -191,7 +158,31 @@ void CNetLoaderService::PostSerRun()
 	if (m_NotifyEvent != NULL) {
 		CancelMibChangeNotify2(m_NotifyEvent);
 	}
-	
+
+	if (m_IpInterfaceNotifyEvent != NULL) {
+		CancelMibChangeNotify2(m_IpInterfaceNotifyEvent);
+	}
+
+	//在locker生存周期中锁定
+	CCSLocker locker = m_Config.LockinLifeCycle();
+
+	//关闭线程
+	std::vector<CONFIG_MODULE>::iterator it;
+	for (it = m_Config.ModuleList().begin(); it != m_Config.ModuleList().end(); it++) {
+		if ((*it).exit_event != NULL) {
+			//激活退出事件
+			SetEvent((*it).exit_event);
+			//等待线程退出
+			WaitForSingleObject((*it).thread_handle, INFINITE);
+			//关闭线程句柄
+			CloseHandle((*it).thread_handle);
+			//删除事件
+			CloseHandle((*it).exit_event);
+			//相关变量置零
+			(*it).exit_event = NULL;
+			(*it).thread_handle = NULL;
+		}
+	}
 }
 
 void CNetLoaderService::RecvEvent(CLLSockObj *SockObj, PIOCPOverlapped Overlapped)
@@ -251,16 +242,7 @@ bool CNetLoaderService::ProcessJsonData(const Json::Value &root, Json::Value &re
 			module["miniport_name"] = wstring_to_string(wstring((*it).module.miniport_name)).c_str();
 			module["miniport_net_luid"] = (*it).module.miniport_net_luid.Value;
 			module["server_count"] = (*it).module.server_count;
-			/*
-			module["router_mac_addr"] = string_format(
-				"%02x-%02x-%02x-%02x-%02x-%02x",
-				(*it).module.router_mac_addr.Address[0],
-				(*it).module.router_mac_addr.Address[1],
-				(*it).module.router_mac_addr.Address[2],
-				(*it).module.router_mac_addr.Address[3],
-				(*it).module.router_mac_addr.Address[4],
-				(*it).module.router_mac_addr.Address[5]).c_str();
-				*/
+			
 			Json::Value virtual_addr;
 			char ipv4[16];
 			inet_ntop(AF_INET, const_cast<IN_ADDR*>(&(*it).module.virtual_addr.ipv4), ipv4, sizeof(ipv4) / sizeof(ipv4[0]));
@@ -286,7 +268,7 @@ bool CNetLoaderService::ProcessJsonData(const Json::Value &root, Json::Value &re
 		luid.Value = root[JSON_MINIPORT_NET_LUID].asInt64();
 		status = JS_JSON_DATA_NOT_FOUND;
 		if (luid.Value != 0) {
-			PCONFIG_MODULE_INFO module = m_Config.FindModuleByLuid(luid);
+			PCONFIG_MODULE module = m_Config.FindModuleByLuid(luid);
 			if (module) {
 				std::vector<CONFIG_SERVER>::iterator sit;
 					
@@ -326,7 +308,7 @@ bool CNetLoaderService::ProcessJsonData(const Json::Value &root, Json::Value &re
 			break;
 		}
 		if (lnlSetVirtualAddr(miniport_net_luid, &addr)){
-			PCONFIG_MODULE_INFO module = m_Config.FindModuleByLuid(miniport_net_luid);
+			PCONFIG_MODULE module = m_Config.FindModuleByLuid(miniport_net_luid);
 			if (module) {
 				module->module.virtual_addr = addr;
 			}
@@ -335,33 +317,7 @@ bool CNetLoaderService::ProcessJsonData(const Json::Value &root, Json::Value &re
 		}
 	}
 		break;
-		/*
-	case JC_SET_ROUTER_MAC_ADDR:
-	{
-		NET_LUID miniport_net_luid;
-		IF_PHYSICAL_ADDRESS mac_addr;
 
-		miniport_net_luid.Value = root["miniport_net_luid"].asInt64();
-		mac_addr.Length = 6;
-		if (root["mac_addr"].isNull()) {
-			status = JS_JSON_INVALID;
-			break;
-		}
-		sscanf_s(
-			root["mac_addr"].asCString(),
-			"%02x-%02x-%02x-%02x-%02x-%02x",
-			&mac_addr.Address[0],
-			&mac_addr.Address[1],
-			&mac_addr.Address[2],
-			&mac_addr.Address[3],
-			&mac_addr.Address[4],
-			&mac_addr.Address[5]
-			);
-
-		if (!lnlSetRouterMacAddr(miniport_net_luid, &mac_addr)) {
-			status = JS_FAIL;
-		}
-	}*/
 		break;
 	default:
 		status = JS_JSON_CODE_NOT_FOUND;
@@ -384,104 +340,78 @@ bool CNetLoaderService::SaveXMLFile()
 	return m_Config.SaveXMLFile(tstring_to_string(ExtractFilePath(GetAppFilePath())) + CONFIG_FILE_NAME);
 }
 
-unsigned long CNetLoaderService::SetIpAddress(NET_LUID miniport_net_luid, PLCXL_ADDR_INFO virtual_addr)
+bool CNetLoaderService::UpdateModuleList()
+{
+	//获取网卡列表信息
+	DWORD module_count = 20;
+	std::vector<APP_MODULE> module_list;
+
+	module_list.resize(module_count);
+	if (!lnlGetModuleList(&module_list[0], &module_count)) {
+		OutputDebugStr(_T("lnlGetModuleList failed.Error Code=%d\n"), GetLastError());
+		module_list.resize(module_count);
+		return false;
+	}
+	module_list.resize(module_count);
+
+	//更新到配置文件中
+	m_Config.UpdateModuleList(module_list);
+	return true;
+}
+
+
+unsigned long CNetLoaderService::SetIpAddress(NET_LUID miniport_net_luid, PSOCKADDR_INET address, UINT8 onlink_prefix_length)
 {
 	//设置IP地址
 	unsigned long status = 0;
-	if (virtual_addr->status & SA_ENABLE_IPV6) {
-		//(*it).module.virtual_addr
-		MIB_UNICASTIPADDRESS_ROW ipRow;
-		// Initialize the row
-		InitializeUnicastIpAddressEntry(&ipRow);
-		ipRow.InterfaceLuid = miniport_net_luid;
-		ipRow.Address.Ipv6.sin6_addr = virtual_addr->ipv6;
-		ipRow.Address.Ipv6.sin6_family = AF_INET6;
-		//ipv6,前缀;ipv4:子网掩码长度
-		ipRow.OnLinkPrefixLength = 64;
 
-		
-		status = CreateUnicastIpAddressEntry(&ipRow);
-		if (status != NO_ERROR)
+	MIB_UNICASTIPADDRESS_ROW ipRow;
+	// Initialize the row
+	InitializeUnicastIpAddressEntry(&ipRow);
+	ipRow.InterfaceLuid = miniport_net_luid;
+	ipRow.Address = *address;
+	//ipv6,前缀;ipv4:子网掩码长度
+	ipRow.OnLinkPrefixLength = onlink_prefix_length;
+
+
+	status = CreateUnicastIpAddressEntry(&ipRow);
+	if (status != NO_ERROR)
+	{
+		switch (status)
 		{
-			switch (status)
-			{
-			case ERROR_INVALID_PARAMETER:
-				OutputDebugStr(_T("Error: CreateUnicastIpAddressEntry returned ERROR_INVALID_PARAMETER\n"));
-				break;
-			case ERROR_NOT_FOUND:
-				OutputDebugStr(_T("Error: CreateUnicastIpAddressEntry returned ERROR_NOT_FOUND\n"));
-				break;
-			case ERROR_NOT_SUPPORTED:
-				OutputDebugStr(_T("Error: CreateUnicastIpAddressEntry returned ERROR_NOT_SUPPORTED\n"));
-				break;
-			case ERROR_OBJECT_ALREADY_EXISTS:
-				OutputDebugStr(_T("Error: CreateUnicastIpAddressEntry returned ERROR_OBJECT_ALREADY_EXISTS\n"));
-				break;
-			default:
-				//NOTE: Is this case needed? If not, we can remove the ErrorExit() function
-				OutputDebugStr(_T("CreateUnicastIpAddressEntry returned error: %d\n"), status);
-				break;
-			}
-		} else {
-			OutputDebugStr(_T("CreateUnicastIpAddressEntry succeeded\n"));
+		case ERROR_INVALID_PARAMETER:
+			OutputDebugStr(_T("Error: CreateUnicastIpAddressEntry returned ERROR_INVALID_PARAMETER\n"));
+			break;
+		case ERROR_NOT_FOUND:
+			OutputDebugStr(_T("Error: CreateUnicastIpAddressEntry returned ERROR_NOT_FOUND\n"));
+			break;
+		case ERROR_NOT_SUPPORTED:
+			OutputDebugStr(_T("Error: CreateUnicastIpAddressEntry returned ERROR_NOT_SUPPORTED\n"));
+			break;
+		case ERROR_OBJECT_ALREADY_EXISTS:
+			OutputDebugStr(_T("Error: CreateUnicastIpAddressEntry returned ERROR_OBJECT_ALREADY_EXISTS\n"));
+			break;
+		default:
+			//NOTE: Is this case needed? If not, we can remove the ErrorExit() function
+			OutputDebugStr(_T("CreateUnicastIpAddressEntry returned error: %d\n"), status);
+			break;
 		}
-	}
-
-	if (virtual_addr->status & SA_ENABLE_IPV4) {
-		//(*it).module.virtual_addr
-		MIB_UNICASTIPADDRESS_ROW ipRow;
-		// Initialize the row
-		InitializeUnicastIpAddressEntry(&ipRow);
-		ipRow.InterfaceLuid = miniport_net_luid;
-		ipRow.Address.Ipv4.sin_addr = virtual_addr->ipv4;
-		ipRow.Address.Ipv4.sin_family = AF_INET;
-
-		//ipv6,前缀;ipv4:子网掩码长度
-		ipRow.OnLinkPrefixLength = 24;
-
-		status = CreateUnicastIpAddressEntry(&ipRow);
-		if (status != NO_ERROR)
-		{
-			switch (status)
-			{
-			case ERROR_INVALID_PARAMETER:
-				OutputDebugStr(_T("Error: CreateUnicastIpAddressEntry returned ERROR_INVALID_PARAMETER\n"));
-				break;
-			case ERROR_NOT_FOUND:
-				OutputDebugStr(_T("Error: CreateUnicastIpAddressEntry returned ERROR_NOT_FOUND\n"));
-				break;
-			case ERROR_NOT_SUPPORTED:
-				OutputDebugStr(_T("Error: CreateUnicastIpAddressEntry returned ERROR_NOT_SUPPORTED\n"));
-				break;
-			case ERROR_OBJECT_ALREADY_EXISTS:
-				OutputDebugStr(_T("Error: CreateUnicastIpAddressEntry returned ERROR_OBJECT_ALREADY_EXISTS\n"));
-				break;
-			default:
-				//NOTE: Is this case needed? If not, we can remove the ErrorExit() function
-				OutputDebugStr(_T("CreateUnicastIpAddressEntry returned error: %d\n"), status);
-				break;
-			}
-		} else {
-			OutputDebugStr(_T("CreateUnicastIpAddressEntry succeeded\n"));
-
-			//SetIpForwardEntry2
-		}
+	} else {
+		OutputDebugStr(_T("CreateUnicastIpAddressEntry succeeded\n"));
 	}
 	return status;
 }
 
-
-
-void CALLBACK CallCompleted(PVOID callerContext, PMIB_UNICASTIPADDRESS_ROW row, MIB_NOTIFICATION_TYPE notificationType)
+void CALLBACK CNetLoaderService::IpAddressChangeEvent(PVOID callerContext, PMIB_UNICASTIPADDRESS_ROW row, MIB_NOTIFICATION_TYPE notificationType)
 {
-
+	CNetLoaderService * service;
 	ADDRESS_FAMILY addressFamily;
-	SOCKADDR_IN sockv4addr;
-	struct in_addr ipv4addr;
 
+	service = static_cast<CNetLoaderService *>(callerContext);
 	// Ensure that this is the correct notification before setting gCallbackComplete
 	// NOTE: Is there a stronger way to do this?
-	if (notificationType == MibAddInstance) {
+	switch (notificationType) {
+	case MibAddInstance:
 		OutputDebugStr(_T("NotifyUnicastIpAddressChange received an Add instance\n"));
 		addressFamily = (ADDRESS_FAMILY)row->Address.si_family;
 		switch (addressFamily) {
@@ -496,12 +426,190 @@ void CALLBACK CallCompleted(PVOID callerContext, PMIB_UNICASTIPADDRESS_ROW row, 
 			break;
 		}
 		if (addressFamily == AF_INET) {
-			sockv4addr = row->Address.Ipv4;
-			ipv4addr = sockv4addr.sin_addr;
-			OutputDebugStr(_T("IPv4 address:  %s\n"), string_to_tstring(std::string(inet_ntoa(ipv4addr))).c_str());
+			OutputDebugStr(_T("IPv4 address:  %s\n"), string_to_tstring(std::string(inet_ntoa(row->Address.Ipv4.sin_addr))).c_str());
 		}
-		if (callerContext != NULL)
-			OutputDebugStr(_T("Received a CallerContext value\n"));
+		//如果IP地址状态不是正常
+		if (row->DadState != IpDadStatePreferred) {
+
+		}
+		break;
+	case MibDeleteInstance:
+		break;
+	case MibInitialNotification:
+
+		break;
+	case MibParameterNotification:
+		break;
+	default:
+		break;
 	}
 	return;
 }
+VOID NETIOAPI_API_ CNetLoaderService::IpInterfaceChangeEvent(_In_ PVOID CallerContext, _In_ PMIB_IPINTERFACE_ROW Row OPTIONAL, _In_ MIB_NOTIFICATION_TYPE NotificationType)
+{
+	CNetLoaderService * service;
+
+	service = static_cast<CNetLoaderService *>(CallerContext);
+
+	//在locker生存周期中锁定
+	CCSLocker locker = service->m_Config.LockinLifeCycle();
+	switch (NotificationType) {
+	case MibAddInstance:
+	{
+		service->UpdateModuleList();
+
+		PCONFIG_MODULE module = service->m_Config.FindModuleByLuid(Row->InterfaceLuid);
+		if (module == NULL || !module->isexist) {
+			break;
+		}
+		//设置模块信息
+		service->SetModuleInfo(module);
+			
+	}
+		break;
+	case MibDeleteInstance:
+		service->UpdateModuleList();
+
+		break;
+	case MibInitialNotification:
+	{
+		
+	}
+		break;
+	case MibParameterNotification:
+		break;
+	default:
+		break;
+	}
+}
+
+unsigned CALLBACK CNetLoaderService::RouterVipCheckThread(void * context)
+{
+	PVIP_CHECK_CONTEXT vip_check;
+
+	vip_check = static_cast<PVIP_CHECK_CONTEXT>(context);
+	do {
+		LCXL_ADDR_INFO virtual_addr;
+		IF_INDEX if_index;
+		{
+			//在locker生存周期中锁定
+			CCSLocker locker = vip_check->service->m_Config.LockinLifeCycle();
+			PCONFIG_MODULE module = vip_check->service->m_Config.FindModuleByLuid(vip_check->miniport_net_luid);
+			if (module == NULL || !module->isexist) {
+				continue;
+			}
+			virtual_addr = module->module.virtual_addr;
+			if_index = module->module.miniport_ifindex;
+		}
+		if (virtual_addr.status && SA_ENABLE_IPV6) {
+			SOCKADDR_INET Address = { 0 };
+
+			Address.Ipv6.sin6_family = AF_INET6;
+			Address.Ipv6.sin6_addr = virtual_addr.ipv6;
+			CheckAndSetVip(vip_check->miniport_net_luid, if_index, &Address, virtual_addr.ipv6_onlink_prefix_length);
+		}
+		if (virtual_addr.status && SA_ENABLE_IPV4) {
+			SOCKADDR_INET Address = { 0 };
+
+			Address.Ipv4.sin_family = AF_INET;
+			Address.Ipv4.sin_addr = virtual_addr.ipv4;
+			CheckAndSetVip(vip_check->miniport_net_luid, if_index, &Address, virtual_addr.ipv4_onlink_prefix_length);
+		}
+	} while (WaitForSingleObject(vip_check->exit_event, 1000) == WAIT_TIMEOUT);
+	//删除
+	delete context;
+	return 0;
+}
+
+void CNetLoaderService::CheckAndSetVip(NET_LUID miniport_net_luid, IF_INDEX ifindex, PSOCKADDR_INET Address, UINT8 onlink_prefix_length)
+{
+	MIB_UNICASTIPADDRESS_ROW Row = { 0 };
+
+	Row.InterfaceLuid = miniport_net_luid;
+	Row.Address = *Address;
+
+	//查看本机是否有虚拟IP地址
+	if (GetUnicastIpAddressEntry(&Row) == NO_ERROR) {
+		//如果虚拟IP状态不正确，如ip重复等
+		if (Row.DadState != IpDadStatePreferred && Row.DadState != IpDadStateTentative) {
+			//删除虚拟IP
+			DeleteUnicastIpAddressEntry(&Row);
+		}
+	} else {
+		//本机不具有虚拟IP地址，则查看局域网中是否有主机拥有了虚拟IP地址
+		MIB_IPNET_ROW2 NetRow = { 0 };
+
+		NetRow.InterfaceLuid = Row.InterfaceLuid;
+		NetRow.Address = Row.Address;
+
+		//检查是否虚拟IP地址已经存在于网络中
+		if (GetIpNetEntry2(&NetRow) == NO_ERROR) {
+			switch (NetRow.State)
+			{
+			case NlnsUnreachable://链路无法搜索到
+				//虚拟IP地址不存在，抢占虚拟IP地址
+				SetIpAddress(NetRow.InterfaceLuid, &NetRow.Address, onlink_prefix_length);
+				break;
+			case NlnsReachable:
+				//清空邻居缓存，以供下次更快的发现
+				FlushIpNetTable2(NetRow.Address.si_family, ifindex);
+				break;
+			default:
+				break;
+			}
+		}
+
+	}
+}
+
+void CNetLoaderService::SetModuleInfo(PCONFIG_MODULE module)
+{
+#ifdef _DEBUG
+	OutputDebugStr(_T("APP:SetModuleInfo-----------------------------\n"));
+	OutputDebugStr(_T("mac_addr=%02x-%02x-%02x-%02x-%02x-%02x\nfilter_module_name=%ws\nminiport_friendly_name=%ws\nminiport_name=%ws\nminiport_net_luid=%I64x\n"),
+		module->module.mac_addr.Address[0], module->module.mac_addr.Address[1], module->module.mac_addr.Address[2], module->module.mac_addr.Address[3], module->module.mac_addr.Address[4], module->module.mac_addr.Address[5],
+		module->module.filter_module_name,
+		module->module.miniport_friendly_name,
+		module->module.miniport_name,
+		module->module.miniport_net_luid
+		);
+	OutputDebugStr(_T("APP:-----------------------------\n"));
+#endif
+	//设置虚拟IP地址
+	if (!lnlSetVirtualAddr(module->module.miniport_net_luid, &module->module.virtual_addr)) {
+		OutputDebugStr(_T("lnlSetVirtualAddr(%I64d) failed:error code=%d\n"), module->module.miniport_net_luid, GetLastError());
+	}
+	switch (m_Config.GetRole()) {
+	case LCXL_ROLE_ROUTER:
+	{
+		std::vector<CONFIG_SERVER>::iterator sit;
+		for (sit = module->server_list.begin(); sit != module->server_list.end(); sit++) {
+			//添加主机
+			if (!lnlAddServer(module->module.miniport_net_luid, &(*sit).server)) {
+				OutputDebugStr(_T("lnlAddServer(%I64d) failed:error code=%d\n"), module->module.miniport_net_luid, GetLastError());
+			}
+		}
+
+		if (module->thread_handle == NULL) {
+			PVIP_CHECK_CONTEXT context = new VIP_CHECK_CONTEXT();
+
+			context->exit_event = CreateEvent(NULL, TRUE, FALSE, NULL);
+			context->service = this;
+			context->miniport_net_luid = module->module.miniport_net_luid;
+
+			module->thread_handle = (HANDLE)_beginthreadex(NULL, 0, &RouterVipCheckThread, context, 0, NULL);
+			if (module->thread_handle == NULL) {
+				CloseHandle(context->exit_event);
+				delete context;
+			} else {
+				module->exit_event = context->exit_event;
+			}
+		}
+	}
+		break;
+	default:
+		break;
+	}
+}
+
+

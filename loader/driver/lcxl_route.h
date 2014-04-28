@@ -3,7 +3,7 @@
 
 /*
 author:
-LCX
+LCXL
 abstract:
 路由相关头文件
 */
@@ -13,17 +13,17 @@ abstract:
 #define TAG_ROUTE       'ROUT'
 //路由信息
 typedef struct _LCXL_ROUTE_LIST_ENTRY {
-	LIST_ENTRY		        list_entry;		//列表项
-#define RS_NONE     0x00
-#define RS_NORMAL   0x01					//正常
-#define RS_LAST_ACK 0x02					//正在等待最后一个ACK包
-#define RS_CLOSED   0x03					//连接已关闭
-	int                     status;         //连接状态
-	LCXL_IP					src_ip;			//源IP地址
-	unsigned short	        src_port;		//源端口号
-	unsigned short	        dst_port;		//目的端口号
-	PSERVER_INFO_LIST_ENTRY dst_server;	    //目标服务器
-	LARGE_INTEGER			timestamp;		//时间戳，使用KeQueryPerformanceCounter
+	LIST_ENTRY		        list_entry;	//列表项
+#define RS_NONE     0x00				//初始状态
+#define RS_NORMAL   0x01				//正常
+#define RS_LAST_ACK 0x02				//正在等待最后一个ACK包
+#define RS_CLOSED   0x03				//连接已关闭
+	int                     status;		//路由状态
+	LCXL_IP					src_ip;		//源IP地址
+	unsigned short	        src_port;	//源端口号
+	unsigned short	        dst_port;	//目的端口号
+	PSERVER_INFO_LIST_ENTRY dst_server;	//目标服务器
+	LARGE_INTEGER			timestamp;	//时间戳，使用KeQueryPerformanceCounter
 } LCXL_ROUTE_LIST_ENTRY, *PLCXL_ROUTE_LIST_ENTRY;
 
 extern NPAGED_LOOKASIDE_LIST  g_route_mem_mgr;
@@ -43,11 +43,11 @@ __inline PLCXL_ROUTE_LIST_ENTRY AllocRoute()
 #define FreeRoute(__buf) ExFreeToNPagedLookasideList(&g_route_mem_mgr, __buf)
 #define DelRouteMemMgr() ExDeleteNPagedLookasideList(&g_route_mem_mgr)
 
-
 ///<summary>
 ///创建路由信息表项
 ///</summary>
 PLCXL_ROUTE_LIST_ENTRY CreateRouteListEntry(IN PLIST_ENTRY route_list);
+
 ///<summary>
 ///始化路由信息表项
 ///</summary>
