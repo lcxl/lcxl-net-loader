@@ -43,10 +43,11 @@ public class MonitorServiceImpl implements IMonitorService {
                 / kb;
         //InetAddress addr = InetAddress.getLocalHost();
         InetAddress addrs[] = InetAddress.getAllByName(InetAddress.getLocalHost().getHostName());
-        String ips = "";
+        String ips = "<br/>------------------------<br/>";
         for (InetAddress addr: addrs) {
-        	ips += addr.getHostAddress()+"; ";
+        	ips += addr.getHostAddress()+"<br/>";
         }
+        ips += "------------------------<br/>";
         // 获得线程总数
         ThreadGroup parentThread;
         for (parentThread = Thread.currentThread().getThreadGroup(); parentThread
@@ -83,7 +84,7 @@ public class MonitorServiceImpl implements IMonitorService {
     public static void main(String[] args) throws Exception {
         IMonitorService service = new MonitorServiceImpl();
         MonitorInfoBean monitorInfo = service.getMonitorInfoBean();
-        System.out.println("服务器IP地址=" + monitorInfo.getHostAddress());
+        System.out.println("服务器IP地址" + monitorInfo.getHostAddress());
         System.out.println("服务器名称=" + monitorInfo.getHostName());
         System.out.println("cpu占有率=" + monitorInfo.getCpuRatio());
         System.out.println("可使用内存=" + monitorInfo.getTotalMemory());

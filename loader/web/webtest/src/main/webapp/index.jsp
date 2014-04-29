@@ -29,7 +29,7 @@
         <%
             IMonitorService service = new MonitorServiceImpl();
             MonitorInfoBean monitorInfo = service.getMonitorInfoBean();
-            out.println("服务器IP地址=" + monitorInfo.getHostAddress() + "<br>");
+            out.println("服务器IP地址" + monitorInfo.getHostAddress() + "<br>");
         	out.println("服务器名称=" + monitorInfo.getHostName() + "<br>");
             out.println("cpu占有率=" + monitorInfo.getCpuRatio() + "<br>");
             out.println("可使用内存=" + monitorInfo.getTotalMemory() + "<br>");

@@ -9,6 +9,7 @@
 #include "lcxl_net_code.h"
 #include <Ws2tcpip.h>
 #include <process.h>
+#include <Icmpapi.h>
 
 TCHAR LCXLSHADOW_SER_NAME[] = _T("LCXLNetLoaderService");
 
@@ -102,7 +103,7 @@ void CNetLoaderService::IOCPEvent(IocpEventEnum EventType, CLLSockObj *SockObj, 
 
 bool CNetLoaderService::PreSerRun()
 {
-	
+
 	//加载配置文件
 	if (!LoadXMLFile()) {
 		return false;
@@ -540,42 +541,158 @@ void CNetLoaderService::CheckAndSetVip(NET_LUID miniport_net_luid, IF_INDEX ifin
 			DeleteUnicastIpAddressEntry(&Row);
 		}
 	} else {
-
-		//本机不具有虚拟IP地址，则查看局域网中是否有主机拥有了虚拟IP地址
-		MIB_IPNET_ROW2 NetRow = { 0 };
-		
-		NetRow.InterfaceLuid = Row.InterfaceLuid;
-		NetRow.Address = Row.Address;
-
+		DWORD dwError = 0;
 		OutputDebugStr(_T("GetUnicastIpAddressEntry failed(0x%08x)\n"), resu);
-		//检查是否虚拟IP地址已经存在于网络中
-		resu = GetIpNetEntry2(&NetRow);
-		if (resu == NO_ERROR) {
-			switch (NetRow.State)
-			{
-			case NlnsUnreachable://链路无法搜索到
-				OutputDebugStr(_T("CNetLoaderService::CheckAndSetVip:GetIpNetEntry2 NlnsUnreachable\n"));
-				//虚拟IP地址不存在，抢占虚拟IP地址
-				SetIpAddress(NetRow.InterfaceLuid, &NetRow.Address, onlink_prefix_length);
+
+		HANDLE hIcmpFile = INVALID_HANDLE_VALUE;
+		char SendData[] = "Data Buffer";
+		
+		DWORD ReplySize = sizeof (ICMP_ECHO_REPLY)+sizeof (SendData)+256;
+		LPVOID ReplyBuffer = malloc(ReplySize);
+		DWORD ReplyDataLen = 0;
+		BOOL is_router_down = FALSE;
+
+		PMIB_UNICASTIPADDRESS_TABLE ip_table;
+		SOCKADDR_INET source_ip;
+		//先获取本地IP地址列表，之后需要使用
+		dwError = GetUnicastIpAddressTable(Address->si_family, &ip_table);
+		if (dwError != NO_ERROR) {
+			return;
+		}
+		BOOL is_found = FALSE;
+		ULONG i;
+		//获取本地第一个ip地址
+		for (i = 0; i < ip_table->NumEntries; i++) {
+			if (ip_table->Table[i].InterfaceLuid.Value == miniport_net_luid.Value) {
+				is_found = true;
+				source_ip = ip_table->Table[i].Address;
 				break;
-			case NlnsReachable:
-				OutputDebugStr(_T("CNetLoaderService::CheckAndSetVip:GetIpNetEntry2 NlnsReachable\n"));
-				//清空邻居缓存，以供下次更快的发现
-				FlushIpNetTable2(NetRow.Address.si_family, ifindex);
-				break;
-			default:
-				OutputDebugStr(_T("CNetLoaderService::CheckAndSetVip:GetIpNetEntry2 NetRow.State=%d\n"), NetRow.State);
-				break;
-			}
-		} else {
-			OutputDebugStr(_T("GetIpNetEntry2 failed(0x%08x)\n"), resu);
-			if (resu == ERROR_NOT_FOUND) {
-				OutputDebugStr(_T("CNetLoaderService::CheckAndSetVip:GetIpNetEntry2 ERROR_NOT_FOUND\n"));
-				//虚拟IP地址不存在，抢占虚拟IP地址
-				SetIpAddress(NetRow.InterfaceLuid, &NetRow.Address, onlink_prefix_length);
 			}
 		}
+		FreeMibTable(ip_table);
+		if (!is_found) {
+			return;
+		}
 
+		switch (Address->si_family)
+		{
+		case AF_INET:
+		{
+			hIcmpFile = IcmpCreateFile();
+			if (hIcmpFile == INVALID_HANDLE_VALUE) {
+				break;
+			}
+			ReplyDataLen = IcmpSendEcho2Ex(
+				hIcmpFile, 
+				NULL, 
+				NULL, 
+				NULL, 
+				source_ip.Ipv4.sin_addr.S_un.S_addr, 
+				Row.Address.Ipv4.sin_addr.S_un.S_addr, 
+				SendData, 
+				sizeof (SendData), 
+				NULL,
+				ReplyBuffer, 
+				ReplySize, 
+				3000);
+			if (ReplyDataLen > 0) {
+				PICMP_ECHO_REPLY pEchoReply = (PICMP_ECHO_REPLY)ReplyBuffer;
+				switch (pEchoReply->Status) {
+				case IP_DEST_HOST_UNREACHABLE://主机名不可达
+				case IP_DEST_NET_UNREACHABLE://网络不可达
+				//case IP_DEST_PROT_UNREACHABLE://协议不可达
+				//case IP_DEST_PORT_UNREACHABLE://端口不可达
+				case IP_REQ_TIMED_OUT://超时
+					is_router_down = TRUE;
+					break;
+				default:
+					
+					break;
+				}
+			} else {
+				
+				dwError = GetLastError();
+				switch (dwError)
+				{
+				case IP_DEST_HOST_UNREACHABLE://主机名不可达
+				case IP_DEST_NET_UNREACHABLE://网络不可达
+					//case IP_DEST_PROT_UNREACHABLE://协议不可达
+					//case IP_DEST_PORT_UNREACHABLE://端口不可达
+				case IP_REQ_TIMED_OUT:
+					//超时，负载均衡器已经当掉
+					is_router_down = TRUE;
+				default:
+					break;
+				}
+			}
+		}
+			break;
+		case AF_INET6:
+		{
+			hIcmpFile = Icmp6CreateFile();
+			if (hIcmpFile == INVALID_HANDLE_VALUE) {
+				break;
+			}
+			
+			//GetIpAddrTable()
+			ReplyDataLen = Icmp6SendEcho2(
+				hIcmpFile, 
+				NULL, 
+				NULL, 
+				NULL, 
+				&source_ip.Ipv6, 
+				&Row.Address.Ipv6, 
+				SendData, 
+				sizeof (SendData), 
+				NULL, 
+				ReplyBuffer, 
+				ReplySize, 
+				3000);
+			if (ReplyDataLen > 0) {
+				PICMPV6_ECHO_REPLY pEchoReply = (PICMPV6_ECHO_REPLY)ReplyBuffer;
+				switch (pEchoReply->Status) {
+				case IP_DEST_HOST_UNREACHABLE://主机名不可达
+				case IP_DEST_NET_UNREACHABLE://网络不可达
+					//case IP_DEST_PROT_UNREACHABLE://协议不可达
+					//case IP_DEST_PORT_UNREACHABLE://端口不可达
+				case IP_REQ_TIMED_OUT://超时
+					is_router_down = TRUE;
+					break;
+				default:
+
+					break;
+				}
+			} else {
+				dwError = GetLastError();
+				switch (dwError)
+				{
+				case IP_DEST_HOST_UNREACHABLE://主机名不可达
+				case IP_DEST_NET_UNREACHABLE://网络不可达
+					//case IP_DEST_PROT_UNREACHABLE://协议不可达
+					//case IP_DEST_PORT_UNREACHABLE://端口不可达
+				case IP_REQ_TIMED_OUT:
+					//超时，负载均衡器已经当掉
+					is_router_down = TRUE;
+				default:
+					break;
+				}
+			}
+		}
+			break;
+		default:
+			break;
+		}
+		if (hIcmpFile != INVALID_HANDLE_VALUE) {
+			IcmpCloseHandle(hIcmpFile);
+		}
+		
+		free(ReplyBuffer);
+		//如果负载均衡器当掉
+		if (is_router_down) {
+			OutputDebugStr(_T("CNetLoaderService::CheckAndSetVip:the Active Router is down.\n"));
+			//虚拟IP地址不存在，抢占虚拟IP地址
+			SetIpAddress(Row.InterfaceLuid, &Row.Address, onlink_prefix_length);
+		}
 	}
 }
 
@@ -621,6 +738,36 @@ void CNetLoaderService::SetModuleInfo(PCONFIG_MODULE module)
 			} else {
 				module->exit_event = context->exit_event;
 			}
+		}
+	}
+		break;
+	case LCXL_ROLE_SERVER:
+	{
+
+		LCXL_ADDR_INFO virtual_addr;
+		IF_INDEX if_index;
+		{
+			//在locker生存周期中锁定
+			CCSLocker locker = m_Config.LockinLifeCycle();
+			
+			virtual_addr = module->module.virtual_addr;
+			if_index = module->module.miniport_ifindex;
+		}
+		if (virtual_addr.status & SA_ENABLE_IPV6) {
+			SOCKADDR_INET Address = { 0 };
+
+			Address.Ipv6.sin6_family = AF_INET6;
+			Address.Ipv6.sin6_addr = virtual_addr.ipv6;
+
+			SetIpAddress(module->module.miniport_net_luid, &Address, virtual_addr.ipv6_onlink_prefix_length);
+		}
+		if (virtual_addr.status & SA_ENABLE_IPV4) {
+			SOCKADDR_INET Address = { 0 };
+
+			Address.Ipv4.sin_family = AF_INET;
+			Address.Ipv4.sin_addr = virtual_addr.ipv4;
+
+			SetIpAddress(module->module.miniport_net_luid, &Address, virtual_addr.ipv6_onlink_prefix_length);
 		}
 	}
 		break;
