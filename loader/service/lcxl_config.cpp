@@ -228,11 +228,22 @@ tinyxml2::XMLElement * CLCXLConfig::WriteAddrInfo(tinyxml2::XMLElement *owner_el
 	inet_ntop(AF_INET, const_cast<IN_ADDR*>(&addr.ipv4), ipv4, sizeof(ipv4) / sizeof(ipv4[0]));
 	element->SetAttribute(CONFIG_VALUE, ipv4);
 	owner_element->InsertEndChild(element);
+
+	//写入IPv4前缀
+	element = owner_element->GetDocument()->NewElement(ELEMENT_IPV4_ONLINK_PREFIX_LENGTH);
+	element->SetAttribute(CONFIG_VALUE, addr.ipv4_onlink_prefix_length);
+	owner_element->InsertEndChild(element);
+
 	//写入ipv6
 	element = owner_element->GetDocument()->NewElement(ELEMENT_IPV6);
 	char ipv6[100];
 	inet_ntop(AF_INET6, const_cast<IN6_ADDR*>(&addr.ipv6), ipv6, sizeof(ipv6) / sizeof(ipv6[0]));
 	element->SetAttribute(CONFIG_VALUE, ipv6);
+	owner_element->InsertEndChild(element);
+
+	//写入IPv6前缀
+	element = owner_element->GetDocument()->NewElement(ELEMENT_IPV6_ONLINK_PREFIX_LENGTH);
+	element->SetAttribute(CONFIG_VALUE, addr.ipv6_onlink_prefix_length);
 	owner_element->InsertEndChild(element);
 
 	return owner_element;
@@ -362,11 +373,28 @@ LCXL_ADDR_INFO & CLCXLConfig::ReadAddrInfo(tinyxml2::XMLElement *owner_element, 
 	if (element != NULL) {
 		inet_pton(AF_INET, element->Attribute(CONFIG_VALUE), &addr.ipv4);
 	}
+	//读取ipv4前缀
+	element = owner_element->FirstChildElement(ELEMENT_IPV4_ONLINK_PREFIX_LENGTH);
+	if (element != NULL) {
+		addr.ipv4_onlink_prefix_length = element->UnsignedAttribute(CONFIG_VALUE);
+	} else {
+		addr.ipv4_onlink_prefix_length = 24;
+	}
+
 	//读取ipv6
 	element = owner_element->FirstChildElement(ELEMENT_IPV6);
 	if (element != NULL) {
 		inet_pton(AF_INET6, element->Attribute(CONFIG_VALUE), &addr.ipv6);
 	}
+
+	//读取ipv6前缀
+	element = owner_element->FirstChildElement(ELEMENT_IPV6_ONLINK_PREFIX_LENGTH);
+	if (element != NULL) {
+		addr.ipv6_onlink_prefix_length = element->UnsignedAttribute(CONFIG_VALUE);
+	} else {
+		addr.ipv6_onlink_prefix_length = 64;
+	}
+
 	return addr;
 }
 

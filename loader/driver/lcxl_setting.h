@@ -32,11 +32,19 @@ typedef struct _LCXL_MODULE_SETTING_INFO {
 	//------------------------LCXL_ROUTER角色------------------------
 	//服务器列表，SERVER_INFO_LIST_ENTRY
 	LCXL_LOCK_LIST			server_list;
-	//路由表超时时间，默认为10分钟，以秒为单位
+	//路由表超时时间，以秒为单位
 	INT						route_timeout;
+	//设置服务器检测间隔，以秒为单位
+	INT						server_check_interval;
+	//服务器检测超时时间，以秒为单位
+	INT						server_check_timeout;
+	//服务器检测失败时的重试次数
+	INT						server_check_retry_number;
+
+	//路由算法，有RA_....
+	INT						routing_algorithm;
 	//------------------------LCXL_SERVER角色------------------------
-	//负载均衡器的mac地址
-	IF_PHYSICAL_ADDRESS		router_mac_addr;
+
 } LCXL_MODULE_SETTING_INFO, *PLCXL_MODULE_SETTING_INFO;//配置模块数据结构
 
 typedef struct _LCXL_SETTING{
@@ -57,7 +65,7 @@ __inline VOID DeleteRouteListEntry(IN OUT PLCXL_ROUTE_LIST_ENTRY route_info, IN 
 	//将路由所在的服务器的引用减1
 	DecRefListEntry(server_list, &server->list_entry);
 }
-VOID LoadModuleSetting(IN OUT PLCXL_MODULE_SETTING_INFO module, IN PNDIS_FILTER_ATTACH_PARAMETERS attach_paramters);
+VOID InitModuleSetting(IN OUT PLCXL_MODULE_SETTING_INFO module, IN PNDIS_FILTER_ATTACH_PARAMETERS attach_paramters);
 
 extern LCXL_SETTING g_setting;
 #endif

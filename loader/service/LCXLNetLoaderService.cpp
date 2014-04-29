@@ -373,7 +373,6 @@ unsigned long CNetLoaderService::SetIpAddress(NET_LUID miniport_net_luid, PSOCKA
 	//ipv6,前缀;ipv4:子网掩码长度
 	ipRow.OnLinkPrefixLength = onlink_prefix_length;
 
-
 	status = CreateUnicastIpAddressEntry(&ipRow);
 	if (status != NO_ERROR)
 	{
@@ -486,7 +485,7 @@ VOID NETIOAPI_API_ CNetLoaderService::IpInterfaceChangeEvent(_In_ PVOID CallerCo
 unsigned CALLBACK CNetLoaderService::RouterVipCheckThread(void * context)
 {
 	PVIP_CHECK_CONTEXT vip_check;
-
+	OutputDebugStr(_T("CNetLoaderService::RouterVipCheckThread start\n"));
 	vip_check = static_cast<PVIP_CHECK_CONTEXT>(context);
 	do {
 		LCXL_ADDR_INFO virtual_addr;
@@ -501,14 +500,15 @@ unsigned CALLBACK CNetLoaderService::RouterVipCheckThread(void * context)
 			virtual_addr = module->module.virtual_addr;
 			if_index = module->module.miniport_ifindex;
 		}
-		if (virtual_addr.status && SA_ENABLE_IPV6) {
+		if (virtual_addr.status & SA_ENABLE_IPV6) {
 			SOCKADDR_INET Address = { 0 };
 
 			Address.Ipv6.sin6_family = AF_INET6;
 			Address.Ipv6.sin6_addr = virtual_addr.ipv6;
+
 			CheckAndSetVip(vip_check->miniport_net_luid, if_index, &Address, virtual_addr.ipv6_onlink_prefix_length);
 		}
-		if (virtual_addr.status && SA_ENABLE_IPV4) {
+		if (virtual_addr.status & SA_ENABLE_IPV4) {
 			SOCKADDR_INET Address = { 0 };
 
 			Address.Ipv4.sin_family = AF_INET;
@@ -518,44 +518,61 @@ unsigned CALLBACK CNetLoaderService::RouterVipCheckThread(void * context)
 	} while (WaitForSingleObject(vip_check->exit_event, 1000) == WAIT_TIMEOUT);
 	//删除
 	delete context;
+	OutputDebugStr(_T("CNetLoaderService::RouterVipCheckThread end\n"));
 	return 0;
 }
 
 void CNetLoaderService::CheckAndSetVip(NET_LUID miniport_net_luid, IF_INDEX ifindex, PSOCKADDR_INET Address, UINT8 onlink_prefix_length)
 {
+	DWORD resu;
 	MIB_UNICASTIPADDRESS_ROW Row = { 0 };
-
+	
 	Row.InterfaceLuid = miniport_net_luid;
 	Row.Address = *Address;
 
 	//查看本机是否有虚拟IP地址
-	if (GetUnicastIpAddressEntry(&Row) == NO_ERROR) {
+	resu = GetUnicastIpAddressEntry(&Row);
+	if (resu == NO_ERROR) {
 		//如果虚拟IP状态不正确，如ip重复等
 		if (Row.DadState != IpDadStatePreferred && Row.DadState != IpDadStateTentative) {
+			OutputDebugStr(_T("CNetLoaderService::CheckAndSetVip:GetUnicastIpAddressEntry DadState failed, delete VIP\n"));
 			//删除虚拟IP
 			DeleteUnicastIpAddressEntry(&Row);
 		}
 	} else {
+
 		//本机不具有虚拟IP地址，则查看局域网中是否有主机拥有了虚拟IP地址
 		MIB_IPNET_ROW2 NetRow = { 0 };
-
+		
 		NetRow.InterfaceLuid = Row.InterfaceLuid;
 		NetRow.Address = Row.Address;
 
+		OutputDebugStr(_T("GetUnicastIpAddressEntry failed(0x%08x)\n"), resu);
 		//检查是否虚拟IP地址已经存在于网络中
-		if (GetIpNetEntry2(&NetRow) == NO_ERROR) {
+		resu = GetIpNetEntry2(&NetRow);
+		if (resu == NO_ERROR) {
 			switch (NetRow.State)
 			{
 			case NlnsUnreachable://链路无法搜索到
+				OutputDebugStr(_T("CNetLoaderService::CheckAndSetVip:GetIpNetEntry2 NlnsUnreachable\n"));
 				//虚拟IP地址不存在，抢占虚拟IP地址
 				SetIpAddress(NetRow.InterfaceLuid, &NetRow.Address, onlink_prefix_length);
 				break;
 			case NlnsReachable:
+				OutputDebugStr(_T("CNetLoaderService::CheckAndSetVip:GetIpNetEntry2 NlnsReachable\n"));
 				//清空邻居缓存，以供下次更快的发现
 				FlushIpNetTable2(NetRow.Address.si_family, ifindex);
 				break;
 			default:
+				OutputDebugStr(_T("CNetLoaderService::CheckAndSetVip:GetIpNetEntry2 NetRow.State=%d\n"), NetRow.State);
 				break;
+			}
+		} else {
+			OutputDebugStr(_T("GetIpNetEntry2 failed(0x%08x)\n"), resu);
+			if (resu == ERROR_NOT_FOUND) {
+				OutputDebugStr(_T("CNetLoaderService::CheckAndSetVip:GetIpNetEntry2 ERROR_NOT_FOUND\n"));
+				//虚拟IP地址不存在，抢占虚拟IP地址
+				SetIpAddress(NetRow.InterfaceLuid, &NetRow.Address, onlink_prefix_length);
 			}
 		}
 

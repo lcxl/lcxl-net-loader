@@ -294,7 +294,8 @@ typedef struct _LCXL_FILTER
 	LCXL_MODULE_SETTING_INFO	module;//存储模块
 	LIST_ENTRY					route_list;//LCXL_ROUTE_LIST_ENTRY，路由信息
     NDIS_HANDLE					send_net_buffer_list_pool;//NBL发送池
-}LCXL_FILTER, *PLCXL_FILTER;
+	ROUTING_ALGORITHM_DATA		routing_algorithm_data;//负载均衡算法所用数据
+} LCXL_FILTER, *PLCXL_FILTER;
 
 typedef struct _FILTER_DEVICE_EXTENSION
 {
@@ -438,6 +439,13 @@ typedef struct _NPROT_SEND_NETBUFLIST_RSVD{
 ///</summary>
 PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER filter, IN INT ip_mode, IN PVOID ip_header);
 
+
+//************************************
+// 简介: 检查服务器状态
+// 返回: void
+// 参数: IN PLCXL_FILTER filter
+//************************************
+VOID CheckServerStatus(IN PLCXL_FILTER filter);
 //************************************
 // 简介: 检查TCP数据包的mac地址是不是我们所关心的地址
 // 返回: BOOLEAN
@@ -459,7 +467,9 @@ typedef enum _PROCESS_NBL_RESULT_CODE {
 	//处理ICMP NS数据包
 	PNRC_ICMPV6_NS = 4,
 	//处理ICMP NA数据包
-	PNRC_ICMPV6_NA = 5
+	PNRC_ICMPV6_NA = 5,
+	//可用性帧数据包
+	PNRC_CHECKING_NBL = 6
 } PROCESS_NBL_RESULT_CODE, *PPROCESS_NBL_RESULT_CODE;//数据包处理结果代码
 
 
@@ -481,6 +491,28 @@ typedef struct _PROCESS_NBL_RESULT{
 //************************************
 VOID ProcessNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PETHERNET_HEADER eth_header, IN UINT data_length, IN OUT PPROCESS_NBL_RESULT return_data);
 
+//************************************
+// 简介: 处理可用性检测帧
+// 返回: VOID
+// 参数: IN PLCXL_FILTER filter
+// 参数: IN BOOLEAN is_recv
+// 参数: IN INT lcxl_role
+// 参数: IN PETHERNET_HEADER eth_header
+// 参数: IN UINT data_length
+// 参数: IN OUT PPROCESS_NBL_RESULT return_data
+//************************************
+VOID ProcessCheckingNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PETHERNET_HEADER eth_header, IN UINT data_length, IN OUT PPROCESS_NBL_RESULT return_data);
+
+//************************************
+// 简介: 处理ARP请求
+// 返回: VOID
+// 参数: IN PLCXL_FILTER filter
+// 参数: IN BOOLEAN is_recv
+// 参数: IN INT lcxl_role
+// 参数: IN PARP_HEADER arp_header
+// 参数: IN PLCXL_ADDR_INFO virtual_addr
+// 参数: IN OUT PPROCESS_NBL_RESULT return_data
+//************************************
 VOID ProcessARP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PARP_HEADER arp_header, IN PLCXL_ADDR_INFO virtual_addr, IN OUT PPROCESS_NBL_RESULT return_data);
 //************************************
 // 简介: 处理ICMPv6数据包
@@ -519,7 +551,24 @@ VOID ProcessTCP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN
 //************************************
 VOID ProcessUDP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PVOID ip_header, IN INT ip_mode, IN PLCXL_ADDR_INFO virtual_addr, IN OUT PPROCESS_NBL_RESULT return_data);
 
+//************************************
+// 简介: 创建NBL
+// 返回: NTSTATUS
+// 参数: IN PLCXL_FILTER filter
+// 参数: IN PETHERNET_HEADER send_buffer
+// 参数: IN UINT datalen
+// 参数: OUT PNET_BUFFER_LIST * nbl
+//************************************
 NTSTATUS CreateNBL(IN PLCXL_FILTER filter, IN PETHERNET_HEADER send_buffer, IN UINT datalen, OUT PNET_BUFFER_LIST *nbl);
+
+//************************************
+// 简介: 创建可用性检测帧
+// 返回: NTSTATUS
+// 参数: IN PLCXL_FILTER filter
+// 参数: IN PSERVER_INFO_LIST_ENTRY server_info
+// 参数: OUT PNET_BUFFER_LIST * nbl
+//************************************
+NTSTATUS CreateCheckingNBL(IN PLCXL_FILTER filter, IN PDL_EUI48 dest_mac, OUT PNET_BUFFER_LIST *nbl);
 
 PNET_BUFFER_LIST DropOwnerNBL(IN PLCXL_FILTER filter, IN PNET_BUFFER_LIST NetBufferLists);
 //************************************

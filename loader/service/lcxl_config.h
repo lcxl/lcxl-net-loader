@@ -33,7 +33,9 @@
 //LCXL_ADDR_INFO
 #define ELEMENT_STATUS "status"
 #define ELEMENT_IPV4 "ipv4"
+#define ELEMENT_IPV4_ONLINK_PREFIX_LENGTH "ipv4_onlink_prefix_length"
 #define ELEMENT_IPV6 "ipv6"
+#define ELEMENT_IPV6_ONLINK_PREFIX_LENGTH "ipv6_onlink_prefix_length"
 //LCXL_SERVER
 #define ELEMENT_SERVER "server"
 // #define ELEMENT_STATUS "status"

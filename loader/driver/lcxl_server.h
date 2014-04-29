@@ -9,7 +9,7 @@ abstract:
 #include "../../common/driver/ref_lock_list.h"
 #define TAG_SERVER      'SERV'
 
-//服务器信息列表项
+
 typedef struct _SERVER_INFO_LIST_ENTRY
 {
 	//列表项
@@ -22,7 +22,17 @@ typedef struct _SERVER_INFO_LIST_ENTRY
 	LCXL_SERVER_PERFORMANCE	performance;
 	//时间戳，服务器可用性检测，使用KeQueryPerformanceCounter
 	LARGE_INTEGER			timestamp;	
-} SERVER_INFO_LIST_ENTRY, *PSERVER_INFO_LIST_ENTRY;
+	//当检测服务器可用性失败时，当前重试次数
+	INT						current_retry_number;
+} SERVER_INFO_LIST_ENTRY, *PSERVER_INFO_LIST_ENTRY;//服务器信息列表项
+
+//负载均衡算法用到的数据结构
+typedef struct _ROUTING_ALGORITHM_DATA{
+	struct {
+		INT		current_server_index;//了目前轮询到的服务器的序号
+	} ra_poll;//启用RA_POLL负载均衡算法时所用到的数据
+	
+} ROUTING_ALGORITHM_DATA, *PROUTING_ALGORITHM_DATA;
 
 extern NPAGED_LOOKASIDE_LIST  g_server_mem_mgr;
 
@@ -37,6 +47,9 @@ __inline PSERVER_INFO_LIST_ENTRY AllocServer()
 		InitializeListHead(&resu->list_entry.list_entry);
 		KeInitializeSpinLock(&resu->lock);
 		resu->list_entry.ref_count = 1;
+		resu->current_retry_number = 0;
+		resu->timestamp = KeQueryPerformanceCounter(NULL);
+		
 	}
 	return resu;
 }
@@ -95,10 +108,10 @@ PSERVER_INFO_LIST_ENTRY FindServer(IN PLCXL_LOCK_LIST server_list, IN PIF_PHYSIC
 // 简介: 选择一台最适合的服务器
 // 返回: PSERVER_INFO_LIST_ENTRY
 // 参数: IN PLCXL_LOCK_LIST server_list
-// 参数: IN INT ipMode
-// 参数: IN PVOID pIPHeader
-// 参数: IN PTCP_HDR pTcpHeader
+// 参数: IN INT ip_mode
+// 参数: IN PVOID ip_header
+// 参数: IN PTCP_HDR tcp_header
 //************************************
-PSERVER_INFO_LIST_ENTRY SelectBestServer(IN PLCXL_LOCK_LIST server_list, IN INT ipMode, IN PVOID pIPHeader, IN PTCP_HDR pTcpHeader);
+PSERVER_INFO_LIST_ENTRY SelectBestServer(IN PLCXL_LOCK_LIST server_list, IN INT ip_mode, IN PVOID ip_header, IN PTCP_HDR tcp_header, IN INT	routing_algorithm, IN PROUTING_ALGORITHM_DATA ra_data);
 
 #endif

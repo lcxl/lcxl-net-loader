@@ -50,6 +50,15 @@ extern "C" {
 		UCHAR				ip_status;//IP协议启用状态，SA_ENABLE_IPV...
 		IF_PHYSICAL_ADDRESS mac_addr;//服务器MAC地址
 	} LCXL_SERVER, *PLCXL_SERVER;//服务器信息
+//------可用性检测帧类型------
+#define ETHERNET_TYPE_LCXL_CHECKING 0xF0F0
+//------路由算法类型------
+//静态算法
+#define RA_POLL					0x00//轮询
+#define RA_IP_HASH				0x01//基于IP的hash算法
+//动态算法
+#define RA_LEAST_CONNECTION		0x10//最小连接数
+#define RA_FAST_RESPONSE		0x11//最快响应时间
 
 #ifdef __cplusplus
 }
