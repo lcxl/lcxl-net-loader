@@ -8,7 +8,7 @@ import com.lcxbox.netloader.model.LcxlAddrInfo;
 import com.lcxbox.netloader.model.ModuleListResponse;
 import com.lcxbox.netloader.model.ServerListResponse;
 
-public interface IRouterService {
+public interface IHostService {
 	public ModuleListResponse getModuleList() throws UnknownHostException, IOException;
 	public ServerListResponse getServerList(long miniport_net_luid) throws UnknownHostException, IOException;
 	public CommonResponse setVirtualAddr(long miniportNetLuid, LcxlAddrInfo virtualAddr) throws UnknownHostException, IOException;

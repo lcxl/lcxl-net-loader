@@ -16,9 +16,9 @@ import com.lcxbox.netloader.model.SetVirtualAddrRequest;
 import com.lcxbox.socket.json.SocketRequest;
 
 @Service()
-public class RouterService implements IRouterService {
+public class HostServiceImpl implements IHostService {
 	
-	private String host = "192.168.237.134";
+	private String host = "192.168.237.147";
 	private Integer port = 32112;
 	
 	public ModuleListResponse getModuleList() throws UnknownHostException, IOException {

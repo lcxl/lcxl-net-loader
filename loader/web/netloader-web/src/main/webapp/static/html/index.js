@@ -25,8 +25,8 @@ define(function(require, exports, module) {
 	$(window).on('statechange',function(){
 		// Do something, inspect History.getState() to decide what
 		var state = History.getState();
-		var modulestate = History.normalizeState({url:"?module"});
-		var serverstate = History.normalizeState({url:"?server"});
+		var modulestate = History.normalizeState({url:"?nav=module"});
+		var serverstate = History.normalizeState({url:"?nav=server"});
 		//
 		if (state.url == modulestate.url) {
 			var ModulePage = require("module-page");
@@ -42,7 +42,7 @@ define(function(require, exports, module) {
 			new ServerPage(".lcxlpage", state.data);
 		} else {
 			//默认，跳转到网卡列表
-			History.replaceState(null, "网卡列表", "?module");
+			History.replaceState(null, "网卡列表", "?nav=module");
 		}
 		console.log("statechange");
 	});
