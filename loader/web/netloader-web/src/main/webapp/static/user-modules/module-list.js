@@ -18,6 +18,7 @@ define(function(require, exports, module){
 	/**
 	 * 注册模版帮助类
 	 */
+	
 	Handlebars.registerHelper('ifEnableIpv6', function(ipStatus, options) {
 		  if(ipStatus & SA_ENABLE_IPV6) {
 			  return options.fn(this);
@@ -25,6 +26,7 @@ define(function(require, exports, module){
 			  return options.inverse(this);
 		  }
 		});
+	
 	Handlebars.registerHelper('ifEnableIpv4', function(ipStatus, options) {
 		  if(ipStatus & SA_ENABLE_IPV4) {
 			  return options.fn(this);
@@ -32,12 +34,42 @@ define(function(require, exports, module){
 			  return options.inverse(this);
 		  }
 		});
+	//获取路由算法的名称
+	Handlebars.registerHelper('raName', function(ra, options) {
+		switch(ra) {
+			case 0://RA_POLL
+				return options.fn("轮询算法");
+			case 1://RA_IP_HASH
+				return options.fn("IP Hash算法");
+			case 2://RA_LEAST_CONNECTION
+				return options.fn("最小连接数算法");
+			case 3://RA_FAST_RESPONSE
+				return options.fn("最快响应时间算法");
+			default:
+				return options.fn("未知算法");
+		};
+	});
+	//获得角色名称
+	Handlebars.registerHelper('roleName', function(role, options) {
+		switch(role) {
+			case 0://LCXL_ROLE_UNKNOWN
+				return options.fn("未知角色");
+			case 1://LCXL_ROLE_ROUTER
+				return options.fn("负载均衡器");
+			case 2://LCXL_ROLE_SERVER
+				return options.fn("服务器");
+			default:
+				return options.fn("未知角色");	
+		};
+	});
+	
+	var tpl = require("text!template/module-list.htpl");
+	var template = Handlebars.compile(tpl);
+	
 	function ModuleList(select, data) {
 		var context = this;
 		context._data_ = data;
-		
-		var tpl = require("text!template/module-list.htpl");
-		var template = Handlebars.compile(tpl);
+		context._select_ = select;
 		$(select).html(template(data));
 		$(select).on("click", "[id^=virtual-addr-setting-]", function(event) {
 			if (context._data_.module_list ==null) {
@@ -63,7 +95,9 @@ define(function(require, exports, module){
 		});
 		
 	}
+	ModuleList.prototype._select_ = null;
 	ModuleList.prototype._data_ = null;
+	
 	ModuleList.prototype.findModuleByLuid = function(luid) {
 		for (var i = 0; i < this._data_.module_list.length; i++) {
 			if (this._data_.module_list[i].miniport_net_luid == luid) {
@@ -76,11 +110,11 @@ define(function(require, exports, module){
 		if (module) {
 			//设置ipv4
 			$("#virtual-ipv4-td-"+luid).attr("class", (module.virtual_addr.status&SA_ENABLE_IPV4)?"success":"danger");
-			$("#virtual-ipv4-td-"+luid+" span:first").html(module.virtual_addr.ipv4);
+			$("#virtual-ipv4-td-"+luid+" span:first").html(module.virtual_addr.ipv4+"("+module.virtual_addr.ipv4_onlink_prefix_length+")");
 			$("#virtual-ipv4-td-"+luid+" span:last").html((module.virtual_addr.status&SA_ENABLE_IPV4)?"已启用":"已禁用");
 			//设置ipv6
 			$("#virtual-ipv6-td-"+luid).attr("class", (module.virtual_addr.status&SA_ENABLE_IPV6)?"success":"danger");
-			$("#virtual-ipv6-td-"+luid+" span:first").html(module.virtual_addr.ipv6);
+			$("#virtual-ipv6-td-"+luid+" span:first").html(module.virtual_addr.ipv6+"("+module.virtual_addr.ipv6_onlink_prefix_length+")");
 			$("#virtual-ipv6-td-"+luid+" span:last").html((module.virtual_addr.status&SA_ENABLE_IPV6)?"已启用":"已禁用");
 		}
 	};

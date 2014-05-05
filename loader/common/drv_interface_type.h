@@ -31,17 +31,23 @@ extern "C" {
 		WCHAR				miniport_name[MAX_INSTANCE_NAME_LENGTH];
 		//驱动当前角色，有LCXL_ROLE_ROUTER和LCXL_ROLE_SERVER两种角色
 		INT					lcxl_role;
-		//1606
 		//------------------------LCXL_ROUTER角色------------------------
 		//服务器数量
 		INT					server_count;
 		//路由表项超时时间
 		INT					route_timeout;
+		//服务器检测信息
+		LCXL_SERVER_CHECK	server_check;
+		//路由算法，有RA_....
+		INT					routing_algorithm;
 		//------------------------LCXL_SERVER角色------------------------	
-		//负载均衡器的mac地址
-		//IF_PHYSICAL_ADDRESS	router_mac_addr;
+
 	} APP_MODULE, *PAPP_MODULE;
 
+	typedef struct _APP_SET_ROLE {
+		NET_LUID miniport_net_luid;
+		INT lcxl_role;
+	} APP_SET_ROLE, *PAPP_SET_ROLE;//设置角色
 	//IOCTL_SET_VIRTUAL_ADDR
 	typedef struct _APP_SET_VIRTUAL_ADDR {
 		NET_LUID			miniport_net_luid;

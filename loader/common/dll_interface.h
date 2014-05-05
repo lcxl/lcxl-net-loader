@@ -7,8 +7,8 @@
 extern "C" {
 #endif
 
-	INT WINAPI lnlGetLcxlRole();
-	BOOL WINAPI lnlSetLcxlRole(IN INT lcxl_role);
+	//INT WINAPI lnlGetLcxlRole();
+	BOOL WINAPI lnlSetLcxlRole(IN NET_LUID miniport_net_luid, IN INT lcxl_role);
 	BOOL WINAPI lnlGetModuleList(OUT PAPP_MODULE module_list, IN OUT PDWORD module_list_count);
 	BOOL WINAPI lnlSetVirtualAddr(IN NET_LUID miniport_net_luid, IN PLCXL_ADDR_INFO addr);
 	//-------------------LCXL_ROLE_ROUTER-------------------

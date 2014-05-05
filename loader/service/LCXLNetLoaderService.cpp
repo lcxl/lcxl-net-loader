@@ -110,16 +110,7 @@ bool CNetLoaderService::PreSerRun()
 	}
 
 	//设置
-	//获取角色信息
-	INT sys_lcxl_role = lnlGetLcxlRole();
-	if (sys_lcxl_role != m_Config.GetRole()) {
-		if (sys_lcxl_role != LCXL_ROLE_UNKNOWN) {
-			lnlSetLcxlRole(LCXL_ROLE_UNKNOWN);
-		}
-		if (m_Config.GetRole() != LCXL_ROLE_UNKNOWN) {
-			lnlSetLcxlRole(m_Config.GetRole());
-		}
-	}
+	
 
 	//在locker生存周期中锁定
 	CCSLocker locker = m_Config.LockinLifeCycle();
@@ -229,8 +220,8 @@ bool CNetLoaderService::ProcessJsonData(const Json::Value &root, Json::Value &re
 		for (it = m_Config.ModuleList().begin(); it != m_Config.ModuleList().end(); it++) {
 			Json::Value module;
 			
-			module["filter_module_name"] = wstring_to_string(wstring((*it).module.filter_module_name)).c_str();
-			module["mac_addr"] = string_format(
+			module[ELEMENT_FILTER_MODULE_NAME] = wstring_to_string(wstring((*it).module.filter_module_name)).c_str();
+			module[ELEMENT_MAC_ADDR] = string_format(
 				"%02x-%02x-%02x-%02x-%02x-%02x",
 				(*it).module.mac_addr.Address[0],
 				(*it).module.mac_addr.Address[1],
@@ -238,22 +229,36 @@ bool CNetLoaderService::ProcessJsonData(const Json::Value &root, Json::Value &re
 				(*it).module.mac_addr.Address[3],
 				(*it).module.mac_addr.Address[4],
 				(*it).module.mac_addr.Address[5]).c_str();
-			module["miniport_friendly_name"] = wstring_to_string(wstring((*it).module.miniport_friendly_name)).c_str();
-			module["miniport_ifindex"] = (UINT)(*it).module.miniport_ifindex;
-			module["miniport_name"] = wstring_to_string(wstring((*it).module.miniport_name)).c_str();
-			module["miniport_net_luid"] = (*it).module.miniport_net_luid.Value;
-			module["server_count"] = (*it).module.server_count;
+			module[ELEMENT_MINIPORT_FRIENDLY_NAME] = wstring_to_string(wstring((*it).module.miniport_friendly_name)).c_str();
+			module[ELEMENT_MINIPORT_IFINDEX] = (UINT)(*it).module.miniport_ifindex;
+			module[ELEMENT_MINIPORT_NAME] = wstring_to_string(wstring((*it).module.miniport_name)).c_str();
+			module[ELEMENT_MINIPORT_NET_LUID] = (*it).module.miniport_net_luid.Value;
+			module[ELEMENT_LCXL_ROLE] = (*it).module.lcxl_role;
+			module[ELEMENT_SERVER_COUNT] = (*it).module.server_count;
+			module[ELEMENT_ROUTE_TIMEOUT] = (*it).module.route_timeout;
+
+			Json::Value server_check;
+			server_check[ELEMENT_INTERVAL] = (*it).module.server_check.interval;
+			server_check[ELEMENT_TIMEOUT] = (*it).module.server_check.timeout;
+			server_check[ELEMENT_RETRY_NUMBER] = (*it).module.server_check.retry_number;
+			module[ELEMENT_SERVER_CHECK] = server_check;
 			
+			module[ELEMENT_ROUTING_ALGORITHM] = (*it).module.routing_algorithm;
+
 			Json::Value virtual_addr;
 			char ipv4[16];
 			inet_ntop(AF_INET, const_cast<IN_ADDR*>(&(*it).module.virtual_addr.ipv4), ipv4, sizeof(ipv4) / sizeof(ipv4[0]));
 			char ipv6[100];
 			inet_ntop(AF_INET6, const_cast<IN6_ADDR*>(&(*it).module.virtual_addr.ipv6), ipv6, sizeof(ipv6) / sizeof(ipv6[0]));
 
-			virtual_addr["status"] = (*it).module.virtual_addr.status;
-			virtual_addr["ipv4"] = ipv4;
-			virtual_addr["ipv6"] = ipv6;
-			module["virtual_addr"] = virtual_addr;
+			virtual_addr[ELEMENT_STATUS] = (*it).module.virtual_addr.status;
+			virtual_addr[ELEMENT_IPV4] = ipv4;
+			virtual_addr[ELEMENT_IPV4_ONLINK_PREFIX_LENGTH] = (*it).module.virtual_addr.ipv4_onlink_prefix_length;
+			virtual_addr[ELEMENT_IPV6] = ipv6;
+			virtual_addr[ELEMENT_IPV6_ONLINK_PREFIX_LENGTH] = (*it).module.virtual_addr.ipv6_onlink_prefix_length;
+
+			module[ELEMENT_VIRTUAL_ADDR] = virtual_addr;
+
 
 			module_list.append(module);
 		}
@@ -300,14 +305,16 @@ bool CNetLoaderService::ProcessJsonData(const Json::Value &root, Json::Value &re
 		NET_LUID miniport_net_luid;
 		LCXL_ADDR_INFO addr;
 
-		const Json::Value &virtual_addr = root["virtual_addr"];
+		const Json::Value &virtual_addr = root[ELEMENT_VIRTUAL_ADDR];
 
-		miniport_net_luid.Value = root["miniport_net_luid"].asInt64();
-		addr.status = virtual_addr["status"].asInt();
-		if (inet_pton(AF_INET, virtual_addr["ipv4"].asCString(), &addr.ipv4) != 1 || inet_pton(AF_INET6, virtual_addr["ipv6"].asCString(), &addr.ipv6) != 1) {
+		miniport_net_luid.Value = root[ELEMENT_MINIPORT_NET_LUID].asInt64();
+		addr.status = virtual_addr[ELEMENT_STATUS].asInt();
+		if (inet_pton(AF_INET, virtual_addr[ELEMENT_IPV4].asCString(), &addr.ipv4) != 1 || inet_pton(AF_INET6, virtual_addr[ELEMENT_IPV6].asCString(), &addr.ipv6) != 1) {
 			status = JS_JSON_CODE_IP_FORMAT_INVALID;
 			break;
 		}
+		addr.ipv4_onlink_prefix_length = root[ELEMENT_IPV4_ONLINK_PREFIX_LENGTH].asInt();
+		addr.ipv6_onlink_prefix_length = root[ELEMENT_IPV6_ONLINK_PREFIX_LENGTH].asInt();
 		if (lnlSetVirtualAddr(miniport_net_luid, &addr)){
 			PCONFIG_MODULE module = m_Config.FindModuleByLuid(miniport_net_luid);
 			if (module) {
@@ -713,7 +720,12 @@ void CNetLoaderService::SetModuleInfo(PCONFIG_MODULE module)
 	if (!lnlSetVirtualAddr(module->module.miniport_net_luid, &module->module.virtual_addr)) {
 		OutputDebugStr(_T("lnlSetVirtualAddr(%I64d) failed:error code=%d\n"), module->module.miniport_net_luid, GetLastError());
 	}
-	switch (m_Config.GetRole()) {
+
+	//设置角色信息
+	lnlSetLcxlRole(module->module.miniport_net_luid, module->module.lcxl_role);
+		
+
+	switch (module->module.lcxl_role) {
 	case LCXL_ROLE_ROUTER:
 	{
 		std::vector<CONFIG_SERVER>::iterator sit;

@@ -24,10 +24,21 @@ public class Module {
 	
 	@JsonProperty("miniport_name")
 	private String miniportName;
-
+	
+	@JsonProperty("lcxl_role")
+	private Integer lcxlRole;
+	
 	@JsonProperty("server_count")
 	private Integer serverCount;
 	
+	@JsonProperty("route_timeout")
+	private Integer routeTimeout;
+	
+	@JsonProperty("server_check")
+	private ServerCheck serverCheck;
+	
+	@JsonProperty("routing_algorithm")
+	private Integer routingAlgorithm;
 	
 	public Integer getMiniportIfindex() {
 		return miniportIfindex;
@@ -85,12 +96,44 @@ public class Module {
 		this.miniportName = miniportName;
 	}
 
+	public Integer getLcxlRole() {
+		return lcxlRole;
+	}
+
+	public void setLcxlRole(Integer lcxlRole) {
+		this.lcxlRole = lcxlRole;
+	}
+
 	public Integer getServerCount() {
 		return serverCount;
 	}
 
 	public void setServerCount(Integer serverCount) {
 		this.serverCount = serverCount;
+	}
+
+	public Integer getRouteTimeout() {
+		return routeTimeout;
+	}
+
+	public void setRouteTimeout(Integer routeTimeout) {
+		this.routeTimeout = routeTimeout;
+	}
+
+	public ServerCheck getServerCheck() {
+		return serverCheck;
+	}
+
+	public void setServerCheck(ServerCheck serverCheck) {
+		this.serverCheck = serverCheck;
+	}
+
+	public Integer getRoutingAlgorithm() {
+		return routingAlgorithm;
+	}
+
+	public void setRoutingAlgorithm(Integer routingAlgorithm) {
+		this.routingAlgorithm = routingAlgorithm;
 	}
 
 	

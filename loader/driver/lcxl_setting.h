@@ -34,12 +34,8 @@ typedef struct _LCXL_MODULE_SETTING_INFO {
 	LCXL_LOCK_LIST			server_list;
 	//路由表超时时间，以秒为单位
 	INT						route_timeout;
-	//设置服务器检测间隔，以秒为单位
-	INT						server_check_interval;
-	//服务器检测超时时间，以秒为单位
-	INT						server_check_timeout;
-	//服务器检测失败时的重试次数
-	INT						server_check_retry_number;
+	//服务器检测信息
+	LCXL_SERVER_CHECK		server_check;
 
 	//路由算法，有RA_....
 	INT						routing_algorithm;
@@ -48,7 +44,6 @@ typedef struct _LCXL_MODULE_SETTING_INFO {
 } LCXL_MODULE_SETTING_INFO, *PLCXL_MODULE_SETTING_INFO;//配置模块数据结构
 
 typedef struct _LCXL_SETTING{
-	INT					lcxl_role;//!!此角色不应该放在全局变量中，应该放在模块变量中，驱动当前角色，有LCXL_ROLE_ROUTER和LCXL_ROLE_SERVER两种角色
 	LARGE_INTEGER		frequency;//KeQueryPerformanceCounter的每秒时钟频率，用于计算路由表的生存周期
 } LCXL_SETTING, *PLCXL_SETTING;//驱动设置
 

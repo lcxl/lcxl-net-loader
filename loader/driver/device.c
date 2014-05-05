@@ -211,6 +211,7 @@ FilterDeviceIoControl(
             }
             break;
 		//添加代码
+		/*
 		case IOCTL_GET_ROLE:
 		{
 			if (output_buffer_length == sizeof(INT)) {
@@ -220,28 +221,41 @@ FilterDeviceIoControl(
 			}
 		}
 			break;
+			*/
 		case IOCTL_SET_ROLE:
-			if (input_buffer_length == sizeof(INT)) {
-				INT lcxl_role = *(PINT)input_buffer;
-				switch (lcxl_role) {
-				case LCXL_ROLE_UNKNOWN:
-					break;
-				case LCXL_ROLE_ROUTER:
-					if (g_setting.lcxl_role != LCXL_ROLE_UNKNOWN) {
-						//参数非法
-						status = STATUS_INVALID_PARAMETER;
+			if (input_buffer_length == sizeof(APP_SET_ROLE)) {
+				PAPP_SET_ROLE set_role = (PAPP_SET_ROLE)input_buffer;
+
+				//锁定列表数量
+				LockLCXLLockList(&g_filter_list);
+				filter = FindFilter(set_role->miniport_net_luid);
+				if (filter != NULL) {
+					KLOCK_QUEUE_HANDLE lock_handle;
+					LockFilter(filter, &lock_handle);
+					switch (set_role->lcxl_role) {
+					case LCXL_ROLE_UNKNOWN:
+						break;
+					case LCXL_ROLE_ROUTER:
+						if (filter->module.lcxl_role != LCXL_ROLE_UNKNOWN) {
+							//参数非法
+							status = STATUS_INVALID_PARAMETER;
+						}
+						break;
+					case LCXL_ROLE_SERVER:
+						if (filter->module.lcxl_role != LCXL_ROLE_UNKNOWN) {
+							//参数非法
+							status = STATUS_INVALID_PARAMETER;
+						}
+						break;
 					}
-					break;
-				case LCXL_ROLE_SERVER:
-					if (g_setting.lcxl_role != LCXL_ROLE_UNKNOWN) {
-						//参数非法
-						status = STATUS_INVALID_PARAMETER;
+					if (NT_SUCCESS(status)) {
+						filter->module.lcxl_role = set_role->lcxl_role;
 					}
-					break;
+					UnlockFilter(&lock_handle);
+				} else {
+					status = STATUS_NOT_FOUND;
 				}
-				if (NT_SUCCESS(status)) {
-					g_setting.lcxl_role = lcxl_role;
-				}
+				UnlockLCXLLockList(&g_filter_list);
 			}
 			break;
 		case IOCTL_GET_MODULE_LIST:
@@ -278,12 +292,14 @@ FilterDeviceIoControl(
 					cur_buf->miniport_name[buflen / sizeof(WCHAR)] = L'\0';
 
 					//原子数据
+					cur_buf->lcxl_role = module->lcxl_role;
 					cur_buf->route_timeout = module->route_timeout;
+					cur_buf->routing_algorithm = module->routing_algorithm;
 					//需要线程保护的数据
 					
 					LockFilter(filter, &lock_handle);
 					cur_buf->virtual_addr = module->virtual_addr;
-					//cur_buf->router_mac_addr = module->router_mac_addr;
+					cur_buf->server_check = module->server_check;
 					LockLCXLLockList(&module->server_list);
 					cur_buf->server_count = GetListCountofLCXLLockList(&module->server_list);
 					UnlockLCXLLockList(&module->server_list);

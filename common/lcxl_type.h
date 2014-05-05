@@ -50,15 +50,24 @@ extern "C" {
 		UCHAR				ip_status;//IP协议启用状态，SA_ENABLE_IPV...
 		IF_PHYSICAL_ADDRESS mac_addr;//服务器MAC地址
 	} LCXL_SERVER, *PLCXL_SERVER;//服务器信息
+
+	typedef struct _LCXL_SERVER_CHECK {
+		//设置服务器检测间隔，以秒为单位
+		INT					interval;
+		//服务器检测超时时间，以秒为单位
+		INT					timeout;
+		//服务器检测失败时的重试次数
+		INT					retry_number;
+	} LCXL_SERVER_CHECK, *PLCXL_SERVER_CHECK;//服务器检测设置
 //------可用性检测帧类型------
 #define ETHERNET_TYPE_LCXL_CHECKING 0xF0F0
 //------路由算法类型------
 //静态算法
-#define RA_POLL					0x00//轮询
+#define RA_POLL					0x00//轮询算法
 #define RA_IP_HASH				0x01//基于IP的hash算法
 //动态算法
-#define RA_LEAST_CONNECTION		0x10//最小连接数
-#define RA_FAST_RESPONSE		0x11//最快响应时间
+#define RA_LEAST_CONNECTION		0x10//最小连接数算法
+#define RA_FAST_RESPONSE		0x11//最快响应时间算法
 
 #ifdef __cplusplus
 }

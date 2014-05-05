@@ -61,6 +61,7 @@ define(function(require, exports, module) {
 					
 				};
 			}).fail(function( jqxhr, textStatus, error ) {
+				new ModuleList(".module-list", data);
 				var err = textStatus + ", " + error;
 				console.log( "Request Failed: " + err );
 			});

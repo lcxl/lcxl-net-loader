@@ -23,7 +23,7 @@ PSERVER_INFO_LIST_ENTRY FindServer(IN PLCXL_LOCK_LIST server_list, IN PIF_PHYSIC
 		PSERVER_INFO_LIST_ENTRY server_info;
 
 		server_info = GetServerbyListEntry(Link);
-		if (RtlEqualMemory(&server_info->info.mac_addr, mac_addr, sizeof(server_info->info.mac_addr))) {
+		if (RtlEqualMemory(server_info->info.mac_addr.Address, mac_addr->Address, mac_addr->Length)) {
 			return server_info;
 		}
 		Link = Link->Flink;

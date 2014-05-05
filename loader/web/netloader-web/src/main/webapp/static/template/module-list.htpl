@@ -21,6 +21,11 @@
 					</thead>
 					<tbody>
 						<tr>
+							<td>角色</td>
+							<td>{{#roleName lcxl_role}}{{/roleName}}</td>
+							<td></td>
+						</tr>
+						<tr>
 							<td>网卡MAC地址</td>
 							<td>{{mac_addr}}</td>
 							<td></td>
@@ -46,6 +51,29 @@
 							<td>服务器列表</td>
 							<td>{{server_count}}台</td>
 							<td><a class="btn btn-default btn-sm" id="server-list-setting-{{miniport_net_luid}}">管理服务器</a></td>
+						</tr>
+						<tr>
+							<td>路由表超时时间</td>
+							<td>{{route_timeout}}秒</td>
+							<td><a class="btn btn-default btn-sm" id="route-timeout-{{miniport_net_luid}}">编辑</a></td>
+						</tr>
+						<tr>
+							<td>服务器检测间隔时间</td>
+							<td>{{server_check.interval}}秒</td>
+							<td rowspan="3"><a class="btn btn-default btn-sm" id="server-check-{{miniport_net_luid}}">设置</a></td>
+						</tr>
+						<tr>
+							<td>服务器检测超时时间</td>
+							<td>{{server_check.timeout}}秒</td>
+						</tr>
+						<tr>
+							<td>服务器检测失败重试次数</td>
+							<td>{{server_check.retry_number}}秒</td>
+						</tr>
+						<tr>
+							<td>路由算法</td>
+							<td>{{#raName routing_algorithm}}{{/raName}}</td>
+							<td><a class="btn btn-default btn-sm" id="server-check-retry-number-{{miniport_net_luid}}">编辑</a></td>
 						</tr>
 					</tbody>
 				</table>

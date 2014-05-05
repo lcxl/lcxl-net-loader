@@ -48,20 +48,15 @@ BOOL lnlDeviceIoControl(_In_ DWORD dwIoControlCode,
 	return last_error == ERROR_SUCCESS;
 }
 
-INT WINAPI lnlGetLcxlRole()
-{
-	INT resu;
-	DWORD data_size = 0;
-
-	lnlDeviceIoControl(IOCTL_GET_ROLE, NULL, 0, &resu, sizeof(resu), &data_size);
-	return resu;
-}
-
-BOOL WINAPI lnlSetLcxlRole(IN INT lcxl_role)
+BOOL WINAPI lnlSetLcxlRole(IN NET_LUID miniport_net_luid, IN INT lcxl_role)
 {
 	DWORD data_size = 0;
+	APP_SET_ROLE set_role;
 
-	return lnlDeviceIoControl(IOCTL_SET_ROLE, &lcxl_role, sizeof(lcxl_role), NULL, 0, &data_size);
+	set_role.miniport_net_luid = miniport_net_luid;
+	set_role.lcxl_role = lcxl_role;
+
+	return lnlDeviceIoControl(IOCTL_SET_ROLE, &set_role, sizeof(set_role), NULL, 0, &data_size);
 }
 
 BOOL WINAPI lnlGetModuleList(OUT PAPP_MODULE pModuleList, IN OUT PDWORD pModuleListCount)

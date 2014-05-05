@@ -1383,10 +1383,7 @@ Arguments:
 		eth_header = GetEthernetHeader(current_nbl, &buffer_length);
 
 		if (eth_header != NULL) {
-			INT lcxl_role;
-
-			lcxl_role = g_setting.lcxl_role;
-			ProcessNBL(filter, FALSE, lcxl_role, eth_header, buffer_length, &return_data);
+			ProcessNBL(filter, FALSE, eth_header, buffer_length, &return_data);
 		}
 		switch (return_data.code) {
 		case PNRC_PASS:case PNRC_MODIFY:
@@ -1747,10 +1744,7 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 		
 		//各种有效性判断
 		if (ethernet_header != NULL) {
-			INT lcxl_role;
-			
-			lcxl_role  = g_setting.lcxl_role;
-			ProcessNBL(filter, TRUE, lcxl_role, ethernet_header, data_length, &return_data);
+			ProcessNBL(filter, TRUE, ethernet_header, data_length, &return_data);
 		}
 		switch (return_data.code) {
 		case PNRC_DROP:case PNRC_ROUTER:case PNRC_ICMPV6_NA:
@@ -2363,13 +2357,13 @@ VOID CheckServerStatus(IN PLCXL_FILTER filter)
 				if ((server_info->info.status & SS_CHECKING) != 0) {
 					//正在检查状态
 					//查看是否超时
-					if (timestamp.QuadPart - server_info->timestamp.QuadPart > g_setting.frequency.QuadPart*(filter->module.server_check_interval + filter->module.server_check_timeout*(server_info->current_retry_number + 1))) {
+					if (timestamp.QuadPart - server_info->timestamp.QuadPart > g_setting.frequency.QuadPart*filter->module.server_check.timeout*(server_info->current_retry_number + 1)) {
 						//等待服务器响应超时
 						//重试次数+1
 						server_info->current_retry_number++;
 						KdPrint(("SYS:CheckServerStatus wait for server reponse timeout, current_retry_number=%d\n", server_info->current_retry_number));
 						//如果重试次数超过规定的次数
-						if (server_info->current_retry_number >= filter->module.server_check_retry_number) {
+						if (server_info->current_retry_number >= filter->module.server_check.retry_number) {
 							KdPrint(("SYS:CheckServerStatus:set server status = SS_OFFLINE\n"));
 							//取消online状态
 							server_info->info.status &= ~SS_ONLINE;
@@ -2389,10 +2383,12 @@ VOID CheckServerStatus(IN PLCXL_FILTER filter)
 				} else {
 					//正常状态
 					//如果到了检查服务器状态的时间
-					if (timestamp.QuadPart - server_info->timestamp.QuadPart > g_setting.frequency.QuadPart*filter->module.server_check_interval) {
+					if (timestamp.QuadPart - server_info->timestamp.QuadPart > g_setting.frequency.QuadPart*filter->module.server_check.interval) {
 						server_info->current_retry_number = 0;
 						//此服务器处于检查状态
 						server_info->info.status |= SS_CHECKING;
+						//更新时间戳
+						server_info->timestamp.QuadPart = timestamp.QuadPart;
 						KdPrint(("SYS:CheckServerStatus:checking server status\n"));
 						//发送数据包
 						CreateCheckingNBL(filter, (PDL_EUI48)server_info->info.mac_addr.Address, &send_nbl);
@@ -2408,7 +2404,7 @@ VOID CheckServerStatus(IN PLCXL_FILTER filter)
 				}
 			} else {
 				//服务器offline
-				if (timestamp.QuadPart - server_info->timestamp.QuadPart > g_setting.frequency.QuadPart*(filter->module.server_check_interval + filter->module.server_check_timeout*(server_info->current_retry_number + 1))) {
+				if (timestamp.QuadPart - server_info->timestamp.QuadPart > g_setting.frequency.QuadPart*filter->module.server_check.timeout*(server_info->current_retry_number + 1)) {
 					//等待服务器响应超时
 					//重试次数+1
 					server_info->current_retry_number++;
@@ -2475,7 +2471,7 @@ BOOLEAN CheckTCPNBLMacAddr(IN PIF_PHYSICAL_ADDRESS mac_addr, IN BOOLEAN is_recv,
 	return TRUE;
 }
 
-VOID ProcessNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PETHERNET_HEADER eth_header, IN UINT data_length, IN OUT PPROCESS_NBL_RESULT return_data)
+VOID ProcessNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN PETHERNET_HEADER eth_header, IN UINT data_length, IN OUT PPROCESS_NBL_RESULT return_data)
 {
 	PVOID ethernet_data;
 	USHORT ethernet_type;
@@ -2497,7 +2493,7 @@ VOID ProcessNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN
 	switch (ethernet_type) {
 	case ETHERNET_TYPE_LCXL_CHECKING:
 		//处理可用性检测帧
-		ProcessCheckingNBL(filter, is_recv, lcxl_role, eth_header, data_length, return_data);
+		ProcessCheckingNBL(filter, is_recv, eth_header, data_length, return_data);
 		break;
 	case ETHERNET_TYPE_ARP:
 		//ARP_OPCODE  ARP_REQUEST  ARP_RESPONSE
@@ -2507,7 +2503,7 @@ VOID ProcessNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN
 
 				arp_header = (PARP_HEADER)ethernet_data;
 
-				ProcessARP(filter, is_recv, lcxl_role, arp_header, &virtual_addr, return_data);
+				ProcessARP(filter, is_recv, arp_header, &virtual_addr, return_data);
 			}
 		}
 		break;
@@ -2525,7 +2521,7 @@ VOID ProcessNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN
 					break;
 				case 0x06://TCP数据包
 					if (CheckTCPNBLMacAddr(&filter->module.mac_addr, is_recv, eth_header)) {
-						ProcessTCP(filter, is_recv, lcxl_role, ip_header, IM_IPV4, &virtual_addr, return_data);
+						ProcessTCP(filter, is_recv, ip_header, IM_IPV4, &virtual_addr, return_data);
 					} else {
 						return_data->code = PNRC_DROP;
 					}
@@ -2550,17 +2546,17 @@ VOID ProcessNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN
 
 				switch (ip_header->NextHeader) {
 				case 0x3A://ICMPv6数据包
-					ProcessICMPv6(filter, is_recv, lcxl_role, ip_header, &virtual_addr, return_data);
+					ProcessICMPv6(filter, is_recv, ip_header, &virtual_addr, return_data);
 					break;
 				case 0x06://TCP数据包
 					if (CheckTCPNBLMacAddr(&filter->module.mac_addr, is_recv, eth_header)) {
-						ProcessTCP(filter, is_recv, lcxl_role, ip_header, IM_IPV6, &virtual_addr, return_data);
+						ProcessTCP(filter, is_recv, ip_header, IM_IPV6, &virtual_addr, return_data);
 					} else {
 						return_data->code = PNRC_DROP;
 					}
 					break;
 				case 0x11://PROT_UDP 数据包
-					ProcessUDP(filter, is_recv, lcxl_role, ip_header, IM_IPV6, &virtual_addr, return_data);
+					ProcessUDP(filter, is_recv, ip_header, IM_IPV6, &virtual_addr, return_data);
 					break;
 				}
 			}
@@ -2571,18 +2567,21 @@ VOID ProcessNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN
 	}
 }
 
-VOID ProcessCheckingNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PETHERNET_HEADER eth_header, IN UINT data_length, IN OUT PPROCESS_NBL_RESULT return_data)
+VOID ProcessCheckingNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN PETHERNET_HEADER eth_header, IN UINT data_length, IN OUT PPROCESS_NBL_RESULT return_data)
 {
 	UNREFERENCED_PARAMETER(filter);
-	UNREFERENCED_PARAMETER(lcxl_role);
 	UNREFERENCED_PARAMETER(eth_header);
 	UNREFERENCED_PARAMETER(data_length);
 
 	if (is_recv) {
 		KdPrint(("SYS:recv checking nbl\n"));
-		if (lcxl_role == LCXL_ROLE_ROUTER) {
+		switch (filter->module.lcxl_role)
+		{
+		case LCXL_ROLE_SERVER:
 			return_data->code = PNRC_CHECKING_NBL;
-		} else {
+			break;
+		case LCXL_ROLE_ROUTER:
+		{
 			IF_PHYSICAL_ADDRESS mac_addr;
 			PSERVER_INFO_LIST_ENTRY server_info;
 
@@ -2604,19 +2603,20 @@ VOID ProcessCheckingNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_
 			//解锁列表
 			UnlockLCXLLockList(&filter->module.server_list);
 		}
-		
+			break;
+		default:
+			break;
+		}
 	}
-	
 }
 
-VOID ProcessARP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PARP_HEADER arp_header, IN PLCXL_ADDR_INFO virtual_addr, IN OUT PPROCESS_NBL_RESULT return_data)
+VOID ProcessARP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN PARP_HEADER arp_header, IN PLCXL_ADDR_INFO virtual_addr, IN OUT PPROCESS_NBL_RESULT return_data)
 {
 	LCXL_ARP_ETHERNET lcxl_arp_ethernet;
 
 	ASSERT(virtual_addr->status && SA_ENABLE_IPV4);
 	UNREFERENCED_PARAMETER(virtual_addr);
 	UNREFERENCED_PARAMETER(return_data);
-	UNREFERENCED_PARAMETER(lcxl_role);
 	UNREFERENCED_PARAMETER(filter);
 	UNREFERENCED_PARAMETER(is_recv);
 	LCXLReadARPEthernet(arp_header, &lcxl_arp_ethernet);
@@ -2657,7 +2657,7 @@ TPA=%d.%d.%d.%d\n",
 			 lcxl_arp_ethernet.TargetProtocolAddress.S_un.S_un_b.s_b2,
 			 lcxl_arp_ethernet.TargetProtocolAddress.S_un.S_un_b.s_b3,
 			 lcxl_arp_ethernet.TargetProtocolAddress.S_un.S_un_b.s_b4));
-	switch (lcxl_role) {
+	switch (filter->module.lcxl_role) {
 	case LCXL_ROLE_SERVER:
 		switch (lcxl_arp_ethernet.Opcode)
 		{
@@ -2713,7 +2713,7 @@ TPA=%d.%d.%d.%d\n",
 	}
 }
 
-VOID ProcessICMPv6(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PIPV6_HEADER ip_header, IN PLCXL_ADDR_INFO virtual_addr, IN OUT PPROCESS_NBL_RESULT return_data)
+VOID ProcessICMPv6(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN PIPV6_HEADER ip_header, IN PLCXL_ADDR_INFO virtual_addr, IN OUT PPROCESS_NBL_RESULT return_data)
 {
 	PICMPV6_MESSAGE icmpv6_message = (PICMPV6_MESSAGE)((PUCHAR)ip_header + sizeof(IPV6_HEADER));
 
@@ -2744,7 +2744,7 @@ VOID ProcessICMPv6(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role,
 		ntohs(ip_header->DestinationAddress.u.Word[7])
 		));
 
-	switch (lcxl_role) {
+	switch (filter->module.lcxl_role) {
 	case LCXL_ROLE_SERVER:
 		//阻止服务器收到负载均衡器对虚拟IP的通告
 		switch (icmpv6_message->Header.Type) {
@@ -2839,7 +2839,7 @@ VOID ProcessICMPv6(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role,
 	}
 }
 
-VOID ProcessTCP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PVOID ip_header, IN INT ip_mode, IN PLCXL_ADDR_INFO virtual_addr, IN OUT PPROCESS_NBL_RESULT return_data)
+VOID ProcessTCP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN PVOID ip_header, IN INT ip_mode, IN PLCXL_ADDR_INFO virtual_addr, IN OUT PPROCESS_NBL_RESULT return_data)
 {
 	PVOID destination_address = NULL;
 	SIZE_T destination_address_len = 0;
@@ -2870,7 +2870,7 @@ VOID ProcessTCP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN
 		ASSERT(FALSE);
 		break;
 	}
-	switch (lcxl_role) {
+	switch (filter->module.lcxl_role) {
 	case LCXL_ROLE_ROUTER://如果角色是路由
 
 		if (is_recv) {
@@ -2903,7 +2903,7 @@ VOID ProcessTCP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN
 	}
 }
 
-VOID ProcessUDP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN PVOID ip_header, IN INT ip_mode, IN PLCXL_ADDR_INFO virtual_addr, IN OUT PPROCESS_NBL_RESULT return_data)
+VOID ProcessUDP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN PVOID ip_header, IN INT ip_mode, IN PLCXL_ADDR_INFO virtual_addr, IN OUT PPROCESS_NBL_RESULT return_data)
 {
 	PVOID destination_address = NULL;
 	SIZE_T destination_address_len = 0;
@@ -2935,7 +2935,7 @@ VOID ProcessUDP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN INT lcxl_role, IN
 		ASSERT(FALSE);
 		break;
 	}
-	switch (lcxl_role) {
+	switch (filter->module.lcxl_role) {
 	case LCXL_ROLE_ROUTER://如果角色是路由
 		break;
 	case LCXL_ROLE_SERVER:
