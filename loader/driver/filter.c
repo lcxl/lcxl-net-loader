@@ -2480,12 +2480,12 @@ VOID ProcessNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN PETHERNET_HEADER 
 
 	ASSERT(return_data != NULL && filter != NULL && eth_header != NULL);
 	RtlZeroMemory(return_data, sizeof(PROCESS_NBL_RESULT));
-	
+	//获取以太网帧数据内容部分
 	ethernet_data = GetEthernetData(eth_header, data_length, &ethernet_type, &data_length);
 	if (ethernet_data == NULL) {
 		return;
 	}
-
+	//虚拟IP地址
 	LockFilter(filter, &lock_handle);
 	virtual_addr = filter->module.virtual_addr;
 	UnlockFilter(&lock_handle);

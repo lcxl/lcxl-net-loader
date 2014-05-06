@@ -31,7 +31,7 @@ protected:
 	// 参数: void * context
 	//************************************
 	static unsigned  CALLBACK RouterVipCheckThread(void *context);
-	static void CheckAndSetVip(NET_LUID miniport_net_luid, IF_INDEX ifindex, PSOCKADDR_INET Address, UINT8 onlink_prefix_length);
+	static bool CheckAndSetVip(NET_LUID miniport_net_luid, IF_INDEX ifindex, PSOCKADDR_INET Address, UINT8 onlink_prefix_length);
 	static void CALLBACK IpAddressChangeEvent(PVOID callerContext, PMIB_UNICASTIPADDRESS_ROW row, MIB_NOTIFICATION_TYPE notificationType);
 	static VOID
 		NETIOAPI_API_ IpInterfaceChangeEvent(

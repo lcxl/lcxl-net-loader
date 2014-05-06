@@ -14,8 +14,6 @@
 #define ELEMENT_PORT "port"
 #define VALUE_PORT_DEFAULT 32112
 
-#define ELEMENT_LCXL_ROLE "lcxl_role"
-
 #define ELEMENT_ROLENAME "rolename"
 #define VALUE_ROLENAME_UNKNOWN "unknown"
 #define VALUE_ROLENAME_ROUTE "router"
@@ -25,6 +23,8 @@
 #define ELEMENT_MODULE_LIST "module_list"
 //CONFIG_MODULE
 #define ELEMENT_MODULE "module"
+#define ELEMENT_LCXL_ROLE "lcxl_role"
+#define ELEMENT_ISEXIST "isexist"
 #define ELEMENT_MINIPORT_NET_LUID "miniport_net_luid"
 #define ELEMENT_MAC_ADDR "mac_addr"
 #define ELEMENT_VIRTUAL_ADDR "virtual_addr"//LCXL_ADDR_INFO
@@ -37,7 +37,8 @@
 #define ELEMENT_ROUTE_TIMEOUT "route_timeout"
 #define ELEMENT_SERVER_CHECK "server_check"//LCXL_SERVER_CHECK
 #define ELEMENT_ROUTING_ALGORITHM "routing_algorithm"
-
+#define ELEMENT_IPV4_ROUTER_ACTIVE "ipv4_router_active"
+#define ELEMENT_IPV6_ROUTER_ACTIVE "ipv6_router_active"
 //LCXL_ADDR_INFO
 #define ELEMENT_STATUS "status"
 #define ELEMENT_IPV4 "ipv4"
@@ -65,11 +66,16 @@ typedef struct _CONFIG_SERVER {
 typedef struct _CONFIG_MODULE{
 	//网卡是否存在，如果不存在，则表明可能被禁用或者从系统中移除
 	bool						isexist;
+	
 	//驱动模块列表
 	APP_MODULE					module;
 	//------------------------LCXL_ROUTER角色------------------------
+	
 	//服务器列表
 	std::vector<CONFIG_SERVER>	server_list;
+	//负载均衡器是否启用，如果处于Active状态，如果为false，则处于Standby状态
+	bool						ipv4_router_active;
+	bool						ipv6_router_active;
 	HANDLE						thread_handle;
 	HANDLE						exit_event;
 	//------------------------LCXL_SERVER角色------------------------

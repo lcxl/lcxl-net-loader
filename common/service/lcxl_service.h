@@ -20,6 +20,7 @@ private:
 	static DWORD WINAPI HandlerEx(_In_  DWORD dwControl, _In_  DWORD dwEventType, _In_  LPVOID lpEventData, _In_  LPVOID lpContext);
 protected:
 	SERVICE_STATUS m_SerStatus;
+
 	void SerMain(DWORD dwNumServicesArgs, LPTSTR lpServiceArgVectors[]);
 	virtual DWORD SerHandler(DWORD dwControl, DWORD dwEventType, LPVOID lpEventData) = 0;
 	//如果服务运行成功，则需要执行SetCurrentState(SERVICE_RUNNING);

@@ -111,6 +111,8 @@ void CLCXLConfig::UpdateModuleList(const std::vector<APP_MODULE> &module_list)
 			module.isexist = true;
 			module.exit_event = NULL;
 			module.thread_handle = NULL;
+			module.ipv4_router_active = false;
+			module.ipv6_router_active = false;
 			m_ModuleList.push_back(module);
 		}
 	}
@@ -128,9 +130,15 @@ tinyxml2::XMLElement * CLCXLConfig::WriteModuleList(tinyxml2::XMLElement *owner_
 
 tinyxml2::XMLElement * CLCXLConfig::WriteModule(tinyxml2::XMLElement *owner_element, const CONFIG_MODULE &module)
 {
-	//写入miniport_net_luid
+	
 	tinyxml2::XMLElement *element;
 
+	//插入角色
+	element = owner_element->GetDocument()->NewElement(ELEMENT_ROLENAME);
+	element->SetAttribute(ATTRIBUTE_VALUE, RoleToStr(module.module.lcxl_role).c_str());
+	owner_element->InsertEndChild(element);
+
+	//写入miniport_net_luid
 	element = owner_element->GetDocument()->NewElement(ELEMENT_MINIPORT_NET_LUID);
 	element->SetAttribute(ATTRIBUTE_VALUE, std::to_string(module.module.miniport_net_luid.Value).c_str());
 	owner_element->InsertEndChild(element);
@@ -154,11 +162,6 @@ tinyxml2::XMLElement * CLCXLConfig::WriteModule(tinyxml2::XMLElement *owner_elem
 		module.module.virtual_addr));
 	//插入服务器列表
 	owner_element->InsertEndChild(WriteServerList(owner_element->GetDocument()->NewElement(ELEMENT_SERVER_LIST), module.server_list));
-
-	//插入角色
-	element = owner_element->GetDocument()->NewElement(ELEMENT_ROLENAME);
-	element->SetAttribute(ATTRIBUTE_VALUE, RoleToStr(module.module.lcxl_role).c_str());
-	owner_element->InsertEndChild(element);
 
 	//插入路由表超时时间，以秒为单位
 	element = owner_element->GetDocument()->NewElement(ELEMENT_ROUTE_TIMEOUT);
@@ -311,11 +314,18 @@ CONFIG_MODULE & CLCXLConfig::ReadModule(tinyxml2::XMLElement *owner_element, CON
 	//设置负载均衡算法为最小连接数
 	module.module.routing_algorithm = RA_LEAST_CONNECTION;
 
+	//读取角色
+	element = owner_element->FirstChildElement(ELEMENT_ROLENAME);
+	if (element != NULL) {
+		module.module.lcxl_role = StrToRole(element->Attribute(ATTRIBUTE_VALUE));
+	}
+
 	//读取net_luid
 	element = owner_element->FirstChildElement(ELEMENT_MINIPORT_NET_LUID);
 	if (element != NULL) {
 		module.module.miniport_net_luid.Value = _atoi64(element->Attribute(ATTRIBUTE_VALUE));
 	}
+
 
 	//读取mac_addr
 	element = owner_element->FirstChildElement(ELEMENT_MAC_ADDR);
@@ -337,6 +347,10 @@ CONFIG_MODULE & CLCXLConfig::ReadModule(tinyxml2::XMLElement *owner_element, CON
 		*/
 	}
 	//读取virtual_addr
+
+	ZeroMemory(&module.module.virtual_addr, sizeof(module.module.virtual_addr));
+	module.module.virtual_addr.ipv4_onlink_prefix_length = 24;
+	module.module.virtual_addr.ipv6_onlink_prefix_length = 64;
 	element = owner_element->FirstChildElement(ELEMENT_VIRTUAL_ADDR);
 	if (element != NULL) {
 		ReadAddrInfo(element, module.module.virtual_addr);
@@ -346,17 +360,20 @@ CONFIG_MODULE & CLCXLConfig::ReadModule(tinyxml2::XMLElement *owner_element, CON
 	if (element != NULL) {
 		ReadServerList(element, module.server_list);
 	}
-	//读取角色
-	element = owner_element->FirstChildElement(ELEMENT_ROLENAME);
-	if (element != NULL) {
-		module.module.lcxl_role = StrToRole(element->Attribute(ATTRIBUTE_VALUE));
-	}
+	
 	//读取路由表超时时间，以秒为单位
 	element = owner_element->FirstChildElement(ELEMENT_ROUTE_TIMEOUT);
 	if (element != NULL) {
 		module.module.route_timeout = element->UnsignedAttribute(ATTRIBUTE_VALUE);
 	}
 	//读取服务器检测信息
+	ZeroMemory(&module.module.server_check, sizeof(module.module.server_check));
+	//设置服务器检测间隔，默认10秒
+	module.module.server_check.interval = 10;
+	//服务器检测超时时间，默认10秒
+	module.module.server_check.timeout = 10;
+	//服务器检测失败时的重试次数，默认2次
+	module.module.server_check.retry_number = 2;
 	element = owner_element->FirstChildElement(ELEMENT_SERVER_CHECK);
 	if (element != NULL) {
 		ReadServerCheck(element, module.module.server_check);
@@ -373,9 +390,7 @@ LCXL_ADDR_INFO & CLCXLConfig::ReadAddrInfo(tinyxml2::XMLElement *owner_element, 
 {
 	tinyxml2::XMLElement *element;
 	
-	ZeroMemory(&addr, sizeof(addr));
-	addr.ipv4_onlink_prefix_length = 24;
-	addr.ipv6_onlink_prefix_length = 64;
+	
 	//读取状态
 	element = owner_element->FirstChildElement(ELEMENT_STATUS);
 	if (element != NULL) {
@@ -409,14 +424,6 @@ LCXL_ADDR_INFO & CLCXLConfig::ReadAddrInfo(tinyxml2::XMLElement *owner_element, 
 LCXL_SERVER_CHECK & CLCXLConfig::ReadServerCheck(tinyxml2::XMLElement *owner_element, LCXL_SERVER_CHECK &server_check)
 {
 	tinyxml2::XMLElement * element;
-
-	ZeroMemory(&server_check, sizeof(server_check));
-	//设置服务器检测间隔，默认10秒
-	server_check.interval = 10;
-	//服务器检测超时时间，默认10秒
-	server_check.timeout = 10;
-	//服务器检测失败时的重试次数，默认2次
-	server_check.retry_number = 2;
 
 	//设置服务器检测间隔，以秒为单位
 	element = owner_element->FirstChildElement(ELEMENT_INTERVAL);

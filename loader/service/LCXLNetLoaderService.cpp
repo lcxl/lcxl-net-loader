@@ -39,6 +39,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	_getch();
 	printf("%s\n", "服务开始");
 	g_NetLoadSer.Run();
+
 	return 0;
 }
 #else
@@ -103,6 +104,14 @@ void CNetLoaderService::IOCPEvent(IocpEventEnum EventType, CLLSockObj *SockObj, 
 
 bool CNetLoaderService::PreSerRun()
 {
+	if (__argc > 1) {
+		std::tstring action =__targv[1];
+		if (action == _T("install")) {
+			//安装驱动，服务程序等
+		} else if (action == _T("uninstall")) {
+			//卸载驱动，服务程序等
+		}
+	}
 
 	//加载配置文件
 	if (!LoadXMLFile()) {
@@ -219,7 +228,10 @@ bool CNetLoaderService::ProcessJsonData(const Json::Value &root, Json::Value &re
 		std::vector<CONFIG_MODULE>::iterator it;
 		for (it = m_Config.ModuleList().begin(); it != m_Config.ModuleList().end(); it++) {
 			Json::Value module;
-			
+			module[ELEMENT_LCXL_ROLE] = (*it).module.lcxl_role;
+			module[ELEMENT_ISEXIST] = (*it).isexist;
+			module[ELEMENT_IPV4_ROUTER_ACTIVE] = (*it).ipv4_router_active;
+			module[ELEMENT_IPV6_ROUTER_ACTIVE] = (*it).ipv6_router_active;
 			module[ELEMENT_FILTER_MODULE_NAME] = wstring_to_string(wstring((*it).module.filter_module_name)).c_str();
 			module[ELEMENT_MAC_ADDR] = string_format(
 				"%02x-%02x-%02x-%02x-%02x-%02x",
@@ -233,8 +245,7 @@ bool CNetLoaderService::ProcessJsonData(const Json::Value &root, Json::Value &re
 			module[ELEMENT_MINIPORT_IFINDEX] = (UINT)(*it).module.miniport_ifindex;
 			module[ELEMENT_MINIPORT_NAME] = wstring_to_string(wstring((*it).module.miniport_name)).c_str();
 			module[ELEMENT_MINIPORT_NET_LUID] = (*it).module.miniport_net_luid.Value;
-			module[ELEMENT_LCXL_ROLE] = (*it).module.lcxl_role;
-			module[ELEMENT_SERVER_COUNT] = (*it).module.server_count;
+			module[ELEMENT_SERVER_COUNT] = (*it).server_list.size();
 			module[ELEMENT_ROUTE_TIMEOUT] = (*it).module.route_timeout;
 
 			Json::Value server_check;
@@ -496,32 +507,26 @@ unsigned CALLBACK CNetLoaderService::RouterVipCheckThread(void * context)
 	OutputDebugStr(_T("CNetLoaderService::RouterVipCheckThread start\n"));
 	vip_check = static_cast<PVIP_CHECK_CONTEXT>(context);
 	do {
-		LCXL_ADDR_INFO virtual_addr;
-		IF_INDEX if_index;
-		{
-			//在locker生存周期中锁定
-			CCSLocker locker = vip_check->service->m_Config.LockinLifeCycle();
-			PCONFIG_MODULE module = vip_check->service->m_Config.FindModuleByLuid(vip_check->miniport_net_luid);
-			if (module == NULL || !module->isexist) {
-				continue;
-			}
-			virtual_addr = module->module.virtual_addr;
-			if_index = module->module.miniport_ifindex;
+		//在locker生存周期中锁定
+		CCSLocker locker = vip_check->service->m_Config.LockinLifeCycle();
+		PCONFIG_MODULE module = vip_check->service->m_Config.FindModuleByLuid(vip_check->miniport_net_luid);
+		if (module == NULL || !module->isexist) {
+			continue;
 		}
-		if (virtual_addr.status & SA_ENABLE_IPV6) {
+		if (module->module.virtual_addr.status & SA_ENABLE_IPV6) {
 			SOCKADDR_INET Address = { 0 };
 
 			Address.Ipv6.sin6_family = AF_INET6;
-			Address.Ipv6.sin6_addr = virtual_addr.ipv6;
+			Address.Ipv6.sin6_addr = module->module.virtual_addr.ipv6;
 
-			CheckAndSetVip(vip_check->miniport_net_luid, if_index, &Address, virtual_addr.ipv6_onlink_prefix_length);
+			module->ipv4_router_active = CheckAndSetVip(vip_check->miniport_net_luid, module->module.miniport_ifindex, &Address, module->module.virtual_addr.ipv6_onlink_prefix_length);
 		}
-		if (virtual_addr.status & SA_ENABLE_IPV4) {
+		if (module->module.virtual_addr.status & SA_ENABLE_IPV4) {
 			SOCKADDR_INET Address = { 0 };
 
 			Address.Ipv4.sin_family = AF_INET;
-			Address.Ipv4.sin_addr = virtual_addr.ipv4;
-			CheckAndSetVip(vip_check->miniport_net_luid, if_index, &Address, virtual_addr.ipv4_onlink_prefix_length);
+			Address.Ipv4.sin_addr = module->module.virtual_addr.ipv4;
+			module->ipv6_router_active = CheckAndSetVip(vip_check->miniport_net_luid, module->module.miniport_ifindex, &Address, module->module.virtual_addr.ipv4_onlink_prefix_length);
 		}
 	} while (WaitForSingleObject(vip_check->exit_event, 1000) == WAIT_TIMEOUT);
 	//删除
@@ -530,7 +535,7 @@ unsigned CALLBACK CNetLoaderService::RouterVipCheckThread(void * context)
 	return 0;
 }
 
-void CNetLoaderService::CheckAndSetVip(NET_LUID miniport_net_luid, IF_INDEX ifindex, PSOCKADDR_INET Address, UINT8 onlink_prefix_length)
+bool CNetLoaderService::CheckAndSetVip(NET_LUID miniport_net_luid, IF_INDEX ifindex, PSOCKADDR_INET Address, UINT8 onlink_prefix_length)
 {
 	DWORD resu;
 	MIB_UNICASTIPADDRESS_ROW Row = { 0 };
@@ -546,6 +551,9 @@ void CNetLoaderService::CheckAndSetVip(NET_LUID miniport_net_luid, IF_INDEX ifin
 			OutputDebugStr(_T("CNetLoaderService::CheckAndSetVip:GetUnicastIpAddressEntry DadState failed, delete VIP\n"));
 			//删除虚拟IP
 			DeleteUnicastIpAddressEntry(&Row);
+
+		} else if (Row.DadState == IpDadStatePreferred){
+			return true;
 		}
 	} else {
 		DWORD dwError = 0;
@@ -564,7 +572,7 @@ void CNetLoaderService::CheckAndSetVip(NET_LUID miniport_net_luid, IF_INDEX ifin
 		//先获取本地IP地址列表，之后需要使用
 		dwError = GetUnicastIpAddressTable(Address->si_family, &ip_table);
 		if (dwError != NO_ERROR) {
-			return;
+			return false;
 		}
 		BOOL is_found = FALSE;
 		ULONG i;
@@ -578,7 +586,7 @@ void CNetLoaderService::CheckAndSetVip(NET_LUID miniport_net_luid, IF_INDEX ifin
 		}
 		FreeMibTable(ip_table);
 		if (!is_found) {
-			return;
+			return false;
 		}
 
 		switch (Address->si_family)
@@ -701,6 +709,7 @@ void CNetLoaderService::CheckAndSetVip(NET_LUID miniport_net_luid, IF_INDEX ifin
 			SetIpAddress(Row.InterfaceLuid, &Row.Address, onlink_prefix_length);
 		}
 	}
+	return false;
 }
 
 void CNetLoaderService::SetModuleInfo(PCONFIG_MODULE module)
