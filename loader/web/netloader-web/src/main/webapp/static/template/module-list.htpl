@@ -1,17 +1,17 @@
 <div class="panel-group" class=".network-card-list">
 {{#if module_list}}
 {{#each module_list}}
-	<div class="panel panel-primary">
+	<div class="panel {{#if isexist}}panel-primary{{else}}panel-danger{{/if}}">
 		<div class="panel-heading">
 			<div class="panel-title">
 				<a data-toggle="collapse" data-toggle="collapse"
 					data-parent=".network-card-list" href="#network-card-{{miniport_net_luid}}">
-					{{miniport_friendly_name}} </a><span class="badge pull-right">{{server_count}}台</span>
+					{{miniport_friendly_name}}{{#if isexist}}{{else}}（网卡不存在）{{/if}}</a><span class="badge pull-right">{{server_count}}台</span>
 			</div>
 		</div>
 		<div id="network-card-{{miniport_net_luid}}" class="panel-collapse collapse">
 			<div class="panel-body">
-				<table class="table table-bordered table-hover lcxl-table-vert-middle">
+				<table class="table table-bordered table-hover table-condensed lcxl-table-vert-middle">
 					<thead>
 						<tr>
 							<th>名称</th>
@@ -22,7 +22,7 @@
 					<tbody>
 						<tr>
 							<td>角色</td>
-							<td>{{#roleName lcxl_role}}{{/roleName}}</td>
+							<td>{{#roleName lcxl_role}}{{/roleName}}{{#ifRouter lcxl_role}}<span class="pull-right"><span class="badge">IPv4:{{#if ipv4_router_active}}已激活{{else}}备用{{/if}}</span><span class="badge">IPv6:{{#if ipv6_router_active}}已激活{{else}}备用{{/if}}</span></span>{{/ifRouter}}</td>
 							<td></td>
 						</tr>
 						<tr>
@@ -40,7 +40,7 @@
 							<td id="virtual-ipv4-td-{{miniport_net_luid}}" class="{{#ifEnableIpv4 virtual_addr.status}}success{{else}}danger{{/ifEnableIpv4}}"><span>{{virtual_addr.ipv4}}({{virtual_addr.ipv4_onlink_prefix_length}})</span><span
 								class="badge pull-right">{{#ifEnableIpv4 virtual_addr.status}}已启用{{else}}已禁用{{/ifEnableIpv4}}</span></td>
 							<td rowspan="2"><a
-								class="btn btn-default btn-sm" id="virtual-addr-setting-{{miniport_net_luid}}">设置</a></td>
+								class="btn btn-default btn-xs" id="virtual-addr-setting-{{miniport_net_luid}}">设置</a></td>
 						</tr>
 						<tr>
 							<td>虚拟IPv6地址(子网前缀长度)</td>
@@ -50,17 +50,17 @@
 						<tr>
 							<td>服务器列表</td>
 							<td>{{server_count}}台</td>
-							<td><a class="btn btn-default btn-sm" id="server-list-setting-{{miniport_net_luid}}">管理服务器</a></td>
+							<td><a class="btn btn-default btn-xs" id="server-list-setting-{{miniport_net_luid}}">管理服务器</a></td>
 						</tr>
 						<tr>
 							<td>路由表超时时间</td>
 							<td>{{route_timeout}}秒</td>
-							<td><a class="btn btn-default btn-sm" id="route-timeout-{{miniport_net_luid}}">编辑</a></td>
+							<td><a class="btn btn-default btn-xs" id="route-timeout-{{miniport_net_luid}}">编辑</a></td>
 						</tr>
 						<tr>
 							<td>服务器检测间隔时间</td>
 							<td>{{server_check.interval}}秒</td>
-							<td rowspan="3"><a class="btn btn-default btn-sm" id="server-check-{{miniport_net_luid}}">设置</a></td>
+							<td rowspan="3"><a class="btn btn-default btn-xs" id="server-check-{{miniport_net_luid}}">设置</a></td>
 						</tr>
 						<tr>
 							<td>服务器检测超时时间</td>
@@ -68,12 +68,12 @@
 						</tr>
 						<tr>
 							<td>服务器检测失败重试次数</td>
-							<td>{{server_check.retry_number}}秒</td>
+							<td>{{server_check.retry_number}}次</td>
 						</tr>
 						<tr>
 							<td>路由算法</td>
 							<td>{{#raName routing_algorithm}}{{/raName}}</td>
-							<td><a class="btn btn-default btn-sm" id="server-check-retry-number-{{miniport_net_luid}}">编辑</a></td>
+							<td><a class="btn btn-default btn-xs" id="server-check-retry-number-{{miniport_net_luid}}">编辑</a></td>
 						</tr>
 					</tbody>
 				</table>

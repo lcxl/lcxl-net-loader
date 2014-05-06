@@ -3,6 +3,13 @@ package com.lcxbox.netloader.model;
 import org.codehaus.jackson.annotate.JsonProperty;
 
 public class Module {
+	private Boolean isexist;
+	
+	@JsonProperty("ipv4_router_active")
+	private Boolean ipv4RouterActive;
+	
+	@JsonProperty("ipv6_router_active")
+	private Boolean ipv6RouterActive;
 	
 	@JsonProperty("miniport_ifindex")
 	private Integer miniportIfindex;
@@ -40,6 +47,31 @@ public class Module {
 	@JsonProperty("routing_algorithm")
 	private Integer routingAlgorithm;
 	
+	
+	public Boolean getIsexist() {
+		return isexist;
+	}
+
+	public void setIsexist(Boolean isexist) {
+		this.isexist = isexist;
+	}
+
+	public Boolean getIpv4RouterActive() {
+		return ipv4RouterActive;
+	}
+
+	public void setIpv4RouterActive(Boolean ipv4RouterActive) {
+		this.ipv4RouterActive = ipv4RouterActive;
+	}
+
+	public Boolean getIpv6RouterActive() {
+		return ipv6RouterActive;
+	}
+
+	public void setIpv6RouterActive(Boolean ipv6RouterActive) {
+		this.ipv6RouterActive = ipv6RouterActive;
+	}
+
 	public Integer getMiniportIfindex() {
 		return miniportIfindex;
 	}

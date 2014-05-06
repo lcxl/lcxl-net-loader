@@ -20,7 +20,7 @@ define(function(require, exports, module) {
 				//注册响应事件
 				moduleList.onServerListBtnClick=function (moduleData) {
 					//跳转到ServerList列表
-					History.pushState({luid: moduleData.miniport_net_luid}, "服务器列表 - "+moduleData.miniport_friendly_name, "?server");
+					History.pushState({luid: moduleData.miniport_net_luid}, "服务器列表 - "+moduleData.miniport_friendly_name, "?nav=server");
 				};
 				moduleList.onVirtualAddrBtnClick=function (moduleData) {
 					//生成模态对话框

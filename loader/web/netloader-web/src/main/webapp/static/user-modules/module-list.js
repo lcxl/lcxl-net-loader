@@ -15,6 +15,7 @@ define(function(require, exports, module){
 	var SA_ENABLE_IPV4 = 0x01;
 	var SA_ENABLE_IPV6 = 0x02;
 	
+	
 	/**
 	 * 注册模版帮助类
 	 */
@@ -34,33 +35,50 @@ define(function(require, exports, module){
 			  return options.inverse(this);
 		  }
 		});
+	
 	//获取路由算法的名称
 	Handlebars.registerHelper('raName', function(ra, options) {
 		switch(ra) {
-			case 0://RA_POLL
-				return options.fn("轮询算法");
-			case 1://RA_IP_HASH
-				return options.fn("IP Hash算法");
-			case 2://RA_LEAST_CONNECTION
-				return options.fn("最小连接数算法");
-			case 3://RA_FAST_RESPONSE
-				return options.fn("最快响应时间算法");
+			case 0x00://RA_POLL
+				return "轮询算法";
+			case 0x01://RA_IP_HASH
+				return "IP Hash算法";
+			case 0x10://RA_LEAST_CONNECTION
+				return "最小连接数算法";
+			case 0x11://RA_FAST_RESPONSE
+				return "最快响应时间算法";
 			default:
-				return options.fn("未知算法");
+				return "未知算法("+ra+")";
 		};
 	});
 	//获得角色名称
 	Handlebars.registerHelper('roleName', function(role, options) {
 		switch(role) {
 			case 0://LCXL_ROLE_UNKNOWN
-				return options.fn("未知角色");
+				return "未配置";
 			case 1://LCXL_ROLE_ROUTER
-				return options.fn("负载均衡器");
+				return "负载均衡器";
 			case 2://LCXL_ROLE_SERVER
-				return options.fn("服务器");
+				return "服务器";
 			default:
-				return options.fn("未知角色");	
+				return "未知角色("+role+")";	
 		};
+	});
+	
+	Handlebars.registerHelper('ifRouter', function(role, options) {
+		if(role == 1) {
+			  return options.fn(this);
+		} else {
+			  return options.inverse(this);
+		}
+	});
+	
+	Handlebars.registerHelper('ifServer', function(role, options) {
+		if(role == 2) {
+			  return options.fn(this);
+		} else {
+			  return options.inverse(this);
+		}
 	});
 	
 	var tpl = require("text!template/module-list.htpl");

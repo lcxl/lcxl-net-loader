@@ -18,7 +18,7 @@ import com.lcxbox.socket.json.SocketRequest;
 @Service()
 public class HostServiceImpl implements IHostService {
 	
-	private String host = "192.168.237.147";
+	private String host = "192.168.237.143";
 	private Integer port = 32112;
 	
 	public ModuleListResponse getModuleList() throws UnknownHostException, IOException {
