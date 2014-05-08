@@ -1,4 +1,4 @@
-package com.lcxbox.netloader.model;
+package com.lcxbox.netloader.host.model;
 
 import org.codehaus.jackson.annotate.JsonProperty;
 

@@ -1,4 +1,4 @@
-package com.lcxbox.netloader.model;
+package com.lcxbox.common.model;
 /**
  * 内容与lcxl_net_code.h同步
  * @author lcxl
@@ -33,6 +33,8 @@ public class LcxlNetCode {
 	 */
 	public final static int JC_DEL_SERVER = 0x07;
 	
+	public final static int JC_LOGON = 0x10;
+	
 	public final static String JSON_DATA = "data";
 	public final static String JSON_MODULE_LIST = "module_list";
 	public final static String JSON_SERVER_LIST = "server_list";
@@ -44,4 +46,6 @@ public class LcxlNetCode {
 	public final static int JS_JSON_DATA_NOT_FOUND =0x02;
 	public final static int JS_JSON_CODE_NOT_FOUND =0x03;
 	public final static int JS_JSON_CODE_IP_FORMAT_INVALID =0x04;
+	public final static int JS_UNKNOWN_HOST = 0x10;
+	public final static int JS_SOCKET_ERROR = 0x11;
 }

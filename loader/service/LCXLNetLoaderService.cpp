@@ -336,7 +336,8 @@ bool CNetLoaderService::ProcessJsonData(const Json::Value &root, Json::Value &re
 		}
 	}
 		break;
-
+	case JC_LOGON:
+		status = JS_SUCCESS;
 		break;
 	default:
 		status = JS_JSON_CODE_NOT_FOUND;
@@ -346,7 +347,7 @@ bool CNetLoaderService::ProcessJsonData(const Json::Value &root, Json::Value &re
 	ret[JSON_CODE] = code;
 	ret[JSON_STATUS] = status;
 	
-	return code == JS_SUCCESS;
+	return status == JS_SUCCESS;
 }
 
 bool CNetLoaderService::LoadXMLFile()

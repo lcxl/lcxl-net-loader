@@ -1,4 +1,4 @@
-package com.lcxbox.netloader.model;
+package com.lcxbox.common.model;
 
 import org.codehaus.jackson.map.annotate.JsonSerialize;
 

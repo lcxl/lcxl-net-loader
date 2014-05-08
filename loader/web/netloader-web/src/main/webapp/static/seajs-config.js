@@ -6,6 +6,7 @@ seajs.config({
       
       "jquery": "sea-modules/jquery/jquery-1.10.1.js",
       "history": "sea-modules/history/jquery.history.js",
+      "cookie": "sea-modules/cookie/jquery.cookie-1.4.1.min.js",
 	  "bootstrap": "sea-modules/bootstrap/bootstrap.js",
 	  "bootstrap-css": "sea-modules/bootstrap/css/bootstrap.css",
 	  "bootstrap-theme-css": "sea-modules/bootstrap/css/bootstrap-theme.css",
@@ -25,7 +26,8 @@ seajs.config({
 	  "server-page":"user-modules/server-page.js",
 	  "server-list":"user-modules/server-list.js",
 	  
-	  
+	  "logon-page":"user-modules/logon-page.js",
+	  "logon":"user-modules/logon.js",
 	  //"mysql-cluster":"html/mysql-cluster.js",
 	  //"qingcloud":"html/qingcloud.js",
 	  

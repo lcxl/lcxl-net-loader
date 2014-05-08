@@ -15,7 +15,8 @@
 #define JC_SET_SERVER 0x06
 //删除服务器
 #define JC_DEL_SERVER 0x07
-
+//登录服务器
+#define JC_LOGON 0x10
 //设置负载均衡器的mac地址
 //#define JC_SET_ROUTER_MAC_ADDR 0x05
 
@@ -31,5 +32,8 @@
 #define JS_JSON_CODE_NOT_FOUND 0x03
 #define JS_JSON_CODE_IP_FORMAT_INVALID 0x04
 #define JS_JSON_INVALID 0x05
+
+#define JS_UNKNOWN_HOST 0x10;
+#define JS_SOCKET_ERROR 0x11;
 
 #endif

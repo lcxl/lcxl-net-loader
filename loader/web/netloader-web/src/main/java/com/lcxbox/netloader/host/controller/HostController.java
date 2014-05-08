@@ -1,4 +1,4 @@
-package com.lcxbox.netloader.controller;
+package com.lcxbox.netloader.host.controller;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
@@ -13,14 +13,14 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import com.lcxbox.netloader.model.CommonResponse;
-import com.lcxbox.netloader.model.LcxlAddrInfo;
-import com.lcxbox.netloader.model.ModuleListResponse;
-import com.lcxbox.netloader.service.IHostService;
+import com.lcxbox.common.model.CommonResponse;
+import com.lcxbox.netloader.host.model.LcxlAddrInfo;
+import com.lcxbox.netloader.host.model.ModuleListResponse;
+import com.lcxbox.netloader.host.service.IHostService;
 
 @Controller
 @RequestMapping(value = "/netloader")
-public class NetLoaderController {
+public class HostController {
 	
 	@Autowired
     private IHostService routerService; 

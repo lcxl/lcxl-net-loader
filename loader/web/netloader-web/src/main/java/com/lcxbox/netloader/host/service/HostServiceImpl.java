@@ -1,18 +1,18 @@
-package com.lcxbox.netloader.service;
+package com.lcxbox.netloader.host.service;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
 
 import org.springframework.stereotype.Service;
 
-import com.lcxbox.netloader.model.CommonRequest;
-import com.lcxbox.netloader.model.CommonResponse;
-import com.lcxbox.netloader.model.LcxlAddrInfo;
-import com.lcxbox.netloader.model.LcxlNetCode;
-import com.lcxbox.netloader.model.ModuleListResponse;
-import com.lcxbox.netloader.model.ServerListRequest;
-import com.lcxbox.netloader.model.ServerListResponse;
-import com.lcxbox.netloader.model.SetVirtualAddrRequest;
+import com.lcxbox.common.model.CommonRequest;
+import com.lcxbox.common.model.CommonResponse;
+import com.lcxbox.common.model.LcxlNetCode;
+import com.lcxbox.netloader.host.model.LcxlAddrInfo;
+import com.lcxbox.netloader.host.model.ModuleListResponse;
+import com.lcxbox.netloader.host.model.ServerListRequest;
+import com.lcxbox.netloader.host.model.ServerListResponse;
+import com.lcxbox.netloader.host.model.SetVirtualAddrRequest;
 import com.lcxbox.socket.json.SocketRequest;
 
 @Service()
