@@ -8,11 +8,13 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import com.lcxbox.common.CookieHelper;
 import com.lcxbox.common.model.CommonResponse;
 import com.lcxbox.netloader.host.model.LcxlAddrInfo;
 import com.lcxbox.netloader.host.model.ModuleListResponse;
@@ -34,7 +36,7 @@ public class HostController {
 	@RequestMapping(value = "/module_list.do", method=RequestMethod.GET)
 	@ResponseBody
 	public ModuleListResponse getModuleList(HttpServletRequest request, HttpServletResponse response) throws UnknownHostException, IOException {
-		return routerService.getModuleList();
+		return routerService.getModuleList(CookieHelper.getHostInfo(request.getCookies()));
 	}
 	
 	@RequestMapping(value = "/set_virtual_addr.do", method=RequestMethod.POST)
@@ -56,6 +58,6 @@ public class HostController {
 		virtualAddr.setIpv6(ipv6);
 		virtualAddr.setIpv6OnlinkPrefixLength(ipv6OnlinkPrefixLength);
 		
-		return routerService.setVirtualAddr(miniportNetLuid, virtualAddr);
+		return routerService.setVirtualAddr(CookieHelper.getHostInfo(request.getCookies()), miniportNetLuid, virtualAddr);
 	}
 }
