@@ -105,6 +105,24 @@ __inline PSERVER_INFO_LIST_ENTRY GetServerbyListEntry(PLIST_ENTRY server_list_en
 PSERVER_INFO_LIST_ENTRY FindServer(IN PLCXL_LOCK_LIST server_list, IN PIF_PHYSICAL_ADDRESS mac_addr);
 
 //************************************
+// 简介: 服务是否可用
+// 返回: BOOLEAN
+// 参数: IN PSERVER_INFO_LIST_ENTRY server_info
+// 参数: IN INT ip_mode
+//************************************
+__inline BOOLEAN ServerIsAvaliable(IN PSERVER_INFO_LIST_ENTRY server_info, IN INT ip_mode)
+{
+	return (server_info->info.status&SS_ONLINE) != 0 &&
+		(
+		(server_info->info.ip_status&SA_ENABLE_IPV6) && (ip_mode == IM_IPV6) ||
+		(server_info->info.ip_status&SA_ENABLE_IPV4) && (ip_mode == IM_IPV4)
+		) &&
+		(server_info->info.status&SS_DELETED) == 0;
+}
+
+PSERVER_INFO_LIST_ENTRY FindAvaliableServerFormCurrentServer(IN PLCXL_LOCK_LIST server_list, IN PSERVER_INFO_LIST_ENTRY server);
+
+//************************************
 // 简介: 选择一台最适合的服务器
 // 返回: PSERVER_INFO_LIST_ENTRY
 // 参数: IN PLCXL_LOCK_LIST server_list

@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ClassDiagram>
+    <Class name="com.lcxbox.netloader.host.model.LcxlAddrInfo" x="265" y="300">
+        <AttributesDisplayFilter public-accepted="true"
+            private-accepted="true" protected-accepted="true"
+            default-accepted="true" static-accepted="false"/>
+        <MethodDisplayFilter public-accepted="true"
+            private-accepted="false" protected-accepted="false"
+            default-accepted="false" static-accepted="false"
+            accessors-accepted="false" constructors-accepted="false"/>
+    </Class>
+    <Class name="com.lcxbox.common.model.CommonRequest" x="467" y="201">
+        <AttributesDisplayFilter public-accepted="true"
+            private-accepted="true" protected-accepted="true"
+            default-accepted="true" static-accepted="false"/>
+        <MethodDisplayFilter public-accepted="true"
+            private-accepted="false" protected-accepted="false"
+            default-accepted="false" static-accepted="false"
+            accessors-accepted="false" constructors-accepted="false"/>
+    </Class>
+    <Class name="com.lcxbox.netloader.host.service.HostServiceImpl"
+        x="1081" y="703">
+        <AttributesDisplayFilter public-accepted="true"
+            private-accepted="true" protected-accepted="true"
+            default-accepted="true" static-accepted="false"/>
+        <MethodDisplayFilter public-accepted="true"
+            private-accepted="false" protected-accepted="false"
+            default-accepted="false" static-accepted="false"
+            accessors-accepted="true" constructors-accepted="false"/>
+        <Extension destinationClassName="com.lcxbox.netloader.host.service.IHostService"/>
+        <Communication destinationClassName="com.lcxbox.common.model.CommonRequest"/>
+        <Communication destinationClassName="com.lcxbox.netloader.host.model.SetVirtualAddrRequest"/>
+        <Communication destinationClassName="com.lcxbox.netloader.host.model.ServerListRequest"/>
+    </Class>
+    <Class name="com.lcxbox.netloader.host.model.ModuleListResponse"
+        x="460" y="440">
+        <AttributesDisplayFilter public-accepted="true"
+            private-accepted="true" protected-accepted="true"
+            default-accepted="true" static-accepted="false"/>
+        <MethodDisplayFilter public-accepted="true"
+            private-accepted="false" protected-accepted="false"
+            default-accepted="false" static-accepted="false"
+            accessors-accepted="false" constructors-accepted="false"/>
+        <Extension destinationClassName="com.lcxbox.common.model.CommonResponse"/>
+        <Association
+            destinationClassName="com.lcxbox.netloader.host.model.Module"
+            endpointName="moduleList" kind="Simple"/>
+    </Class>
+    <Class name="com.lcxbox.common.model.HostInfo" x="967" y="580">
+        <AttributesDisplayFilter public-accepted="true"
+            private-accepted="true" protected-accepted="true"
+            default-accepted="true" static-accepted="false"/>
+        <MethodDisplayFilter public-accepted="true"
+            private-accepted="false" protected-accepted="false"
+            default-accepted="false" static-accepted="false"
+            accessors-accepted="false" constructors-accepted="false"/>
+    </Class>
+    <Class name="com.lcxbox.netloader.host.model.Server" x="619" y="428">
+        <AttributesDisplayFilter public-accepted="true"
+            private-accepted="true" protected-accepted="true"
+            default-accepted="true" static-accepted="false"/>
+        <MethodDisplayFilter public-accepted="true"
+            private-accepted="false" protected-accepted="false"
+            default-accepted="false" static-accepted="false"
+            accessors-accepted="false" constructors-accepted="false"/>
+    </Class>
+    <Class name="com.lcxbox.socket.json.JsonSocket" x="1500" y="588">
+        <AttributesDisplayFilter public-accepted="true"
+            private-accepted="true" protected-accepted="true"
+            default-accepted="true" static-accepted="false"/>
+        <MethodDisplayFilter public-accepted="true"
+            private-accepted="false" protected-accepted="false"
+            default-accepted="false" static-accepted="false"
+            accessors-accepted="false" constructors-accepted="false"/>
+    </Class>
+    <Class name="com.lcxbox.netloader.user.model.LogonRequest" x="603" y="198">
+        <AttributesDisplayFilter public-accepted="true"
+            private-accepted="true" protected-accepted="true"
+            default-accepted="true" static-accepted="false"/>
+        <MethodDisplayFilter public-accepted="true"
+            private-accepted="false" protected-accepted="false"
+            default-accepted="false" static-accepted="false"
+            accessors-accepted="false" constructors-accepted="false"/>
+        <Extension destinationClassName="com.lcxbox.common.model.CommonRequest"/>
+    </Class>
+    <Class name="com.lcxbox.netloader.user.service.IUserService" x="947" y="129">
+        <AttributesDisplayFilter public-accepted="true"
+            private-accepted="true" protected-accepted="true"
+            default-accepted="true" static-accepted="false"/>
+        <MethodDisplayFilter public-accepted="true"
+            private-accepted="false" protected-accepted="false"
+            default-accepted="false" static-accepted="false"
+            accessors-accepted="true" constructors-accepted="false"/>
+    </Class>
+    <Class name="com.lcxbox.common.model.CommonResponse" x="467" y="340">
+        <AttributesDisplayFilter public-accepted="true"
+            private-accepted="true" protected-accepted="true"
+            default-accepted="true" static-accepted="false"/>
+        <MethodDisplayFilter public-accepted="true"
+            private-accepted="false" protected-accepted="false"
+            default-accepted="false" static-accepted="false"
+            accessors-accepted="false" constructors-accepted="false"/>
+    </Class>
+    <Class name="com.lcxbox.netloader.host.model.ServerListResponse"
+        x="606" y="353">
+        <AttributesDisplayFilter public-accepted="true"
+            private-accepted="true" protected-accepted="true"
+            default-accepted="true" static-accepted="false"/>
+        <MethodDisplayFilter public-accepted="true"
+            private-accepted="false" protected-accepted="false"
+            default-accepted="false" static-accepted="false"
+            accessors-accepted="false" constructors-accepted="false"/>
+        <Extension destinationClassName="com.lcxbox.common.model.CommonResponse"/>
+        <Association
+            destinationClassName="com.lcxbox.netloader.host.model.Server"
+            endpointName="serverList" kind="Simple"/>
+    </Class>
+    <Class name="com.lcxbox.netloader.user.controller.UserController"
+        x="794" y="44">
+        <AttributesDisplayFilter public-accepted="true"
+            private-accepted="true" protected-accepted="true"
+            default-accepted="true" static-accepted="false"/>
+        <MethodDisplayFilter public-accepted="true"
+            private-accepted="false" protected-accepted="false"
+            default-accepted="false" static-accepted="false"
+            accessors-accepted="true" constructors-accepted="false"/>
+        <Association
+            destinationClassName="com.lcxbox.netloader.user.service.IUserService"
+            endpointName="userService" kind="Simple"/>
+        <Communication destinationClassName="com.lcxbox.netloader.user.service.IUserService"/>
+        <Communication destinationClassName="com.lcxbox.common.model.CommonResponse"/>
+    </Class>
+    <Class name="com.lcxbox.netloader.host.model.ServerCheck" x="468" y="502">
+        <AttributesDisplayFilter public-accepted="true"
+            private-accepted="true" protected-accepted="true"
+            default-accepted="true" static-accepted="false"/>
+        <MethodDisplayFilter public-accepted="true"
+            private-accepted="false" protected-accepted="false"
+            default-accepted="false" static-accepted="false"
+            accessors-accepted="false" constructors-accepted="false"/>
+    </Class>
+    <Class name="com.lcxbox.netloader.host.service.IHostService"
+        x="1079" y="581">
+        <AttributesDisplayFilter public-accepted="true"
+            private-accepted="true" protected-accepted="true"
+            default-accepted="true" static-accepted="false"/>
+        <MethodDisplayFilter public-accepted="true"
+            private-accepted="false" protected-accepted="false"
+            default-accepted="false" static-accepted="false"
+            accessors-accepted="true" constructors-accepted="false"/>
+    </Class>
+    <Class name="com.lcxbox.netloader.user.service.UserServiceImpl"
+        x="947" y="227">
+        <AttributesDisplayFilter public-accepted="true"
+            private-accepted="true" protected-accepted="true"
+            default-accepted="true" static-accepted="false"/>
+        <MethodDisplayFilter public-accepted="true"
+            private-accepted="false" protected-accepted="false"
+            default-accepted="false" static-accepted="false"
+            accessors-accepted="true" constructors-accepted="false"/>
+        <Extension destinationClassName="com.lcxbox.netloader.user.service.IUserService"/>
+        <Communication destinationClassName="com.lcxbox.common.model.CommonRequest"/>
+        <Communication destinationClassName="com.lcxbox.netloader.user.model.LogonRequest"/>
+        <Communication destinationClassName="com.lcxbox.common.model.CommonResponse"/>
+    </Class>
+    <Class name="com.lcxbox.netloader.host.controller.HostController"
+        x="880" y="489">
+        <AttributesDisplayFilter public-accepted="true"
+            private-accepted="true" protected-accepted="true"
+            default-accepted="true" static-accepted="false"/>
+        <MethodDisplayFilter public-accepted="true"
+            private-accepted="false" protected-accepted="false"
+            default-accepted="false" static-accepted="false"
+            accessors-accepted="true" constructors-accepted="false"/>
+        <Association
+            destinationClassName="com.lcxbox.netloader.host.service.IHostService"
+            endpointName="routerService" kind="Simple"/>
+        <Communication destinationClassName="com.lcxbox.netloader.host.model.LcxlAddrInfo"/>
+        <Communication destinationClassName="com.lcxbox.netloader.host.service.IHostService"/>
+    </Class>
+    <Class name="com.lcxbox.netloader.host.model.Module" x="266" y="426">
+        <AttributesDisplayFilter public-accepted="true"
+            private-accepted="true" protected-accepted="true"
+            default-accepted="true" static-accepted="false"/>
+        <MethodDisplayFilter public-accepted="true"
+            private-accepted="false" protected-accepted="false"
+            default-accepted="false" static-accepted="false"
+            accessors-accepted="false" constructors-accepted="false"/>
+        <Association
+            destinationClassName="com.lcxbox.netloader.host.model.ServerCheck"
+            endpointName="serverCheck" kind="Simple"/>
+        <Association
+            destinationClassName="com.lcxbox.netloader.host.model.LcxlAddrInfo"
+            endpointName="virtualAddr" kind="Simple"/>
+    </Class>
+    <Class name="com.lcxbox.netloader.host.model.SetVirtualAddrRequest"
+        x="300" y="206">
+        <AttributesDisplayFilter public-accepted="true"
+            private-accepted="true" protected-accepted="true"
+            default-accepted="true" static-accepted="false"/>
+        <MethodDisplayFilter public-accepted="true"
+            private-accepted="false" protected-accepted="false"
+            default-accepted="false" static-accepted="false"
+            accessors-accepted="false" constructors-accepted="false"/>
+        <Extension destinationClassName="com.lcxbox.common.model.CommonRequest"/>
+        <Association
+            destinationClassName="com.lcxbox.netloader.host.model.LcxlAddrInfo"
+            endpointName="virtualAddr" kind="Simple"/>
+    </Class>
+    <Class name="com.lcxbox.netloader.user.model.LogonRespnse" x="478" y="279">
+        <AttributesDisplayFilter public-accepted="true"
+            private-accepted="true" protected-accepted="true"
+            default-accepted="true" static-accepted="false"/>
+        <MethodDisplayFilter public-accepted="true"
+            private-accepted="false" protected-accepted="false"
+            default-accepted="false" static-accepted="false"
+            accessors-accepted="true" constructors-accepted="false"/>
+        <Extension destinationClassName="com.lcxbox.common.model.CommonResponse"/>
+    </Class>
+    <Class name="com.lcxbox.netloader.host.model.ServerListRequest"
+        x="457" y="126">
+        <AttributesDisplayFilter public-accepted="true"
+            private-accepted="true" protected-accepted="true"
+            default-accepted="true" static-accepted="false"/>
+        <MethodDisplayFilter public-accepted="true"
+            private-accepted="false" protected-accepted="false"
+            default-accepted="false" static-accepted="false"
+            accessors-accepted="false" constructors-accepted="false"/>
+        <Extension destinationClassName="com.lcxbox.common.model.CommonRequest"/>
+    </Class>
+</ClassDiagram>

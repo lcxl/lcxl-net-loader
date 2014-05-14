@@ -1,0 +1,304 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1" MembersFormat="NameAndType">
+  <Struct Name="_FILTER_DRIVER_ALL_STAT">
+    <Position X="19.25" Y="2.25" Width="3" />
+    <TypeIdentifier>
+      <HashCode>AAgAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAACAQCAAAAA=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="_FILTER_SET_OID">
+    <Position X="18" Y="17.25" Width="4.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAEAAAAAAAAQAAAAAAAAQAQABAAAAAAAAAAAAA=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="_FILTER_QUERY_OID">
+    <Position X="18" Y="11.25" Width="4.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAEAAAAAAAAQAAAAAAAAQAQABAAAAAAAAAAAAA=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="_FILTER_READ_CONFIG">
+    <Position X="9" Y="14.5" Width="4.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAEAABAAAIAAAAAAAAAAQAQARAAAAAAAAAAAAA=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="_FILTER_WRITE_CONFIG">
+    <Position X="13" Y="13.5" Width="4.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAEAABAAAIAAAAAAAAAAQAQARAAAAAAAAAAAAA=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="_FILTER_REQUEST">
+    <Position X="13" Y="7.25" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAEAAAAAAAAAAAAAEAAAAAAgAAAAAAAAAAAAAA=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="_LCXL_FILTER">
+    <Position X="0.75" Y="14" Width="4" />
+    <TypeIdentifier>
+      <HashCode>CAQACAAAkAAAAACCQMAAAAgAgAABAAIEECABAEASAAg=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+    <ShowAsAssociation>
+      <Field Name="module" />
+    </ShowAsAssociation>
+  </Struct>
+  <Struct Name="_FILTER_DEVICE_EXTENSION">
+    <Position X="13.25" Y="2.25" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAE=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="_FL_NDIS_FILTER_LIST">
+    <Position X="8" Y="8.25" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAUAAAAAA=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="_NPROT_SEND_NETBUFLIST_RSVD">
+    <Position X="2.25" Y="8.25" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAEAAAAAAAAAABAAAAAAAAAAA=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="_PROCESS_NBL_RESULT">
+    <Position X="4" Y="2.5" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAQAAAAAAA=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+    <ShowAsAssociation>
+      <Field Name="code" />
+    </ShowAsAssociation>
+  </Struct>
+  <Struct Name="_LCXL_MODULE_SETTING_INFO">
+    <Position X="5" Y="14.75" Width="3" />
+    <TypeIdentifier>
+      <HashCode>CCAIAAAAAAAAAAAAAAAIEAAAgAAAAAAGAAAICAQACAA=</HashCode>
+      <FileName>lcxl_setting.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Typedef Name="FILTER_DRIVER_ALL_STAT" Collapsed="true">
+    <Position X="18" Y="5" Width="4" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="PFILTER_DRIVER_ALL_STAT" Collapsed="true">
+    <Position X="17.75" Y="1" Width="4.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="FILTER_SET_OID" Collapsed="true">
+    <Position X="17.25" Y="20" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="PFILTER_SET_OID" Collapsed="true">
+    <Position X="17" Y="16" Width="3" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="FILTER_QUERY_OID" Collapsed="true">
+    <Position X="17" Y="14" Width="3.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="PFILTER_QUERY_OID" Collapsed="true">
+    <Position X="17" Y="10" Width="3.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="FILTER_READ_CONFIG" Collapsed="true">
+    <Position X="9.25" Y="18" Width="3.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="PFILTER_READ_CONFIG" Collapsed="true">
+    <Position X="7.25" Y="12.75" Width="3.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="FILTER_WRITE_CONFIG" Collapsed="true">
+    <Position X="11.75" Y="16.75" Width="3.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="PFILTER_WRITE_CONFIG" Collapsed="true">
+    <Position X="11.75" Y="11.75" Width="3.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="FILTER_STATE" Collapsed="true">
+    <Position X="11.25" Y="19" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="FILTER_REQUEST" Collapsed="true">
+    <Position X="15.5" Y="7.75" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="PFILTER_REQUEST" Collapsed="true">
+    <Position X="12.5" Y="9.75" Width="3" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="LCXL_FILTER" Collapsed="true">
+    <Position X="1.5" Y="19.5" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="PLCXL_FILTER" Collapsed="true">
+    <Position X="1.5" Y="12.5" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="FILTER_DEVICE_EXTENSION" Collapsed="true">
+    <Position X="11.75" Y="4.5" Width="4.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="PFILTER_DEVICE_EXTENSION" Collapsed="true">
+    <Position X="11.5" Y="0.5" Width="4.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="FL_NDIS_FILTER_LIST" Collapsed="true">
+    <Position X="7" Y="10.75" Width="3.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="PFL_NDIS_FILTER_LIST" Collapsed="true">
+    <Position X="6.75" Y="6.75" Width="3.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="FILTER_REQUEST_CONTEXT" Collapsed="true">
+    <Position X="23" Y="0.5" Width="3.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="PFILTER_REQUEST_CONTEXT" Collapsed="true">
+    <Position X="24.75" Y="0.5" Width="4" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="NPROT_SEND_NETBUFLIST_RSVD" Collapsed="true">
+    <Position X="0.75" Y="10.5" Width="5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="PNPROT_SEND_NETBUFLIST_RSVD" Collapsed="true">
+    <Position X="0.5" Y="6.5" Width="5.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="PROCESS_NBL_RESULT_CODE" Collapsed="true">
+    <Position X="5.5" Y="4" Width="4.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="PPROCESS_NBL_RESULT_CODE" Collapsed="true">
+    <Position X="5.25" Y="1" Width="4.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="PROCESS_NBL_RESULT" Collapsed="true">
+    <Position X="1.75" Y="4" Width="3.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="PPROCESS_NBL_RESULT" Collapsed="true">
+    <Position X="3.5" Y="1.75" Width="3.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="LCXL_MODULE_SETTING_INFO" Collapsed="true">
+    <Position X="5.75" Y="14" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>lcxl_setting.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Enum Name="_FILTER_STATE">
+    <Position X="12" Y="20.25" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAABAAwAAAAAAAABQCBAAAAAAAAAAAA=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="_PROCESS_NBL_RESULT_CODE">
+    <Position X="7.5" Y="1.75" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAIEAAAIAAMAAAAAAAAAAAAAAAAgAAAAAAAAAI=</HashCode>
+      <FileName>filter.h</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Font Name="Microsoft YaHei UI" Size="9" />
+</ClassDiagram>

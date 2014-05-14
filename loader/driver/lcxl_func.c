@@ -19,3 +19,21 @@ VOID LCXLFreeString(PUNICODE_STRING dest)
 		ExFreePoolWithTag(dest, TAG_FILE_BUFFER);
 	}
 }
+
+PLIST_ENTRY GetListEntryByIndex(IN PLIST_ENTRY head_entry, IN INT index)
+{
+	INT i;
+	PLIST_ENTRY entry = head_entry->Flink;
+	for (i = 0; i < index; i++) {
+		if (entry == head_entry) {
+			return NULL;
+		} else {
+			entry = entry->Flink;
+		}
+	}
+	if (entry == head_entry) {
+		return NULL;
+	} else {
+		return entry;
+	}
+}

@@ -7,6 +7,7 @@ import org.codehaus.jackson.annotate.JsonProperty;
 import com.lcxbox.common.model.CommonResponse;
 
 public class ModuleListResponse extends CommonResponse {
+	
 	@JsonProperty("module_list")
 	private List<Module> moduleList;
 

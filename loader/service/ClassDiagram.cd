@@ -1,0 +1,669 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1" MembersFormat="NameAndType">
+  <Class Name="CTestNetLoaderSer">
+    <Position X="12.75" Y="11.25" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAI=</HashCode>
+      <FileName>LCXLNetLoaderService.cpp</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CNetServiceBase">
+    <Position X="15.5" Y="4.75" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>IAAQAAQAAAQCIIAAAgAAAQACAAAAABIAAAAEAgAgAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\common\service\lcxl_net_service.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CServiceBase">
+    <Position X="11" Y="4.75" Width="3.75" />
+    <TypeIdentifier>
+      <HashCode>AQAEAAAAAAFAIpBABAAgMAACAAIggAQgEAAAAAEABEI=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\common\service\lcxl_service.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CNetLoaderService">
+    <Position X="15.25" Y="9.25" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAgAQAAAAAIIQAAAAgAAAjAEAgABQAIAAAIAAEAAg=</HashCode>
+      <FileName>LCXLNetLoaderService.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CLCXLConfig">
+    <Position X="44.75" Y="0.75" Width="3.5" />
+    <TypeIdentifier>
+      <HashCode>gIgAABAAAEABABgBAoAIAAABUMAQAAQAAAATIAAUAQA=</HashCode>
+      <FileName>lcxl_config.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CCSLocker" Collapsed="true">
+    <Position X="37.75" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAEAAAAAAAAIAAAAAAIAAAAAAAgAAAAAAA=</HashCode>
+      <FileName>lcxl_func.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CSocketBase">
+    <Position X="30" Y="1" Width="3.5" />
+    <TypeIdentifier>
+      <HashCode>KAAAABAAALAgEAAAEAAwAAAAAAYAAAAFQAQKEACAAgA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_base.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CSocketLst">
+    <Position X="26.75" Y="7.25" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AYAAAAAAAAAAAAAAAAAAACIAAAQAAAAQAAACCIECAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_base.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CSocketObj">
+    <Position X="29.75" Y="7.25" Width="3.75" />
+    <TypeIdentifier>
+      <HashCode>AEgACAAABIAAAAAAAggAAACCACREaQABAABGkAAIAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_base.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CCustomIOCPBaseList">
+    <Position X="4.25" Y="4.75" Width="3.25" />
+    <TypeIdentifier>
+      <HashCode>gRAQgEAAAoAECAEAAAAAKLAhiAAABoBEMQlDABAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_base.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CIOCPManager" Collapsed="true">
+    <Position X="39.5" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gEAAACBCAoAAAAEAEAEQAAAgABAAhAACAAQAIAABQAQ=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_base.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CIOCPBaseList">
+    <Position X="0.5" Y="4.75" Width="3.5" />
+    <TypeIdentifier>
+      <HashCode>AAAABAAAAAAEAAAABAAAJAAAAAAACIAAAUAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_base.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CCmdSockLst">
+    <Position X="26.75" Y="13.75" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIQAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_cmd.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CCmdSockObj">
+    <Position X="30.25" Y="19" Width="3" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAIAAAAAAAAAAAAAAAAAAIAAAAAAIgAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_cmd.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CIOCPCMDList">
+    <Position X="7.75" Y="3.75" Width="3" />
+    <TypeIdentifier>
+      <HashCode>AAAABAAAAAAEAAAABAAAIAAAAAAACIAAAUAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_cmd.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CLLSockLst">
+    <Position X="26.75" Y="11.75" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAQAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_lcxl.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CLLSockObj">
+    <Position X="30.5" Y="14.25" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AEAAAACCAIgAAAAAAAAABAAAACAAIAAhAABKgAAAEAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_lcxl.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CCustomIOCPLCXLList">
+    <Position X="8" Y="7" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAgAQAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_lcxl.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CIOCPLCXLList">
+    <Position X="7.75" Y="9" Width="3" />
+    <TypeIdentifier>
+      <HashCode>AAAABAAAAAAEAAAABAAAIAAAAIAACIAgAUAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_lcxl.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Struct Name="_VIP_CHECK_CONTEXT">
+    <Position X="22.25" Y="35.25" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAEAAAAAAAAAACAEAAAAAAAAA=</HashCode>
+      <FileName>LCXLNetLoaderService.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="_CONFIG_SERVER">
+    <Position X="31.25" Y="30.25" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAI=</HashCode>
+      <FileName>lcxl_config.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="_CONFIG_MODULE">
+    <Position X="31.5" Y="23.5" Width="3" />
+    <TypeIdentifier>
+      <HashCode>CQAAAAAAAAAAAAEIAAAAAAAAAAAAAAACAAAEAAAAAAg=</HashCode>
+      <FileName>lcxl_config.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="_IOCPOverlapped">
+    <Position X="11.5" Y="31.5" Width="3" />
+    <TypeIdentifier>
+      <HashCode>BEAQAAAAAACAQAAAAAAAAAAAABIAAAAgAEAAgAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_base.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="_CMDDataRec">
+    <Position X="6.25" Y="31.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAYAFACAAAAAEAQAAAAAAAAAAAAAAAAAAAAEAEA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_cmd.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="_SendDataRec">
+    <Position X="26.25" Y="28.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAYAFACAAAAAEAAAAAAAAAAAAAAAAAAAAAAEAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_lcxl.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="_LCXL_IP">
+    <Position X="26.25" Y="23.25" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAIAAAAAAAAAAQAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\common\lcxl_type.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="_LCXL_ADDR_INFO">
+    <Position X="1.5" Y="27.25" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>AAQAAAAAAAAAAAAAAAAABAoAAAAAAAABAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\common\lcxl_type.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="_LCXL_SERVER_PERFORMANCE">
+    <Position X="25.25" Y="17.25" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAIAAAAgAABAAAAAAAAAAAAIAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\common\lcxl_type.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="_LCXL_SERVER">
+    <Position X="11.5" Y="25.25" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>AAQAAAAAAAAAAAAAAAAAAACAAAAAAAAEAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\common\lcxl_type.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="_LCXL_SERVER_CHECK">
+    <Position X="6.25" Y="21.25" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAEAAAAAAAAAAAAAACAAAAAAAAAAAACAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\common\lcxl_type.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="_APP_MODULE">
+    <Position X="19" Y="24.5" Width="4.75" />
+    <TypeIdentifier>
+      <HashCode>ACAIAAAAAAAAAAAAAEAIEAAAgAAAAAAGAAAICAQACAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\loader\common\drv_interface_type.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="_APP_SET_ROLE">
+    <Position X="1.25" Y="21.25" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAAIAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\loader\common\drv_interface_type.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="_APP_SET_VIRTUAL_ADDR">
+    <Position X="19.25" Y="17.25" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAIAAAAEAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\loader\common\drv_interface_type.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="_APP_ADD_SERVER">
+    <Position X="19.25" Y="12.25" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAI=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\loader\common\drv_interface_type.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="_APP_DEL_SERVER">
+    <Position X="19.5" Y="7.25" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAEAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\loader\common\drv_interface_type.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="_APP_SET_ROUTER_MAC_ADDR">
+    <Position X="19.5" Y="2.25" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAEAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\loader\common\drv_interface_type.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Typedef Name="VIP_CHECK_CONTEXT" Collapsed="true">
+    <Position X="21.25" Y="37.75" Width="3.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>LCXLNetLoaderService.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="PVIP_CHECK_CONTEXT" Collapsed="true">
+    <Position X="21.25" Y="33.75" Width="3.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>LCXLNetLoaderService.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="CONFIG_SERVER" Collapsed="true">
+    <Position X="30.5" Y="32.5" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>lcxl_config.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="PCONFIG_SERVER" Collapsed="true">
+    <Position X="30.5" Y="28.5" Width="3" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>lcxl_config.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="PCONFIG_MODULE" Collapsed="true">
+    <Position X="31.25" Y="26.75" Width="3.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>lcxl_config.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="CONFIG_MODULE" Collapsed="true">
+    <Position X="31.5" Y="21.75" Width="3" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>lcxl_config.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="IocpEventEnum" Collapsed="true">
+    <Position X="16.5" Y="36" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_base.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="PIocpEventEnum" Collapsed="true">
+    <Position X="16.5" Y="31" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_base.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="ListenEventEnum" Collapsed="true">
+    <Position X="24.5" Y="4.5" Width="3" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_base.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="PListenEventEnum" Collapsed="true">
+    <Position X="24.5" Y="0.5" Width="3" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_base.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="PCSocketObj" Collapsed="true">
+    <Position X="34.5" Y="10" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_base.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="OverlappedTypeEnum" Collapsed="true">
+    <Position X="26" Y="33.5" Width="3.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_base.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="SocketInitStatus" Collapsed="true">
+    <Position X="0.5" Y="31.5" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_base.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="IOCPOverlapped" Collapsed="true">
+    <Position X="11.5" Y="35.25" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_base.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="PIOCPOverlapped" Collapsed="true">
+    <Position X="11.5" Y="30.25" Width="3" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_base.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="SocketType" Collapsed="true">
+    <Position X="6.75" Y="25.25" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_base.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="EOnIOCPBaseEvent" Collapsed="true">
+    <Position X="41.25" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_base.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="EOnListenBaseEvent" Collapsed="true">
+    <Position X="39.5" Y="3.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_base.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="DOnIOCPBaseEvent" Collapsed="true">
+    <Position X="37.75" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_base.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="DOnListenBaseEvent" Collapsed="true">
+    <Position X="43" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_base.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="CMDDataRec" Collapsed="true">
+    <Position X="5.5" Y="35.25" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_cmd.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="PCMDDataRec" Collapsed="true">
+    <Position X="5.5" Y="30.25" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_cmd.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="EOnIOCPCMDEvent" Collapsed="true">
+    <Position X="43" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_cmd.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="DOnIOCPCMDEvent" Collapsed="true">
+    <Position X="39.5" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_cmd.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="EOnListenCMDEvent" Collapsed="true">
+    <Position X="41.25" Y="3.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_cmd.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="DOnListenCMDEvent" Collapsed="true">
+    <Position X="37.75" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_cmd.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="SendDataRec" Collapsed="true">
+    <Position X="25.5" Y="32" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_lcxl.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="PSendDataRec" Collapsed="true">
+    <Position X="25.5" Y="27" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_lcxl.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="EOnIOCPLCXLEvent" Collapsed="true">
+    <Position X="37.75" Y="3.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_lcxl.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="DOnIOCPLCXLEvent" Collapsed="true">
+    <Position X="41.25" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_lcxl.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="EOnListenLCXLEvent" Collapsed="true">
+    <Position X="43" Y="3.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_lcxl.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="DOnListenLCXLEvent" Collapsed="true">
+    <Position X="39.5" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_lcxl.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="LCXL_IP" Collapsed="true">
+    <Position X="26.25" Y="25.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\common\lcxl_type.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="PLCXL_IP" Collapsed="true">
+    <Position X="26.25" Y="21.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\common\lcxl_type.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="LCXL_ADDR_INFO" Collapsed="true">
+    <Position X="0.75" Y="30" Width="3" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\common\lcxl_type.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="PLCXL_ADDR_INFO" Collapsed="true">
+    <Position X="0.75" Y="26" Width="3.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\common\lcxl_type.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="LCXL_SERVER_PERFORMANCE" Collapsed="true">
+    <Position X="23.75" Y="19.75" Width="4.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\common\lcxl_type.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="PLCXL_SERVER_PERFORMANCE" Collapsed="true">
+    <Position X="23.75" Y="15.75" Width="4.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\common\lcxl_type.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="LCXL_SERVER" Collapsed="true">
+    <Position X="11" Y="27.75" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\common\lcxl_type.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="PLCXL_SERVER" Collapsed="true">
+    <Position X="11" Y="23.75" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\common\lcxl_type.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="LCXL_SERVER_CHECK" Collapsed="true">
+    <Position X="5" Y="23.75" Width="3.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\common\lcxl_type.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="PLCXL_SERVER_CHECK" Collapsed="true">
+    <Position X="5" Y="19.75" Width="3.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\common\lcxl_type.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="PAPP_MODULE" Collapsed="true">
+    <Position X="19.5" Y="29" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\loader\common\drv_interface_type.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="APP_MODULE" Collapsed="true">
+    <Position X="19.5" Y="23" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\loader\common\drv_interface_type.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="APP_SET_ROLE" Collapsed="true">
+    <Position X="0.75" Y="23.5" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\loader\common\drv_interface_type.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="PAPP_SET_ROLE" Collapsed="true">
+    <Position X="0.75" Y="19.5" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\loader\common\drv_interface_type.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="APP_SET_VIRTUAL_ADDR" Collapsed="true">
+    <Position X="18" Y="21.5" Width="4" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\loader\common\drv_interface_type.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="PAPP_SET_VIRTUAL_ADDR" Collapsed="true">
+    <Position X="18" Y="19.5" Width="4" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\loader\common\drv_interface_type.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="APP_ADD_SERVER" Collapsed="true">
+    <Position X="22.5" Y="12.5" Width="3" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\loader\common\drv_interface_type.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="PAPP_ADD_SERVER" Collapsed="true">
+    <Position X="18.5" Y="14.5" Width="3.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\loader\common\drv_interface_type.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="APP_DEL_SERVER" Collapsed="true">
+    <Position X="22.75" Y="9.5" Width="3" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\loader\common\drv_interface_type.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="PAPP_DEL_SERVER" Collapsed="true">
+    <Position X="18.75" Y="9.5" Width="3" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\loader\common\drv_interface_type.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="APP_SET_ROUTER_MAC_ADDR" Collapsed="true">
+    <Position X="18" Y="4.5" Width="4.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\loader\common\drv_interface_type.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="PAPP_SET_ROUTER_MAC_ADDR" Collapsed="true">
+    <Position X="18" Y="0.5" Width="4.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\loader\common\drv_interface_type.h</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Enum Name="_IocpEventEnum">
+    <Position X="17" Y="32.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>QAoAAABAAAAAAAAAAAAAAAAAQAAAAAAAQAEIACAAAIA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_base.h</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="_ListenEventEnum">
+    <Position X="25.25" Y="2.25" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAACCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABIA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_base.h</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="_OverlappedTypeEnum">
+    <Position X="27.25" Y="35.25" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAIAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAABAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_base.h</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="_SocketInitStatus">
+    <Position X="1" Y="33.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAABAAAAAAAAAAAAAAAABAAAAAAEAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_base.h</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="_SocketType">
+    <Position X="7" Y="27" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAIAAAAAAAAAEAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\component\lcxl_iocp\lcxl_iocp_base.h</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Font Name="Microsoft YaHei UI" Size="9" />
+</ClassDiagram>

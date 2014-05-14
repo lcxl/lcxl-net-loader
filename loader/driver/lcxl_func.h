@@ -54,6 +54,13 @@ __inline PUCHAR LCXLWriteStringToBuf(IN PUCHAR cur_buf, IN PUNICODE_STRING data)
 	
 }
 
+//************************************
+// 简介: 通过序号获取列表项
+// 返回: LIST_ENTRY
+// 参数: IN PLIST_ENTRY head
+// 参数: IN INT index
+//************************************
+PLIST_ENTRY GetListEntryByIndex(IN PLIST_ENTRY head_entry, IN INT index);
 //VOID LCXLTransARP
 
 #endif
