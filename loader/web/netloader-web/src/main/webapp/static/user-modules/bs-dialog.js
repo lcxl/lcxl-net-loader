@@ -1,5 +1,6 @@
 /**
  * Bootstrap对话框，进一步封装
+ * lcxl
  */
 
 define(function(require, exports, module) {
@@ -17,7 +18,10 @@ define(function(require, exports, module) {
 		context.bodytag = select+" .modal-body";
 		$(select+">div").on("click", ".modal-footer button", function(event) {
 			console.log(this);
-			context.onButtonClick(this, data);
+			if (typeof(context.onButtonClick) == "function") {
+				context.onButtonClick(this, data);
+			}
+			
 		});
 	}
 	/**

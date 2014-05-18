@@ -16,6 +16,7 @@ seajs.config({
 	  
 	  "navbar":"user-modules/navbar.js",
 	  "bs-dialog":"user-modules/bs-dialog.js",
+	  "bs-msgbox":"user-modules/bs-msgbox.js",
 	  
 	  "index":"html/index.js",
 	  

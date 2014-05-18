@@ -15,6 +15,8 @@ extern "C" {
 	BOOL WINAPI lnlGetServerList(IN NET_LUID miniport_net_luid, OUT PLCXL_SERVER server_list, IN OUT PDWORD server_list_count);
 	BOOL WINAPI lnlAddServer(IN NET_LUID miniport_net_luid, IN PLCXL_SERVER server);
 	BOOL WINAPI lnlDelServer(IN NET_LUID miniport_net_luid, IN PIF_PHYSICAL_ADDRESS mac_addr);
+	BOOL WINAPI lnlSetServerCheck(IN NET_LUID miniport_net_luid, IN PLCXL_SERVER_CHECK server_check);
+	BOOL WINAPI lnlSetRoutingAlgorithm(IN NET_LUID miniport_net_luid, IN INT routing_algorithm);
 	//-------------------LCXL_ROLE_SERVER-------------------
 	//BOOL WINAPI lnlSetRouterMacAddr(IN NET_LUID miniport_net_luid, PIF_PHYSICAL_ADDRESS mac_addr);
 #ifdef __cplusplus

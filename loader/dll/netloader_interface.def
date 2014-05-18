@@ -6,3 +6,5 @@ EXPORTS
 	lnlGetServerList
 	lnlAddServer
 	lnlDelServer
+	lnlSetServerCheck
+	lnlSetRoutingAlgorithm

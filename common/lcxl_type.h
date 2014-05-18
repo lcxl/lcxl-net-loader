@@ -40,6 +40,7 @@ extern "C" {
 		unsigned long long  total_memory;//总内存数
 		unsigned long long  cur_memory;//当前使用内存
 		double              cpu_usage;//CPU使用率，最高为1
+		double				request_response_interval;//收到数据包到发送数据包的间隔，用来衡量服务器的响应时间
 	} LCXL_SERVER_PERFORMANCE, *PLCXL_SERVER_PERFORMANCE;//服务器性能
 	
 	typedef struct _LCXL_SERVER {
@@ -61,6 +62,17 @@ extern "C" {
 	} LCXL_SERVER_CHECK, *PLCXL_SERVER_CHECK;//服务器检测设置
 //------可用性检测帧类型------
 #define ETHERNET_TYPE_LCXL_CHECKING 0xF0F0
+
+#define CHECKING_CODE_NONE		0x00
+#define CHECKING_CODE_REQUEST	0x01
+#define CHECKING_CODE_RESPONSE	0x02
+
+	//LCXL_CHECKING_HEADER
+	typedef struct _LCXL_CHECKING_HEADER {
+		UINT16			code;//代码
+		LCXL_SERVER_PERFORMANCE preformance;//服务器性能，code=CHECKING_CODE_RESPONSE时可用
+	} LCXL_CHECKING_HEADER, *PLCXL_CHECKING_HEADER;
+
 //------路由算法类型------
 //静态算法
 #define RA_POLL					0x00//轮询算法

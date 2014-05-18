@@ -33,6 +33,7 @@ public class UserController {
 			@RequestParam(value="password", required=false, defaultValue = "") String password,
 			@RequestParam(value="remember-me", required=false, defaultValue = "0") boolean rememberMe) throws IOException {
 		LogonRespnse logonresponse = userService.logon(host, port, username, password);
+		/*//ajax下设置cookie失效
 		if (logonresponse.getStatus() == LcxlNetCode.JS_SUCCESS) {
 			int cookieAge;
 			
@@ -61,6 +62,7 @@ public class UserController {
 		    cookie.setMaxAge(cookieAge);
 		    response.addCookie(cookie);
 		} 
+		*/
 		return logonresponse;
 	}
 }

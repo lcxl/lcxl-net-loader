@@ -23,7 +23,7 @@ typedef struct _LCXL_ROUTE_LIST_ENTRY {
 	unsigned short	        src_port;	//源端口号
 	unsigned short	        dst_port;	//目的端口号
 	PSERVER_INFO_LIST_ENTRY dst_server;	//目标服务器
-	LARGE_INTEGER			timestamp;	//时间戳，使用KeQueryPerformanceCounter
+	LARGE_INTEGER			recv_timestamp;	//时间戳，使用KeQueryPerformanceCounter
 } LCXL_ROUTE_LIST_ENTRY, *PLCXL_ROUTE_LIST_ENTRY;
 
 extern NPAGED_LOOKASIDE_LIST  g_route_mem_mgr;

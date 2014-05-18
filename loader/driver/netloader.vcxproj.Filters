@@ -46,6 +46,9 @@
     <ClCompile Include="lcxl_setting.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\common\kalman.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="filter.h">
@@ -140,6 +143,9 @@
     <ClInclude Include="..\common\drv_interface.h">
       <Filter>Header Files\sys_dll_comm</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\common\kalman.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="filter.rc">
@@ -153,5 +159,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="*.txt;*.htm;*.html" />
+    <None Include="ClassDiagram.cd" />
   </ItemGroup>
 </Project>

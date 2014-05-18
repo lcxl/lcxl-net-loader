@@ -31,7 +31,7 @@
     <div class="col-sm-offset-4 col-sm-4">
       <div class="checkbox">
         <label>
-          <input type="checkbox" name="remember-me">记住本次登录（7天）
+          <input type="checkbox" name="remember-me">记住本次登录（14天）
         </label>
       </div>
     </div>

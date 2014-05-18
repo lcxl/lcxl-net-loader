@@ -383,6 +383,11 @@ CONFIG_MODULE & CLCXLConfig::ReadModule(tinyxml2::XMLElement *owner_element, CON
 	if (element != NULL) {
 		module.module.routing_algorithm = element->UnsignedAttribute(ATTRIBUTE_VALUE);
 	}
+	//读取额外的信息
+	element = owner_element->FirstChildElement(ELEMENT_MINIPORT_FRIENDLY_NAME);
+	if (element != NULL) {
+		wcscpy(module.module.miniport_friendly_name, utf8string_to_wstring(std::string(element->Attribute(ATTRIBUTE_VALUE))).c_str());
+	}
 	return module;
 }
 

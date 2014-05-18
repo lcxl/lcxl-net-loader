@@ -30,6 +30,14 @@ define(function(require, exports, module) {
 					$("#alert-text").html("登录失败："+errorTest);
 					$("#alert").show();
 				} else {
+					var info = null;
+					if ($("input[name='remember-me']").is(":checked")) {
+						info = { expires: 14 };
+					}
+					$.cookie("host", $("#host").val(), info);
+					$.cookie("port", $("#port").val(), info);
+					$.cookie("username", $("#username").val(), info);
+					$.cookie("password", $("#password").val(), info);
 					//后退
 					History.back();
 				}

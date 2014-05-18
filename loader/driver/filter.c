@@ -82,6 +82,7 @@ Return Value:
     NDIS_STRING UniqueName   = RTL_CONSTANT_STRING(FILTER_UNIQUE_NAME);
     NDIS_STRING FriendlyName = RTL_CONSTANT_STRING(FILTER_FRIENDLY_NAME);
     BOOLEAN bFalse = FALSE;
+	OBJECT_ATTRIBUTES oa;
 
     UNREFERENCED_PARAMETER(RegistryPath);
 
@@ -172,8 +173,23 @@ Return Value:
             DEBUGP(DL_WARN, "Register device for the filter driver failed.\n");
             break;
         }
-
+		//创建退出事件
+		KeInitializeEvent(&g_setting.thread_exit_event, NotificationEvent, FALSE);
+		InitializeObjectAttributes(&oa, NULL, OBJ_KERNEL_HANDLE, NULL, NULL);
 		KeQueryPerformanceCounter(&g_setting.frequency);
+		//创建系统线程
+		Status = PsCreateSystemThread(&g_setting.thread_handle, GENERIC_ALL, &oa, NULL, NULL, FilterWorkThread, (PVOID)&g_setting.thread_exit_event);
+		if (NT_SUCCESS(Status)) {
+			//获取线程句柄
+			Status = ObReferenceObjectByHandle(g_setting.thread_handle,
+				0,
+				*PsThreadType,
+				KernelMode,
+				(PVOID *)&g_setting.thread_object,
+				NULL
+				);
+		}
+		
     }
     while(bFalse);
 	//注册系统初始化完成事件
@@ -267,8 +283,8 @@ N.B.:  FILTER can use NdisRegisterDeviceEx to create a device, so the upper
 
 --*/
 {
-    PLCXL_FILTER			pFilter = NULL;
-    NDIS_STATUS				Status = NDIS_STATUS_SUCCESS;
+    PLCXL_FILTER			filter = NULL;
+    NDIS_STATUS				status = NDIS_STATUS_SUCCESS;
     NDIS_FILTER_ATTRIBUTES	FilterAttributes;
     ULONG					Size;
     BOOLEAN					bFalse = FALSE;
@@ -282,7 +298,7 @@ N.B.:  FILTER can use NdisRegisterDeviceEx to create a device, so the upper
         ASSERT(FilterDriverContext == (NDIS_HANDLE)g_filter_driver_object);
         if (FilterDriverContext != (NDIS_HANDLE)g_filter_driver_object)
         {
-            Status = NDIS_STATUS_INVALID_PARAMETER;
+            status = NDIS_STATUS_INVALID_PARAMETER;
             break;
         }
 
@@ -300,27 +316,29 @@ N.B.:  FILTER can use NdisRegisterDeviceEx to create a device, so the upper
         {
            DEBUGP(DL_ERROR, "Unsupported media type.\n");
 
-           Status = NDIS_STATUS_INVALID_PARAMETER;
+           status = NDIS_STATUS_INVALID_PARAMETER;
            break;
         }
 
         Size = sizeof(LCXL_FILTER);
 
-        pFilter = (PLCXL_FILTER)FILTER_ALLOC_MEM(NdisFilterHandle, Size);
-        if (pFilter == NULL)
+        filter = (PLCXL_FILTER)FILTER_ALLOC_MEM(NdisFilterHandle, Size);
+        if (filter == NULL)
         {
             DEBUGP(DL_WARN, "Failed to allocate context structure.\n");
-            Status = NDIS_STATUS_RESOURCES;
+            status = NDIS_STATUS_RESOURCES;
             break;
         }
 
-        NdisZeroMemory(pFilter, sizeof(LCXL_FILTER));
+        NdisZeroMemory(filter, sizeof(LCXL_FILTER));
 		//初始化设置
-		InitModuleSetting(&pFilter->module, AttachParameters);
+		InitModuleSetting(&filter->module, AttachParameters);
+		//初始化kalman滤波数据
+		InitKalmanState(&filter->routing_algorithm_data.ra_fast_respnse.kalman_state);
 		//初始化服务器列表
 		//InitializeListHead(&pFilter->server_list.list_entry);
 		//初始化路由列表
-		InitializeListHead(&pFilter->route_list);
+		InitializeListHead(&filter->route_list);
         //初始化NBL发送池
 		NdisZeroMemory(&PoolParameters, sizeof(PoolParameters));
         PoolParameters.Header.Type = NDIS_OBJECT_TYPE_DEFAULT;
@@ -332,7 +350,7 @@ N.B.:  FILTER can use NdisRegisterDeviceEx to create a device, so the upper
 		PoolParameters.ContextSize = sizeof(NPROT_SEND_NETBUFLIST_RSVD);
         PoolParameters.fAllocateNetBuffer = TRUE;
         PoolParameters.PoolTag = TAG_SEND_NBL;
-        pFilter->send_net_buffer_list_pool = NdisAllocateNetBufferListPool( NdisFilterHandle, &PoolParameters); 
+        filter->send_net_buffer_list_pool = NdisAllocateNetBufferListPool( NdisFilterHandle, &PoolParameters); 
 
 		//!添加代码!
         //
@@ -340,9 +358,9 @@ N.B.:  FILTER can use NdisRegisterDeviceEx to create a device, so the upper
         // driver, since its default characteristic has both a send and a receive handler,
         // these fields are initialized to TRUE.
         //
-        pFilter->track_receives = TRUE;
-        pFilter->track_sends = TRUE;
-        pFilter->filter_handle = NdisFilterHandle;
+        filter->track_receives = TRUE;
+        filter->track_sends = TRUE;
+        filter->filter_handle = NdisFilterHandle;
 
 
         NdisZeroMemory(&FilterAttributes, sizeof(NDIS_FILTER_ATTRIBUTES));
@@ -352,31 +370,31 @@ N.B.:  FILTER can use NdisRegisterDeviceEx to create a device, so the upper
         FilterAttributes.Flags = 0;
 
         NDIS_DECLARE_FILTER_MODULE_CONTEXT(LCXL_FILTER);
-        Status = NdisFSetAttributes(NdisFilterHandle,
-                                    pFilter,
+        status = NdisFSetAttributes(NdisFilterHandle,
+                                    filter,
                                     &FilterAttributes);
-        if (Status != NDIS_STATUS_SUCCESS)
+        if (status != NDIS_STATUS_SUCCESS)
         {
             DEBUGP(DL_WARN, "Failed to set attributes.\n");
             break;
         }
 
-		InitLCXLLockList(&pFilter->module.server_list, DelServerCallBack);
-        pFilter->state = FilterPaused;
-		AddtoLCXLLockList(&g_filter_list, &pFilter->filter_module_link);
+		InitLCXLLockList(&filter->module.server_list, DelServerCallBack);
+        filter->state = FilterPaused;
+		AddtoLCXLLockList(&g_filter_list, &filter->filter_module_link);
     }
     while (bFalse);
 
-    if (Status != NDIS_STATUS_SUCCESS)
+    if (status != NDIS_STATUS_SUCCESS)
     {
-        if (pFilter != NULL)
+        if (filter != NULL)
         {
-            FILTER_FREE_MEM(pFilter);
+            FILTER_FREE_MEM(filter);
         }
     }
 
-    DEBUGP(DL_TRACE, "<===FilterAttach:    Status %x\n", Status);
-    return Status;
+    DEBUGP(DL_TRACE, "<===FilterAttach:    Status %x\n", status);
+    return status;
 }
 
 _Use_decl_annotations_
@@ -721,7 +739,19 @@ Return Value:
     UNREFERENCED_PARAMETER(DriverObject);
 
     DEBUGP(DL_TRACE, "===>FilterUnload\n");
-
+	//激活退出事件
+	KeSetEvent(&g_setting.thread_exit_event, 0, TRUE);
+	//等待线程退出
+	KeWaitForSingleObject(g_setting.thread_object,
+		Executive,
+		KernelMode,
+		FALSE,
+		NULL);
+	
+	//减少引用
+	ObDereferenceObject(g_setting.thread_object);
+	//关闭线程句柄
+	ZwClose(g_setting.thread_handle);
     //
     // Should free the filter context list
     //
@@ -1850,7 +1880,16 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 
 			if (return_data.code == PNRC_CHECKING_NBL) {
 				PNET_BUFFER_LIST    send_nbl;
-				CreateCheckingNBL(filter, &ethernet_header->Source, &send_nbl);
+				KLOCK_QUEUE_HANDLE lock_handle;
+				LCXL_CHECKING_HEADER checking_header;
+
+				checking_header.code = CHECKING_CODE_RESPONSE;
+				LockFilter(filter, &lock_handle);
+				checking_header.preformance = filter->module.performance;
+				UnlockFilter(&lock_handle);
+				
+				//发送响应包
+				CreateCheckingNBL(filter, &ethernet_header->Source, &checking_header, &send_nbl);
 				//插入到转发队列中
 				if (send_nbl_head == NULL) {
 					send_nbl_head = send_nbl;
@@ -2277,8 +2316,7 @@ PLCXL_ROUTE_LIST_ENTRY RouteTCPNBL(IN PLCXL_FILTER filter, IN INT ip_mode, IN PV
 	//有TH_SYN的阶段是建立连接的阶段，这个时候就得选择路由信息
 	if (ptcp_header->th_flags == TH_SYN) {
 		PSERVER_INFO_LIST_ENTRY server;
-		//检查服务器状态
-		CheckServerStatus(filter);
+		
 		//选择一个服务器
 		server = SelectBestServer(&filter->module.server_list, ip_mode, ip_header, ptcp_header, filter->module.routing_algorithm, &filter->routing_algorithm_data);
 		if (server == NULL) {
@@ -2347,6 +2385,7 @@ VOID CheckServerStatus(IN PLCXL_FILTER filter)
 	while (Link != head) {
 		PSERVER_INFO_LIST_ENTRY server_info;
 		KLOCK_QUEUE_HANDLE lock_handle;
+		BOOLEAN send_check_nbl = FALSE;
 		//获取server_info的地址
 		server_info = GetServerbyListEntry(Link);
 		LockServer(server_info, &lock_handle);
@@ -2368,61 +2407,54 @@ VOID CheckServerStatus(IN PLCXL_FILTER filter)
 							//取消online状态
 							server_info->info.status &= ~SS_ONLINE;
 						}
-						
-						//发送数据包
-						CreateCheckingNBL(filter, (PDL_EUI48)server_info->info.mac_addr.Address, &send_nbl);
-						//插入到转发队列中
-						if (send_nbl_head == NULL) {
-							send_nbl_head = send_nbl;
-							send_nbl_tail = send_nbl;
-						} else {
-							NET_BUFFER_LIST_NEXT_NBL(send_nbl_tail) = send_nbl;
-							send_nbl_tail = send_nbl;
-						}
+						send_check_nbl = TRUE;
 					}
 				} else {
 					//正常状态
 					//如果到了检查服务器状态的时间
-					if (timestamp.QuadPart - server_info->timestamp.QuadPart > g_setting.frequency.QuadPart*filter->module.server_check.interval) {
+					if (timestamp.QuadPart - server_info->timestamp.QuadPart > g_setting.frequency.QuadPart*filter->module.server_check.interval) {;
+
 						server_info->current_retry_number = 0;
 						//此服务器处于检查状态
 						server_info->info.status |= SS_CHECKING;
 						//更新时间戳
 						server_info->timestamp.QuadPart = timestamp.QuadPart;
 						KdPrint(("SYS:CheckServerStatus:checking server status\n"));
-						//发送数据包
-						CreateCheckingNBL(filter, (PDL_EUI48)server_info->info.mac_addr.Address, &send_nbl);
-						//插入到转发队列中
-						if (send_nbl_head == NULL) {
-							send_nbl_head = send_nbl;
-							send_nbl_tail = send_nbl;
-						} else {
-							NET_BUFFER_LIST_NEXT_NBL(send_nbl_tail) = send_nbl;
-							send_nbl_tail = send_nbl;
-						}
+						send_check_nbl = TRUE;
 					}
 				}
 			} else {
 				//服务器offline
-				if (timestamp.QuadPart - server_info->timestamp.QuadPart > g_setting.frequency.QuadPart*filter->module.server_check.timeout*(server_info->current_retry_number + 1)) {
+				if (timestamp.QuadPart - server_info->timestamp.QuadPart > g_setting.frequency.QuadPart*filter->module.server_check.timeout*(server_info->current_retry_number + 1)) {;
 					//等待服务器响应超时
 					//重试次数+1
 					server_info->current_retry_number++;
-					//发送数据包
-					CreateCheckingNBL(filter, (PDL_EUI48)server_info->info.mac_addr.Address, &send_nbl);
-					//插入到转发队列中
-					if (send_nbl_head == NULL) {
-						send_nbl_head = send_nbl;
-						send_nbl_tail = send_nbl;
-					} else {
-						NET_BUFFER_LIST_NEXT_NBL(send_nbl_tail) = send_nbl;
-						send_nbl_tail = send_nbl;
-					}
+					send_check_nbl = TRUE;
 				}
+			}
+
+		}
+		if (send_check_nbl) {
+			
+			LCXL_CHECKING_HEADER checking_header = { 0 };
+
+			checking_header.code = CHECKING_CODE_REQUEST;
+			
+			//发送数据包
+			CreateCheckingNBL(filter, (PDL_EUI48)server_info->info.mac_addr.Address, &checking_header, &send_nbl);
+			//插入到转发队列中
+			if (send_nbl_head == NULL) {
+				send_nbl_head = send_nbl;
+				send_nbl_tail = send_nbl;
+			} else {
+				NET_BUFFER_LIST_NEXT_NBL(send_nbl_tail) = send_nbl;
+				send_nbl_tail = send_nbl;
 			}
 		}
 		//解锁服务器
 		UnLockServer(&lock_handle);
+
+
 		Link = Link->Flink;
 	}
 	//解锁列表
@@ -2471,6 +2503,52 @@ BOOLEAN CheckTCPNBLMacAddr(IN PIF_PHYSICAL_ADDRESS mac_addr, IN BOOLEAN is_recv,
 	return TRUE;
 }
 
+VOID FilterWorkThread(IN PVOID StartContext)
+{
+	//
+	PKEVENT exit_event = (PKEVENT)StartContext;
+	LARGE_INTEGER timeout;
+	NTSTATUS status;
+
+	KdPrint(("SYS:FilterWorkThread started.\n"));
+	timeout.QuadPart = 1 * 1000 * 1000 * 10;//超时设置为1秒
+	while (status = KeWaitForSingleObject(exit_event, Executive, KernelMode, FALSE, &timeout), NT_SUCCESS(status)) {
+		if (status == STATUS_SUCCESS) {
+			//退出事件激活，退出线程
+			break;
+		}
+		if (status == STATUS_TIMEOUT) {
+			PLIST_ENTRY list_head;
+			PLIST_ENTRY list_entry;
+			
+			//锁定网卡模块数量
+			LockLCXLLockList(&g_filter_list);
+			//开始循环遍历网卡模块
+			list_head = GetListofLCXLLockList(&g_filter_list);
+			list_entry = list_head->Flink;
+			while (list_entry != list_head) {
+				//KLOCK_QUEUE_HANDLE lock_handle;
+				PLCXL_FILTER filter = GetFilterByListEntry(list_entry);
+				//LockFilter(filter, &lock_handle);
+				switch (filter->module.lcxl_role) {
+				case LCXL_ROLE_ROUTER:
+					//检查服务器状态
+					CheckServerStatus(filter);
+					break;
+				case LCXL_ROLE_SERVER:
+					break;
+				}
+				//UnlockFilter(&lock_handle);
+				list_entry = list_entry->Flink;
+			}
+			UnlockLCXLLockList(&g_filter_list);
+		}
+		
+	}
+	KdPrint(("SYS:FilterWorkThread ended.\n"));
+	PsTerminateSystemThread(STATUS_SUCCESS);
+}
+
 VOID ProcessNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN PETHERNET_HEADER eth_header, IN UINT data_length, IN OUT PPROCESS_NBL_RESULT return_data)
 {
 	PVOID ethernet_data;
@@ -2493,7 +2571,9 @@ VOID ProcessNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN PETHERNET_HEADER 
 	switch (ethernet_type) {
 	case ETHERNET_TYPE_LCXL_CHECKING:
 		//处理可用性检测帧
-		ProcessCheckingNBL(filter, is_recv, eth_header, data_length, return_data);
+		if (data_length >= sizeof(LCXL_CHECKING_HEADER)) {
+			ProcessCheckingNBL(filter, is_recv, (PETHERNET_LCXL_CHECKING)eth_header, return_data);
+		}
 		break;
 	case ETHERNET_TYPE_ARP:
 		//ARP_OPCODE  ARP_REQUEST  ARP_RESPONSE
@@ -2567,18 +2647,19 @@ VOID ProcessNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN PETHERNET_HEADER 
 	}
 }
 
-VOID ProcessCheckingNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN PETHERNET_HEADER eth_header, IN UINT data_length, IN OUT PPROCESS_NBL_RESULT return_data)
+VOID ProcessCheckingNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN PETHERNET_LCXL_CHECKING eth_header, IN OUT PPROCESS_NBL_RESULT return_data)
 {
 	UNREFERENCED_PARAMETER(filter);
-	UNREFERENCED_PARAMETER(eth_header);
-	UNREFERENCED_PARAMETER(data_length);
 
 	if (is_recv) {
 		KdPrint(("SYS:recv checking nbl\n"));
+		if (eth_header->checking_header.code == CHECKING_CODE_REQUEST) {
+			return_data->code = PNRC_CHECKING_NBL;
+		}
 		switch (filter->module.lcxl_role)
 		{
 		case LCXL_ROLE_SERVER:
-			return_data->code = PNRC_CHECKING_NBL;
+			
 			break;
 		case LCXL_ROLE_ROUTER:
 		{
@@ -2586,7 +2667,7 @@ VOID ProcessCheckingNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN PETHERNET
 			PSERVER_INFO_LIST_ENTRY server_info;
 
 			mac_addr.Length = sizeof(DL_EUI48);
-			NdisMoveMemory(mac_addr.Address, &eth_header->Source, sizeof(eth_header->Source));
+			NdisMoveMemory(mac_addr.Address, &eth_header->eth_header.Source, sizeof(eth_header->eth_header.Source));
 			//锁定
 			LockLCXLLockList(&filter->module.server_list);
 			server_info = FindServer(&filter->module.server_list, &mac_addr);
@@ -2598,6 +2679,10 @@ VOID ProcessCheckingNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN PETHERNET
 				server_info->info.status |= SS_ONLINE;
 				//取消检查状态
 				server_info->info.status &= ~SS_CHECKING;
+				if (eth_header->checking_header.code == CHECKING_CODE_RESPONSE) {
+					//更新性能
+					server_info->performance = eth_header->checking_header.preformance;
+				}
 				UnLockServer(&lock_handle);
 			}
 			//解锁列表
@@ -2898,6 +2983,8 @@ VOID ProcessTCP(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN PVOID ip_header, 
 				NdisMoveMemory(&return_data->data.modifyip.addr, destination_address, destination_address_len);
 				//KdPrint(("SYS:TCP PNRC_MODIFY\n"));
 			}
+		} else {
+
 		}
 		break;
 	}
@@ -2984,19 +3071,20 @@ NTSTATUS CreateNBL(IN PLCXL_FILTER filter, IN PETHERNET_HEADER send_buffer, IN U
 	return STATUS_SUCCESS;
 }
 
-NTSTATUS CreateCheckingNBL(IN PLCXL_FILTER filter, IN PDL_EUI48 dest_mac, OUT PNET_BUFFER_LIST *nbl)
+NTSTATUS CreateCheckingNBL(IN PLCXL_FILTER filter, IN PDL_EUI48 dest_mac, IN PLCXL_CHECKING_HEADER checking_header, OUT PNET_BUFFER_LIST *nbl)
 {
-	PETHERNET_HEADER send_buffer;
+	PETHERNET_LCXL_CHECKING send_buffer;
 	UINT send_buffer_length;
 	//以太网帧最小长度
-	send_buffer_length = 64;
-	send_buffer = (PETHERNET_HEADER)FILTER_ALLOC_MEM(filter->filter_handle, send_buffer_length);
+	send_buffer_length = sizeof(ETHERNET_LCXL_CHECKING)>64 ? sizeof(ETHERNET_LCXL_CHECKING): 64;
+	send_buffer = (PETHERNET_LCXL_CHECKING)FILTER_ALLOC_MEM(filter->filter_handle, send_buffer_length);
 	RtlZeroMemory(send_buffer, send_buffer_length);
 	//拷贝mac地址
-	NdisMoveMemory(&send_buffer->Source, filter->module.mac_addr.Address, sizeof(send_buffer->Source));
-	send_buffer->Destination = *dest_mac;
-	send_buffer->Type = ntohs(ETHERNET_TYPE_LCXL_CHECKING);
-	return CreateNBL(filter, send_buffer, send_buffer_length, nbl);
+	NdisMoveMemory(&send_buffer->eth_header.Source, filter->module.mac_addr.Address, sizeof(send_buffer->eth_header.Source));
+	send_buffer->eth_header.Destination = *dest_mac;
+	send_buffer->eth_header.Type = ntohs(ETHERNET_TYPE_LCXL_CHECKING);
+	send_buffer->checking_header = *checking_header;
+	return CreateNBL(filter, &send_buffer->eth_header, send_buffer_length, nbl);
 }
 
 PNET_BUFFER_LIST DropOwnerNBL(IN PLCXL_FILTER filter, IN PNET_BUFFER_LIST NetBufferLists)

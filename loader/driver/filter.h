@@ -481,6 +481,13 @@ typedef struct _PROCESS_NBL_RESULT{
 	} data;//返回数据
 } PROCESS_NBL_RESULT, *PPROCESS_NBL_RESULT;//数据包处理结果
 
+typedef struct _ETHERNET_LCXL_CHECKING {
+	ETHERNET_HEADER	eth_header;//包含了以太网头
+	LCXL_CHECKING_HEADER checking_header;//包含了检测帧头
+} ETHERNET_LCXL_CHECKING, *PETHERNET_LCXL_CHECKING;
+
+VOID FilterWorkThread(IN PVOID StartContext);
+
 //************************************
 // 简介: 处理此NBL
 // 返回: BOOLEAN TRUE:已处理，不要交给上层驱动程序；FALSE:未处理，交给上层处理程序
@@ -500,7 +507,7 @@ VOID ProcessNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN PETHERNET_HEADER 
 // 参数: IN UINT data_length
 // 参数: IN OUT PPROCESS_NBL_RESULT return_data
 //************************************
-VOID ProcessCheckingNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN PETHERNET_HEADER eth_header, IN UINT data_length, IN OUT PPROCESS_NBL_RESULT return_data);
+VOID ProcessCheckingNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN PETHERNET_LCXL_CHECKING eth_header, IN OUT PPROCESS_NBL_RESULT return_data);
 
 //************************************
 // 简介: 处理ARP请求
@@ -564,7 +571,7 @@ NTSTATUS CreateNBL(IN PLCXL_FILTER filter, IN PETHERNET_HEADER send_buffer, IN U
 // 参数: IN PSERVER_INFO_LIST_ENTRY server_info
 // 参数: OUT PNET_BUFFER_LIST * nbl
 //************************************
-NTSTATUS CreateCheckingNBL(IN PLCXL_FILTER filter, IN PDL_EUI48 dest_mac, OUT PNET_BUFFER_LIST *nbl);
+NTSTATUS CreateCheckingNBL(IN PLCXL_FILTER filter, IN PDL_EUI48 dest_mac, IN PLCXL_CHECKING_HEADER checking_header, OUT PNET_BUFFER_LIST *nbl);
 
 PNET_BUFFER_LIST DropOwnerNBL(IN PLCXL_FILTER filter, IN PNET_BUFFER_LIST NetBufferLists);
 //************************************
@@ -574,6 +581,9 @@ PNET_BUFFER_LIST DropOwnerNBL(IN PLCXL_FILTER filter, IN PNET_BUFFER_LIST NetBuf
 //************************************
 PLCXL_FILTER FindFilter(IN NET_LUID miniport_net_luid);
 
+__inline PLCXL_FILTER GetFilterByListEntry(IN PLIST_ENTRY list_entry) {
+	return CONTAINING_RECORD(list_entry, LCXL_FILTER, filter_module_link);
+}
 //************************************
 // 简介: 锁定filter
 // 返回: void

@@ -441,24 +441,39 @@ FilterDeviceIoControl(
 				status = STATUS_INFO_LENGTH_MISMATCH;
 			}
 			break;
-			/*
-		case IOCTL_SERVER_SET_ROUTER_MAC_ADDR://服务器角色：设置负载均衡器的mac地址
-			if (sizeof(APP_SET_ROUTER_MAC_ADDR) == input_buffer_length) {
-				PAPP_SET_ROUTER_MAC_ADDR router_mac_addr = (PAPP_SET_ROUTER_MAC_ADDR)input_buffer;
+			
+		case IOCTL_ROUTER_SET_SERVER_CHECK://负载均衡器角色
+			if (sizeof(APP_SET_SERVER_CHECK) == input_buffer_length) {
+				PAPP_SET_SERVER_CHECK set_server_check = (PAPP_SET_SERVER_CHECK)input_buffer;
 
 				LockLCXLLockList(&g_filter_list);
-				filter = FindFilter(router_mac_addr->miniport_net_luid);
+				filter = FindFilter(set_server_check->miniport_net_luid);
 				if (filter != NULL) {
 					KLOCK_QUEUE_HANDLE lock_handle;
 
 					LockFilter(filter, &lock_handle);
-					filter->module.router_mac_addr = router_mac_addr->mac_addr;
+					filter->module.server_check = set_server_check->server_check;
 					UnlockFilter(&lock_handle);
 				}
 				UnlockLCXLLockList(&g_filter_list);
 			}
 			break;
-			*/
+		case IOCTL_ROUTER_SET_ROUTING_ALGORITHM://负载均衡器角色
+			if (sizeof(APP_SET_ROUTING_ALGORITHM) == input_buffer_length) {
+				PAPP_SET_ROUTING_ALGORITHM set_routing_algorithm = (PAPP_SET_ROUTING_ALGORITHM)input_buffer;
+
+				LockLCXLLockList(&g_filter_list);
+				filter = FindFilter(set_routing_algorithm->miniport_net_luid);
+				if (filter != NULL) {
+					KLOCK_QUEUE_HANDLE lock_handle;
+
+					LockFilter(filter, &lock_handle);
+					filter->module.routing_algorithm = set_routing_algorithm->routing_algorithm;
+					UnlockFilter(&lock_handle);
+				}
+				UnlockLCXLLockList(&g_filter_list);
+			}
+			break;
 		//!添加代码!
         default:
 			status = STATUS_INVALID_PARAMETER;

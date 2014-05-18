@@ -37,3 +37,17 @@ PLIST_ENTRY GetListEntryByIndex(IN PLIST_ENTRY head_entry, IN INT index)
 		return entry;
 	}
 }
+
+INT GetListEntryIndex(IN PLIST_ENTRY head_entry, IN PLIST_ENTRY list_entry) 
+{
+	INT i = 0;
+	PLIST_ENTRY curr_entry = head_entry->Flink;
+	while (curr_entry != head_entry) {
+		if (curr_entry == list_entry) {
+			break;
+		}
+		curr_entry = curr_entry->Flink;
+		i++;
+	}
+	return (curr_entry != head_entry) ? i : -1;
+}

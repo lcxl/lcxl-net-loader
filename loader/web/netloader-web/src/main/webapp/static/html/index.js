@@ -30,7 +30,9 @@ define(function(require, exports, module) {
 		var serverstate = History.normalizeState({url:"?nav=server"});
 		var logonstate = History.normalizeState({url:"?nav=logon"});
 		//
-		if ($.cookie("host") && $.cookie("port")) {
+		var host = $.cookie("host");
+		var port = $.cookie("port");
+		if (host != null && port  != null) {
 			if (state.url == modulestate.url) {
 				var ModulePage = require("module-page");
 				new ModulePage(".lcxlpage");

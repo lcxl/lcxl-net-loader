@@ -7,6 +7,7 @@ abstract:
 服务器相关头文件
 */
 #include "../../common/driver/ref_lock_list.h"
+#include "../../common/kalman.h"
 #define TAG_SERVER      'SERV'
 
 
@@ -28,10 +29,14 @@ typedef struct _SERVER_INFO_LIST_ENTRY
 
 //负载均衡算法用到的数据结构
 typedef struct _ROUTING_ALGORITHM_DATA{
+	
 	struct {
 		INT		current_server_index;//了目前轮询到的服务器的序号
 	} ra_poll;//启用RA_POLL负载均衡算法时所用到的数据
-	
+	struct {
+
+		KALMAN_STATE kalman_state;//kalman状态
+	} ra_fast_respnse; //启用RA_FAST_RESPONSE负载均衡算法时所用到的数据
 } ROUTING_ALGORITHM_DATA, *PROUTING_ALGORITHM_DATA;
 
 extern NPAGED_LOOKASIDE_LIST  g_server_mem_mgr;
@@ -120,7 +125,16 @@ __inline BOOLEAN ServerIsAvaliable(IN PSERVER_INFO_LIST_ENTRY server_info, IN IN
 		(server_info->info.status&SS_DELETED) == 0;
 }
 
-PSERVER_INFO_LIST_ENTRY FindAvaliableServerFormCurrentServer(IN PLCXL_LOCK_LIST server_list, IN PSERVER_INFO_LIST_ENTRY server);
+
+//************************************
+// 简介: 从当前服务器开始寻找可用的服务器
+// 返回: PSERVER_INFO_LIST_ENTRY
+// 参数: IN PLCXL_LOCK_LIST server_list
+// 参数: IN PSERVER_INFO_LIST_ENTRY server
+// 参数: IN INT ip_mode
+// 参数: IN BOOLEAN checking_last 如果此值为TRUE，则优先选择状态不为checking的服务器，否则checking服务器和正常的服务器具有一样的优先权
+//************************************
+PSERVER_INFO_LIST_ENTRY FindAvaliableServerFormCurrentServer(IN PLCXL_LOCK_LIST server_list, IN PSERVER_INFO_LIST_ENTRY server, IN INT ip_mode, IN BOOLEAN checking_last);
 
 //************************************
 // 简介: 选择一台最适合的服务器

@@ -29,6 +29,8 @@ typedef struct _LCXL_MODULE_SETTING_INFO {
 	INT						lcxl_role;
 	//虚拟地址IPv4/IPv6(非多线程安全)
 	LCXL_ADDR_INFO			virtual_addr;
+	//当前服务器性能
+	LCXL_SERVER_PERFORMANCE	performance;
 	//------------------------LCXL_ROUTER角色------------------------
 	//服务器列表，SERVER_INFO_LIST_ENTRY
 	LCXL_LOCK_LIST			server_list;
@@ -45,6 +47,9 @@ typedef struct _LCXL_MODULE_SETTING_INFO {
 
 typedef struct _LCXL_SETTING{
 	LARGE_INTEGER		frequency;//KeQueryPerformanceCounter的每秒时钟频率，用于计算路由表的生存周期
+	HANDLE				thread_handle;//线程句柄
+	PETHREAD			thread_object;//线程对象
+	KEVENT				thread_exit_event;//线程退出事件
 } LCXL_SETTING, *PLCXL_SETTING;//驱动设置
 
 //删除路由信息

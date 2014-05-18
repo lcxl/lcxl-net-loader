@@ -745,7 +745,8 @@ void CNetLoaderService::SetModuleInfo(PCONFIG_MODULE module)
 				OutputDebugStr(_T("lnlAddServer(%I64d) failed:error code=%d\n"), module->module.miniport_net_luid, GetLastError());
 			}
 		}
-
+		lnlSetServerCheck(module->module.miniport_net_luid, &module->module.server_check);
+		lnlSetRoutingAlgorithm(module->module.miniport_net_luid, module->module.routing_algorithm);
 		if (module->thread_handle == NULL) {
 			PVIP_CHECK_CONTEXT context = new VIP_CHECK_CONTEXT();
 
@@ -755,7 +756,9 @@ void CNetLoaderService::SetModuleInfo(PCONFIG_MODULE module)
 
 			module->thread_handle = (HANDLE)_beginthreadex(NULL, 0, &RouterVipCheckThread, context, 0, NULL);
 			if (module->thread_handle == NULL) {
-				CloseHandle(context->exit_event);
+				if (context->exit_event != 0) {
+					CloseHandle(context->exit_event);
+				}
 				delete context;
 			} else {
 				module->exit_event = context->exit_event;

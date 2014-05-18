@@ -26,7 +26,7 @@ VOID InitRouteListEntry(IN OUT PLCXL_ROUTE_LIST_ENTRY route_info, IN INT ipMode,
 
 	//获取时间戳
 	timestamp = KeQueryPerformanceCounter(NULL);
-	route_info->timestamp = timestamp;
+	route_info->recv_timestamp = timestamp;
 	route_info->src_ip.ip_mode = ipMode;
 	route_info->status = RS_NORMAL;
 	route_info->dst_server = server_info;
@@ -82,14 +82,14 @@ PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry(IN PLIST_ENTRY route_list, IN INT route
 				//查看是否匹配
 				if (RtlCompareMemory(&route_info->src_ip.addr.ip_4, &ip_header_union.ipv4_header->SourceAddress, sizeof(ip_header_union.ipv4_header->SourceAddress)) == sizeof(ip_header_union.ipv4_header->SourceAddress)) {
 					//更新时间戳
-					route_info->timestamp = timestamp;
+					route_info->recv_timestamp = timestamp;
 					return route_info;
 				}
 				break;
 			case IM_IPV6:
 				if (RtlCompareMemory(&route_info->src_ip.addr.ip_6, &ip_header_union.ipv6_header->SourceAddress, sizeof(ip_header_union.ipv6_header->SourceAddress)) == sizeof(ip_header_union.ipv6_header->SourceAddress)) {
 					//更新时间戳
-					route_info->timestamp = timestamp;
+					route_info->recv_timestamp = timestamp;
 					return route_info;
 				}
 				break;
@@ -100,7 +100,7 @@ PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry(IN PLIST_ENTRY route_list, IN INT route
 		}
 		Link = Link->Flink;
 		//如果路由表项超时
-		if ((timestamp.QuadPart - route_info->timestamp.QuadPart) > route_timeout*g_setting.frequency.QuadPart) {
+		if ((timestamp.QuadPart - route_info->recv_timestamp.QuadPart) > route_timeout*g_setting.frequency.QuadPart) {
 			KdPrint(("SYS:GetRouteListEntry route timeout\n"));
 			//删除超时的路由表项
 			DeleteRouteListEntry(route_info, server_list);

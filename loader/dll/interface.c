@@ -116,6 +116,28 @@ BOOL WINAPI lnlDelServer(IN NET_LUID miniport_net_luid, IN PIF_PHYSICAL_ADDRESS 
 	
 	return lnlDeviceIoControl(IOCTL_ROUTER_DEL_SERVER, &del_server, sizeof(del_server), NULL, 0, &data_size);
 }
+
+BOOL WINAPI lnlSetServerCheck(IN NET_LUID miniport_net_luid, IN PLCXL_SERVER_CHECK server_check)
+{
+	DWORD data_size = 0;
+	APP_SET_SERVER_CHECK set_server_check;
+
+	set_server_check.miniport_net_luid = miniport_net_luid;
+	set_server_check.server_check = *server_check;
+
+	return lnlDeviceIoControl(IOCTL_ROUTER_SET_SERVER_CHECK, &set_server_check, sizeof(set_server_check), NULL, 0, &data_size);
+}
+
+BOOL WINAPI lnlSetRoutingAlgorithm(IN NET_LUID miniport_net_luid, IN INT routing_algorithm)
+{
+	DWORD data_size = 0;
+	APP_SET_ROUTING_ALGORITHM set_routing_algorithm;
+
+	set_routing_algorithm.miniport_net_luid = miniport_net_luid;
+	set_routing_algorithm.routing_algorithm = routing_algorithm;
+	return lnlDeviceIoControl(IOCTL_ROUTER_SET_ROUTING_ALGORITHM, &set_routing_algorithm, sizeof(set_routing_algorithm), NULL, 0, &data_size);
+}
+
 /*
 BOOL WINAPI lnlSetRouterMacAddr(IN NET_LUID miniport_net_luid, PIF_PHYSICAL_ADDRESS mac_addr)
 {

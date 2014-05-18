@@ -70,11 +70,17 @@ extern "C" {
 	} APP_DEL_SERVER, *PAPP_DEL_SERVER;
 
 	//在服务器中设置负载均衡器的mac地址
-	typedef struct _APP_SET_ROUTER_MAC_ADDR {
+	typedef struct _APP_SET_SERVER_CHECK {
 		NET_LUID			miniport_net_luid;
-		//MAC地址
-		IF_PHYSICAL_ADDRESS	mac_addr;
-	} APP_SET_ROUTER_MAC_ADDR, *PAPP_SET_ROUTER_MAC_ADDR;
+		//服务器检测设置
+		LCXL_SERVER_CHECK	server_check;
+	} APP_SET_SERVER_CHECK, *PAPP_SET_SERVER_CHECK;
+
+	typedef struct _APP_SET_ROUTING_ALGORITHM {
+		NET_LUID			miniport_net_luid;
+		//负载均衡算法
+		INT					routing_algorithm;
+	} APP_SET_ROUTING_ALGORITHM, *PAPP_SET_ROUTING_ALGORITHM;
 #pragma pack(pop)
 #ifdef __cplusplus
 }
