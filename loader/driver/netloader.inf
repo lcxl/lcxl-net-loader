@@ -27,16 +27,16 @@ DriverVer       = 10/01/2002,6.0.5019.0
 [Manufacturer]
 %Msft%=MSFT,NTx86,NTia64,NTamd64
 
-; TODO: Change the "MS_NdisLwf" name below to identify your component.
+; TODO: Change the "LL_NetLoader" name below to identify your component.
 ; This name can be used with netcfg.exe to install/uninstall the driver.
 [MSFT.NTx86]
-%NetLoader_Desc%=Install, MS_NdisLwf
+%NetLoader_Desc%=Install, LL_NetLoader
 
 [MSFT.NTia64]
-%NetLoader_Desc%=Install, MS_NdisLwf
+%NetLoader_Desc%=Install, LL_NetLoader
 
 [MSFT.NTamd64]
-%NetLoader_Desc%=Install, MS_NdisLwf
+%NetLoader_Desc%=Install, LL_NetLoader
 
 ;-------------------------------------------------------------------------
 ; Installation Section

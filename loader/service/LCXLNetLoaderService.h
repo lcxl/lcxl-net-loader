@@ -6,8 +6,14 @@
 #include "../../component/jsoncpp/include/json/json.h"
 
 #define CONFIG_FILE_NAME "lcxlnetloader.xml"
+#define NETLOADER_DRIVER_COMPONENT_ID L"LL_NetLoader"
+#define NETLOADER_SERVER_NAME _T("NetLoader")
+#define NETLOADER_SERVER_DISPLAY_NAME _T("LCXL NetLoader Service")
 
-
+typedef enum _NET_CFG_OPT {
+	NC_INSTALL,
+	NC_UNINSTALL
+} NET_CFG_OPT, *PNET_CFG_OPT;
 
 class CNetLoaderService : public CNetServiceBase {
 private:
@@ -40,7 +46,21 @@ protected:
 		_In_ MIB_NOTIFICATION_TYPE NotificationType
 		);
 	void SetModuleInfo(PCONFIG_MODULE module);
+	//************************************
+	// 简介: 
+	// 返回: HRESULT
+	// 参数: NET_CFG_OPT net_cfg_opt
+	// 参数: LPCWSTR pszwInfId
+	//************************************
+	HRESULT NetCfgSetup(NET_CFG_OPT net_cfg_opt, LPCWSTR pszwInfId);
 public:
+	bool StartService();
+	bool InstallService();
+	bool InstallDriver();
+	bool Install();
+	bool UninstallService();
+	bool UninstallDriver();
+	bool Uninstall();
 };
 
 typedef struct _VIP_CHECK_CONTEXT {

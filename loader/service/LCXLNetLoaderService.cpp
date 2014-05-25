@@ -10,6 +10,9 @@
 #include <Ws2tcpip.h>
 #include <process.h>
 #include <Icmpapi.h>
+#include <Netcfgx.h>
+#include <devguid.h>
+#include <Setupapi.h>
 
 TCHAR LCXLSHADOW_SER_NAME[] = _T("LCXLNetLoaderService");
 
@@ -33,7 +36,6 @@ int _tmain(int argc, _TCHAR* argv[])
 	UNREFERENCED_PARAMETER(argc);
 	UNREFERENCED_PARAMETER(argv);
 	SetErrorMode(SEM_FAILCRITICALERRORS);//使程序出现异常时不报错
-	OutputDebugStr(_T("sizeof APP_MODULE=%d, sizeof router_mac_addr=%d, sizeof lcxl_addr_info=%d, sizeof CONFIG_SERVER=%d"), sizeof(APP_MODULE), sizeof(IF_PHYSICAL_ADDRESS), sizeof(LCXL_ADDR_INFO), sizeof(CONFIG_SERVER));
 	//初始化一个分配表  
 	printf("%s\n", "输入任意字符开始");
 	_getch();
@@ -108,9 +110,16 @@ bool CNetLoaderService::PreSerRun()
 		std::tstring action =__targv[1];
 		if (action == _T("install")) {
 			//安装驱动，服务程序等
+			Install();
 		} else if (action == _T("uninstall")) {
 			//卸载驱动，服务程序等
+			Uninstall();
+		} else if (action == _T("startservice")) {
+#ifndef LCXL_SHADOW_SER_TEST
+			StartService();
+#endif
 		}
+		return false;
 	}
 
 	//加载配置文件
@@ -619,6 +628,7 @@ bool CNetLoaderService::CheckAndSetVip(NET_LUID miniport_net_luid, IF_INDEX ifin
 				//case IP_DEST_PROT_UNREACHABLE://协议不可达
 				//case IP_DEST_PORT_UNREACHABLE://端口不可达
 				case IP_REQ_TIMED_OUT://超时
+				//case 1231://不能访问网络位置，
 					is_router_down = TRUE;
 					break;
 				default:
@@ -687,6 +697,7 @@ bool CNetLoaderService::CheckAndSetVip(NET_LUID miniport_net_luid, IF_INDEX ifin
 					//case IP_DEST_PROT_UNREACHABLE://协议不可达
 					//case IP_DEST_PORT_UNREACHABLE://端口不可达
 				case IP_REQ_TIMED_OUT:
+				//case 1231://不能访问网络位置，
 					//超时，负载均衡器已经当掉
 					is_router_down = TRUE;
 				default:
@@ -800,5 +811,213 @@ void CNetLoaderService::SetModuleInfo(PCONFIG_MODULE module)
 		break;
 	}
 }
+
+
+HRESULT CNetLoaderService::NetCfgSetup(NET_CFG_OPT net_cfg_opt, LPCWSTR pszwInfId)
+{
+	INetCfg      *pnc = NULL;
+
+	HRESULT      hr;
+
+	hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+	if (hr != S_OK && hr != S_FALSE) {
+		return false;
+	}
+	hr = CoCreateInstance(CLSID_CNetCfg,
+		NULL, CLSCTX_INPROC_SERVER,
+		IID_INetCfg,
+		(void**)&pnc);
+	if (SUCCEEDED(hr)) {
+		INetCfgLock* pncl = NULL;
+
+		hr = pnc->QueryInterface(IID_INetCfgLock, (void**)&pncl);
+		if (SUCCEEDED(hr)) {
+			LPWSTR pLock = NULL;
+			hr = pncl->AcquireWriteLock(5000/*5s*/, L"Net"/*can be any name*/, &pLock);
+			if (SUCCEEDED(hr)) {
+				INetCfgClassSetup   *pncClassSetup = NULL;
+
+				pnc->Initialize(NULL);
+				hr = pnc->QueryNetCfgClass(&GUID_DEVCLASS_NETSERVICE,
+					IID_INetCfgClassSetup,
+					(void**)&pncClassSetup);
+				if (SUCCEEDED(hr)) {
+					OBO_TOKEN OboToken;
+					ZeroMemory(&OboToken, sizeof(OboToken));
+					OboToken.Type = OBO_USER;
+
+					switch (net_cfg_opt) {
+					case NC_INSTALL:
+					{
+						
+						//安装驱动
+						hr = pncClassSetup->Install(pszwInfId,
+							&OboToken,
+							0,
+							0,
+							0,
+							0,
+							NULL);
+					}
+						break;
+					case NC_UNINSTALL:
+					{
+						INetCfgComponent * pComponent;
+						hr = pnc->FindComponent(pszwInfId, &pComponent);
+						if (SUCCEEDED(hr) && pComponent != NULL) {
+							hr = pncClassSetup->DeInstall(pComponent, &OboToken, NULL);
+
+						}
+						
+					}
+						break;
+					default:
+						hr = E_INVALIDARG;
+						break;
+					}
+					
+					if (SUCCEEDED(hr)) {
+						hr = pnc->Apply();
+					}
+					pncClassSetup->Release();
+				}
+				pnc->Uninitialize();
+				pncl->ReleaseWriteLock();
+			}
+
+			pncl->Release();
+		}
+		pnc->Release();
+	}
+	CoUninitialize();
+	return hr;
+}
+
+
+bool CNetLoaderService::StartService()
+{
+	bool resu = false;
+
+	SC_HANDLE scm_mgr_handle = OpenSCManager(NULL, NULL, SC_MANAGER_ALL_ACCESS);
+	if (scm_mgr_handle == NULL) {
+		return false;
+	}
+
+	SC_HANDLE ser_handle = OpenService(scm_mgr_handle, NETLOADER_SERVER_NAME, SERVICE_ALL_ACCESS);
+	if (ser_handle != NULL) {
+		// 删除服务
+		if (::StartService(ser_handle, 0, NULL)) {
+			resu = true;
+		}
+		CloseServiceHandle(ser_handle);
+	}
+	CloseServiceHandle(scm_mgr_handle);
+	return resu;
+}
+
+
+bool CNetLoaderService::InstallService()
+{
+	bool resu = false;
+
+	SC_HANDLE scm_mgr_handle = OpenSCManager(NULL, NULL, SC_MANAGER_ALL_ACCESS);
+	if (scm_mgr_handle == NULL) {
+		return false;
+	}
+	std::tstring app_path = GetAppFilePath();
+	SC_HANDLE ser_handle = CreateService(scm_mgr_handle, NETLOADER_SERVER_NAME,
+		NETLOADER_SERVER_DISPLAY_NAME, SC_MANAGER_ALL_ACCESS, SERVICE_WIN32_OWN_PROCESS,
+		SERVICE_AUTO_START, SERVICE_ERROR_CRITICAL, app_path.c_str(), NULL, NULL,NULL, NULL, NULL);
+	if (ser_handle != NULL) {
+		CloseServiceHandle(ser_handle);
+		resu = true;
+	}
+	CloseServiceHandle(scm_mgr_handle);
+	return resu;
+}
+
+bool CNetLoaderService::InstallDriver()
+{
+	bool resu = false;
+	TCHAR DestinationInfFileName[MAX_PATH];
+	PTSTR DestinationInfFileNameComponent;
+	//将驱动及配置文件复制到系统中
+	if (!SetupCopyOEMInf((ExtractFilePath(GetAppFilePath()) + _T("netloader.inf")).c_str(), // path to inf file
+		ExtractFilePath(GetAppFilePath()).c_str(), // dir containing driver binary
+		SPOST_PATH,
+		0,
+		DestinationInfFileName,
+		MAX_PATH,
+		NULL,
+		&DestinationInfFileNameComponent)) {
+		OutputDebugStr(_T("CNetLoaderService::Install SetupCopyOEMInf failed(0x%08x)\n"), GetLastError());
+		return false;
+	}
+	OutputDebugStr(_T("CNetLoaderService::Install DestinationInfFileName=%s\n"), DestinationInfFileName);
+	OutputDebugStr(_T("CNetLoaderService::Install DestinationInfFileNameComponent=%s\n"), DestinationInfFileNameComponent);
+	
+	
+	resu = SUCCEEDED(NetCfgSetup(NC_INSTALL, NETLOADER_DRIVER_COMPONENT_ID));
+
+	
+	return resu;
+}
+
+bool CNetLoaderService::Install()
+{
+	if (InstallDriver()) {
+#ifndef LCXL_SHADOW_SER_TEST
+		if (!InstallService()) {
+			UninstallDriver();
+			return false;
+		}
+#endif // !LCXL_SHADOW_SER_TEST
+		return true;
+	}
+	return false;
+}
+
+bool CNetLoaderService::UninstallService()
+{
+	bool resu = false;
+
+	SC_HANDLE scm_mgr_handle = OpenSCManager(NULL, NULL, SC_MANAGER_ALL_ACCESS);
+	if (scm_mgr_handle == NULL) {
+		return false;
+	}
+	
+	SC_HANDLE ser_handle = OpenService(scm_mgr_handle, NETLOADER_SERVER_NAME, SERVICE_ALL_ACCESS);
+	if (ser_handle != NULL) {
+		// 删除服务
+		if (DeleteService(ser_handle)) {
+			resu = true;
+		}
+		CloseServiceHandle(ser_handle);
+		
+	}
+	CloseServiceHandle(scm_mgr_handle);
+	return resu;
+}
+
+bool CNetLoaderService::UninstallDriver()
+{
+	bool resu;
+
+	resu = SUCCEEDED(NetCfgSetup(NC_UNINSTALL, NETLOADER_DRIVER_COMPONENT_ID));
+	return resu;
+}
+
+
+bool CNetLoaderService::Uninstall()
+{
+	bool resu = true;
+#ifndef LCXL_SHADOW_SER_TEST
+	resu = UninstallService();
+#endif
+	resu = UninstallDriver() && resu;
+	return resu;
+}
+
+
 
 

@@ -2511,7 +2511,7 @@ VOID FilterWorkThread(IN PVOID StartContext)
 	NTSTATUS status;
 
 	KdPrint(("SYS:FilterWorkThread started.\n"));
-	timeout.QuadPart = 1 * 1000 * 1000 * 10;//超时设置为1秒
+	timeout.QuadPart = -1 * 1000 * 1000 * 10;//超时设置为1秒
 	while (status = KeWaitForSingleObject(exit_event, Executive, KernelMode, FALSE, &timeout), NT_SUCCESS(status)) {
 		if (status == STATUS_SUCCESS) {
 			//退出事件激活，退出线程

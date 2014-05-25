@@ -8,7 +8,7 @@
     </TypeIdentifier>
   </Class>
   <Class Name="CNetServiceBase">
-    <Position X="15.5" Y="4.75" Width="2.5" />
+    <Position X="15.25" Y="4.75" Width="2.5" />
     <TypeIdentifier>
       <HashCode>IAAQAAQAAAQCIIAAAgAAAQACAAAAABIAAAAEAgAgAAA=</HashCode>
       <FileName>E:\LCXLCode\CPP\lcxl-net-loader\common\service\lcxl_net_service.h</FileName>
@@ -22,7 +22,7 @@
     </TypeIdentifier>
   </Class>
   <Class Name="CNetLoaderService">
-    <Position X="15.25" Y="9.25" Width="2.75" />
+    <Position X="15" Y="9" Width="2.75" />
     <TypeIdentifier>
       <HashCode>AAAAgAQAAAAAIIQAAAAgAAAjAEAgABQAIAAAIAAEAAg=</HashCode>
       <FileName>LCXLNetLoaderService.h</FileName>
@@ -192,7 +192,7 @@
   <Struct Name="_LCXL_SERVER_PERFORMANCE">
     <Position X="25.25" Y="17.25" Width="2.5" />
     <TypeIdentifier>
-      <HashCode>AAAAAIAAAAgAABAAAAAAAAAAAAIAAAAAAAAAAAAAAAA=</HashCode>
+      <HashCode>AAAAAIAAAAgAABAAAAAAAAAAIAIAAAAAAAAAAAAAAAA=</HashCode>
       <FileName>E:\LCXLCode\CPP\lcxl-net-loader\common\lcxl_type.h</FileName>
     </TypeIdentifier>
   </Struct>
@@ -611,13 +611,6 @@
   </Typedef>
   <Typedef Name="PAPP_DEL_SERVER" Collapsed="true">
     <Position X="18.75" Y="9.5" Width="3" />
-    <TypeIdentifier>
-      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
-      <FileName>E:\LCXLCode\CPP\lcxl-net-loader\loader\common\drv_interface_type.h</FileName>
-    </TypeIdentifier>
-  </Typedef>
-  <Typedef Name="APP_SET_ROUTER_MAC_ADDR" Collapsed="true">
-    <Position X="18" Y="4.5" Width="4.5" />
     <TypeIdentifier>
       <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
       <FileName>E:\LCXLCode\CPP\lcxl-net-loader\loader\common\drv_interface_type.h</FileName>
