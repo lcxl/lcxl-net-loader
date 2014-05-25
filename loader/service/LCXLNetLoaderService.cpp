@@ -598,7 +598,7 @@ bool CNetLoaderService::CheckAndSetVip(NET_LUID miniport_net_luid, IF_INDEX ifin
 		if (!is_found) {
 			return false;
 		}
-
+		
 		switch (Address->si_family)
 		{
 		case AF_INET:
@@ -622,34 +622,12 @@ bool CNetLoaderService::CheckAndSetVip(NET_LUID miniport_net_luid, IF_INDEX ifin
 				3000);
 			if (ReplyDataLen > 0) {
 				PICMP_ECHO_REPLY pEchoReply = (PICMP_ECHO_REPLY)ReplyBuffer;
-				switch (pEchoReply->Status) {
-				case IP_DEST_HOST_UNREACHABLE://主机名不可达
-				case IP_DEST_NET_UNREACHABLE://网络不可达
-				//case IP_DEST_PROT_UNREACHABLE://协议不可达
-				//case IP_DEST_PORT_UNREACHABLE://端口不可达
-				case IP_REQ_TIMED_OUT://超时
-				//case 1231://不能访问网络位置，
-					is_router_down = TRUE;
-					break;
-				default:
-					
-					break;
-				}
+
+				dwError = pEchoReply->Status;
 			} else {
 				
 				dwError = GetLastError();
-				switch (dwError)
-				{
-				case IP_DEST_HOST_UNREACHABLE://主机名不可达
-				case IP_DEST_NET_UNREACHABLE://网络不可达
-					//case IP_DEST_PROT_UNREACHABLE://协议不可达
-					//case IP_DEST_PORT_UNREACHABLE://端口不可达
-				case IP_REQ_TIMED_OUT:
-					//超时，负载均衡器已经当掉
-					is_router_down = TRUE;
-				default:
-					break;
-				}
+				
 			}
 		}
 			break;
@@ -676,33 +654,9 @@ bool CNetLoaderService::CheckAndSetVip(NET_LUID miniport_net_luid, IF_INDEX ifin
 				3000);
 			if (ReplyDataLen > 0) {
 				PICMPV6_ECHO_REPLY pEchoReply = (PICMPV6_ECHO_REPLY)ReplyBuffer;
-				switch (pEchoReply->Status) {
-				case IP_DEST_HOST_UNREACHABLE://主机名不可达
-				case IP_DEST_NET_UNREACHABLE://网络不可达
-					//case IP_DEST_PROT_UNREACHABLE://协议不可达
-					//case IP_DEST_PORT_UNREACHABLE://端口不可达
-				case IP_REQ_TIMED_OUT://超时
-					is_router_down = TRUE;
-					break;
-				default:
-
-					break;
-				}
+				dwError = pEchoReply->Status;
 			} else {
 				dwError = GetLastError();
-				switch (dwError)
-				{
-				case IP_DEST_HOST_UNREACHABLE://主机名不可达
-				case IP_DEST_NET_UNREACHABLE://网络不可达
-					//case IP_DEST_PROT_UNREACHABLE://协议不可达
-					//case IP_DEST_PORT_UNREACHABLE://端口不可达
-				case IP_REQ_TIMED_OUT:
-				//case 1231://不能访问网络位置，
-					//超时，负载均衡器已经当掉
-					is_router_down = TRUE;
-				default:
-					break;
-				}
 			}
 		}
 			break;
@@ -714,6 +668,19 @@ bool CNetLoaderService::CheckAndSetVip(NET_LUID miniport_net_luid, IF_INDEX ifin
 		}
 		
 		free(ReplyBuffer);
+
+		switch (dwError)
+		{
+		case IP_DEST_HOST_UNREACHABLE://主机名不可达
+		case IP_DEST_NET_UNREACHABLE://网络不可达
+			//case IP_DEST_PROT_UNREACHABLE://协议不可达
+			//case IP_DEST_PORT_UNREACHABLE://端口不可达
+		case IP_REQ_TIMED_OUT:
+			//超时，负载均衡器已经当掉
+			is_router_down = TRUE;
+		default:
+			break;
+		}
 		//如果负载均衡器当掉
 		if (is_router_down) {
 			OutputDebugStr(_T("CNetLoaderService::CheckAndSetVip:the Active Router is down.\n"));
