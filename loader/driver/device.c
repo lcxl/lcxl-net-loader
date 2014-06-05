@@ -137,8 +137,6 @@ FilterDeviceIoControl(
     PUCHAR                      input_buffer;
     PUCHAR                      output_buffer;
     ULONG                       input_buffer_length, output_buffer_length;
-    PLIST_ENTRY                 link;
-    PUCHAR                      info;
     ULONG                       InfoLength = 0;
     PLCXL_FILTER                filter = NULL;
 
@@ -164,98 +162,60 @@ FilterDeviceIoControl(
 	output_buffer_length = irp_sp->Parameters.DeviceIoControl.OutputBufferLength;
     switch (irp_sp->Parameters.DeviceIoControl.IoControlCode) {
 
-        case IOCTL_FILTER_RESTART_ALL:
-            break;
+        case IOCTL_RESTART_MODULE:
+			if (input_buffer_length == sizeof(NET_LUID)) {
+				PNET_LUID miniport_net_luid = (PNET_LUID)input_buffer;
 
-        case IOCTL_FILTER_RESTART_ONE_INSTANCE:
-            filter = filterFindFilterModule (input_buffer, input_buffer_length);
-
-            if (filter == NULL) {
-
-                break;
-            }
-            NdisFRestartFilter(filter->filter_handle);
-            break;
-
-        case IOCTL_FILTER_ENUERATE_ALL_INSTANCES:
-
-            info = output_buffer;
-			LockLCXLLockList(&g_filter_list);
-            
-            link = GetListofLCXLLockList(&g_filter_list)->Flink;
-			//遍历列表
-			while (link != GetListofLCXLLockList(&g_filter_list)) {
-                filter = CONTAINING_RECORD(link, LCXL_FILTER, filter_module_link);
-
-                InfoLength += (filter->module.filter_module_name->Length + sizeof(USHORT));
-
-                if (InfoLength <= output_buffer_length) {
-					*(PUSHORT)info = filter->module.filter_module_name->Length;
-                    NdisMoveMemory(info + sizeof(USHORT),
-						(PUCHAR)(filter->module.filter_module_name->Buffer),
-						filter->module.filter_module_name->Length);
-
-					info += (filter->module.filter_module_name->Length + sizeof(USHORT));
-                }
-                link = link->Flink;
-            }
-			UnlockLCXLLockList(&g_filter_list);
-            if (InfoLength <= output_buffer_length) {
-                status = NDIS_STATUS_SUCCESS;
-            }
-            //
-            // Buffer is small
-            //
-            else {
-                status = STATUS_BUFFER_TOO_SMALL;
-            }
-            break;
-		//添加代码
-		/*
-		case IOCTL_GET_ROLE:
-		{
-			if (output_buffer_length == sizeof(INT)) {
-				
-				*(PINT)output_buffer = g_setting.lcxl_role;
-				InfoLength = sizeof(INT);
+				LockLcxlList(&g_filter_list);
+				filter = FindFilter(*miniport_net_luid);
+				if (filter != NULL) {
+					//重启模块
+					NdisFRestartFilter(filter->filter_handle);
+				} else {
+					//设备不存在
+					status = STATUS_DEVICE_DOES_NOT_EXIST;
+				}
+				UnlockLcxlList(&g_filter_list);
 			}
-		}
-			break;
-			*/
+            break;
+
 		case IOCTL_SET_ROLE:
 			if (input_buffer_length == sizeof(APP_SET_ROLE)) {
 				PAPP_SET_ROLE set_role = (PAPP_SET_ROLE)input_buffer;
 
 				//锁定列表数量
-				LockLCXLLockList(&g_filter_list);
+				LockLcxlList(&g_filter_list);
 				filter = FindFilter(set_role->miniport_net_luid);
 				if (filter != NULL) {
 					KLOCK_QUEUE_HANDLE lock_handle;
 					LockFilter(filter, &lock_handle);
-					switch (set_role->lcxl_role) {
-					case LCXL_ROLE_UNKNOWN:
-						break;
-					case LCXL_ROLE_ROUTER:
-						if (filter->module.lcxl_role != LCXL_ROLE_UNKNOWN) {
-							//参数非法
-							status = STATUS_INVALID_PARAMETER;
+					if (set_role->lcxl_role != filter->module.lcxl_role) {
+						switch (set_role->lcxl_role) {
+						case LCXL_ROLE_UNKNOWN:
+							break;
+						case LCXL_ROLE_ROUTER:
+							if (filter->module.lcxl_role != LCXL_ROLE_UNKNOWN) {
+								//参数非法
+								status = STATUS_INVALID_PARAMETER;
+							}
+							break;
+						case LCXL_ROLE_SERVER:
+							if (filter->module.lcxl_role != LCXL_ROLE_UNKNOWN) {
+								//参数非法
+								status = STATUS_INVALID_PARAMETER;
+							}
+							break;
 						}
-						break;
-					case LCXL_ROLE_SERVER:
-						if (filter->module.lcxl_role != LCXL_ROLE_UNKNOWN) {
-							//参数非法
-							status = STATUS_INVALID_PARAMETER;
+						if (NT_SUCCESS(status)) {
+							filter->module.lcxl_role = set_role->lcxl_role;
 						}
-						break;
 					}
-					if (NT_SUCCESS(status)) {
-						filter->module.lcxl_role = set_role->lcxl_role;
-					}
+					
 					UnlockFilter(&lock_handle);
 				} else {
 					status = STATUS_NOT_FOUND;
 				}
-				UnlockLCXLLockList(&g_filter_list);
+				UnlockLcxlList(&g_filter_list);
 			}
 			break;
 		case IOCTL_GET_MODULE_LIST:
@@ -264,12 +224,12 @@ FilterDeviceIoControl(
 
 			cur_buf = (PAPP_MODULE)output_buffer;
 			//锁定列表数量
-			LockLCXLLockList(&g_filter_list);
+			LockLcxlList(&g_filter_list);
 			//先判断缓冲区是否足够
-			if (output_buffer_length >= GetListCountofLCXLLockList(&g_filter_list)*sizeof(APP_MODULE)) {
+			if (output_buffer_length >= GetLcxlListCount(&g_filter_list)*sizeof(APP_MODULE)) {
 
-				filter = CONTAINING_RECORD(GetListofLCXLLockList(&g_filter_list)->Flink, LCXL_FILTER, filter_module_link);
-				while (&filter->filter_module_link != GetListofLCXLLockList(&g_filter_list)) {
+				filter = CONTAINING_RECORD(GetLcxlListHead(&g_filter_list)->Flink, LCXL_FILTER, filter_module_link);
+				while (&filter->filter_module_link != GetLcxlListHead(&g_filter_list)) {
 					PLCXL_MODULE_SETTING_INFO module = &filter->module;
 					INT buflen;
 					KLOCK_QUEUE_HANDLE lock_handle;
@@ -300,9 +260,9 @@ FilterDeviceIoControl(
 					LockFilter(filter, &lock_handle);
 					cur_buf->virtual_addr = module->virtual_addr;
 					cur_buf->server_check = module->server_check;
-					LockLCXLLockList(&module->server_list);
-					cur_buf->server_count = GetListCountofLCXLLockList(&module->server_list);
-					UnlockLCXLLockList(&module->server_list);
+					LockLcxlList(&module->server_list);
+					cur_buf->server_count = GetLcxlListCount(&module->server_list);
+					UnlockLcxlList(&module->server_list);
 					UnlockFilter(&lock_handle);
 
 					cur_buf++;
@@ -311,7 +271,7 @@ FilterDeviceIoControl(
 			} else {
 				status = STATUS_BUFFER_TOO_SMALL;
 			}
-			UnlockLCXLLockList(&g_filter_list);
+			UnlockLcxlList(&g_filter_list);
 			InfoLength = (ULONG)((ULONG_PTR)cur_buf - (ULONG_PTR)output_buffer);
 		}
 			break;
@@ -320,7 +280,7 @@ FilterDeviceIoControl(
 				PAPP_SET_VIRTUAL_ADDR ip;
 
 				ip = (PAPP_SET_VIRTUAL_ADDR)input_buffer;
-				LockLCXLLockList(&g_filter_list);
+				LockLcxlList(&g_filter_list);
 				filter = FindFilter(ip->miniport_net_luid);
 				if (filter != NULL) {
 					KLOCK_QUEUE_HANDLE lock_handle;
@@ -331,7 +291,7 @@ FilterDeviceIoControl(
 					status = STATUS_NOT_FOUND;
 				}
 				
-				UnlockLCXLLockList(&g_filter_list);
+				UnlockLcxlList(&g_filter_list);
 			} else {
 				status = STATUS_INFO_LENGTH_MISMATCH;
 			}
@@ -341,15 +301,15 @@ FilterDeviceIoControl(
 				PLCXL_SERVER cur_buf;
 
 				cur_buf = (PLCXL_SERVER)output_buffer;
-				LockLCXLLockList(&g_filter_list); 
+				LockLcxlList(&g_filter_list); 
 				filter = FindFilter(*(PNET_LUID)input_buffer);
 				if (filter != NULL) {
 					PLCXL_MODULE_SETTING_INFO module = &filter->module;
-					LockLCXLLockList(&module->server_list);
+					LockLcxlList(&module->server_list);
 					//先判断缓冲区是否足够
-					if (output_buffer_length >= GetListCountofLCXLLockList(&g_filter_list)*sizeof(LCXL_SERVER)) {
-						PLIST_ENTRY server_entry = GetListofLCXLLockList(&module->server_list)->Flink;
-						while (server_entry != GetListofLCXLLockList(&module->server_list)) {
+					if (output_buffer_length >= GetLcxlListCount(&g_filter_list)*sizeof(LCXL_SERVER)) {
+						PLIST_ENTRY server_entry = GetLcxlListHead(&module->server_list)->Flink;
+						while (server_entry != GetLcxlListHead(&module->server_list)) {
 							PSERVER_INFO_LIST_ENTRY server = GetServerbyListEntry(server_entry);
 
 							*cur_buf = server->info;
@@ -360,11 +320,11 @@ FilterDeviceIoControl(
 					} else {
 						status = STATUS_BUFFER_TOO_SMALL;
 					}
-					UnlockLCXLLockList(&module->server_list);
+					UnlockLcxlList(&module->server_list);
 				} else {
 					status = STATUS_NOT_FOUND;
 				}
-				UnlockLCXLLockList(&g_filter_list);
+				UnlockLcxlList(&g_filter_list);
 				InfoLength = (ULONG)((ULONG_PTR)cur_buf - (ULONG_PTR)output_buffer);
 			} else {
 				status = STATUS_INFO_LENGTH_MISMATCH;
@@ -376,12 +336,12 @@ FilterDeviceIoControl(
 				
 				app_add_server = (PAPP_ADD_SERVER)input_buffer;
 				//寻找module
-				LockLCXLLockList(&g_filter_list);
+				LockLcxlList(&g_filter_list);
 				filter = FindFilter(app_add_server->miniport_net_luid);
 				if (filter != NULL) {
 					PSERVER_INFO_LIST_ENTRY server = NULL;
 					//锁住server列表
-					LockLCXLLockList(&filter->module.server_list);
+					LockLcxlList(&filter->module.server_list);
 					//查找server列表
 					server = FindServer(&filter->module.server_list, &app_add_server->server.mac_addr);
 					//找不到？
@@ -389,7 +349,7 @@ FilterDeviceIoControl(
 						//添加服务器
 						server = AllocServer();
 						server->info = app_add_server->server;
-						AddtoLCXLLockList(&filter->module.server_list, &server->list_entry.list_entry);
+						AddEntrytoLcxlList(&filter->module.server_list, &server->list_entry.list_entry);
 					} else {
 						KLOCK_QUEUE_HANDLE lock_handle;
 						//更改服务器配置
@@ -397,11 +357,11 @@ FilterDeviceIoControl(
 						server->info = app_add_server->server;
 						UnLockServer(&lock_handle);
 					}
-					UnlockLCXLLockList(&filter->module.server_list);
+					UnlockLcxlList(&filter->module.server_list);
 				} else {
 					status = STATUS_NOT_FOUND;
 				}
-				UnlockLCXLLockList(&g_filter_list);
+				UnlockLcxlList(&g_filter_list);
 			} else {
 				status = STATUS_INFO_LENGTH_MISMATCH;
 			}
@@ -410,11 +370,11 @@ FilterDeviceIoControl(
 			if (sizeof(APP_DEL_SERVER) == input_buffer_length) {
 				PAPP_DEL_SERVER app_del_server = (PAPP_DEL_SERVER)input_buffer;
 
-				LockLCXLLockList(&g_filter_list);
+				LockLcxlList(&g_filter_list);
 				filter = FindFilter(app_del_server->miniport_net_luid);
 				if (filter != NULL) {
 					PSERVER_INFO_LIST_ENTRY server = NULL;
-					LockLCXLLockList(&filter->module.server_list);
+					LockLcxlList(&filter->module.server_list);
 					server = FindServer(&filter->module.server_list, &app_del_server->mac_addr);
 
 					if (server != NULL) {
@@ -435,7 +395,7 @@ FilterDeviceIoControl(
 				} else {
 					status = STATUS_NOT_FOUND;
 				}
-				UnlockLCXLLockList(&g_filter_list);
+				UnlockLcxlList(&g_filter_list);
 				
 			} else {
 				status = STATUS_INFO_LENGTH_MISMATCH;
@@ -446,7 +406,7 @@ FilterDeviceIoControl(
 			if (sizeof(APP_SET_SERVER_CHECK) == input_buffer_length) {
 				PAPP_SET_SERVER_CHECK set_server_check = (PAPP_SET_SERVER_CHECK)input_buffer;
 
-				LockLCXLLockList(&g_filter_list);
+				LockLcxlList(&g_filter_list);
 				filter = FindFilter(set_server_check->miniport_net_luid);
 				if (filter != NULL) {
 					KLOCK_QUEUE_HANDLE lock_handle;
@@ -455,14 +415,14 @@ FilterDeviceIoControl(
 					filter->module.server_check = set_server_check->server_check;
 					UnlockFilter(&lock_handle);
 				}
-				UnlockLCXLLockList(&g_filter_list);
+				UnlockLcxlList(&g_filter_list);
 			}
 			break;
 		case IOCTL_ROUTER_SET_ROUTING_ALGORITHM://负载均衡器角色
 			if (sizeof(APP_SET_ROUTING_ALGORITHM) == input_buffer_length) {
 				PAPP_SET_ROUTING_ALGORITHM set_routing_algorithm = (PAPP_SET_ROUTING_ALGORITHM)input_buffer;
 
-				LockLCXLLockList(&g_filter_list);
+				LockLcxlList(&g_filter_list);
 				filter = FindFilter(set_routing_algorithm->miniport_net_luid);
 				if (filter != NULL) {
 					KLOCK_QUEUE_HANDLE lock_handle;
@@ -471,7 +431,7 @@ FilterDeviceIoControl(
 					filter->module.routing_algorithm = set_routing_algorithm->routing_algorithm;
 					UnlockFilter(&lock_handle);
 				}
-				UnlockLCXLLockList(&g_filter_list);
+				UnlockLcxlList(&g_filter_list);
 			}
 			break;
 		//!添加代码!
@@ -491,34 +451,34 @@ FilterDeviceIoControl(
 
 _IRQL_requires_max_(DISPATCH_LEVEL)
 PLCXL_FILTER
-filterFindFilterModule(
-    _In_reads_bytes_(BufferLength)
-         PUCHAR                   Buffer,
-    _In_ ULONG                    BufferLength
+FindModuleByName(
+    _In_reads_bytes_(buffer_length)
+         PUCHAR                   buffer,
+    _In_ ULONG                    buffer_length
     )
 {
 
-   PLCXL_FILTER            pFilter;
-   PLIST_ENTRY             Link;
+   PLCXL_FILTER            filter;
+   PLIST_ENTRY             link;
 
 
-   LockLCXLLockList(&g_filter_list);
-   Link = GetListofLCXLLockList(&g_filter_list)->Flink;
+   LockLcxlList(&g_filter_list);
+   link = GetLcxlListHead(&g_filter_list)->Flink;
 
-   while (Link != GetListofLCXLLockList(&g_filter_list)) {
-	   pFilter = CONTAINING_RECORD(Link, LCXL_FILTER, filter_module_link);
+   while (link != GetLcxlListHead(&g_filter_list)) {
+	   filter = CONTAINING_RECORD(link, LCXL_FILTER, filter_module_link);
 
-	   if (BufferLength >= pFilter->module.filter_module_name->Length) {
-		   if (NdisEqualMemory(Buffer, pFilter->module.filter_module_name->Buffer, pFilter->module.filter_module_name->Length)) {
-			   UnlockLCXLLockList(&g_filter_list);
-               return pFilter;
+	   if (buffer_length >= filter->module.filter_module_name->Length) {
+		   if (NdisEqualMemory(buffer, filter->module.filter_module_name->Buffer, filter->module.filter_module_name->Length)) {
+			   UnlockLcxlList(&g_filter_list);
+               return filter;
            }
        }
 
-       Link = Link->Flink;
+       link = link->Flink;
    }
 
-   UnlockLCXLLockList(&g_filter_list);
+   UnlockLcxlList(&g_filter_list);
    return NULL;
 }
 

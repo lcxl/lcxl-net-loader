@@ -48,6 +48,13 @@ BOOL lnlDeviceIoControl(_In_ DWORD dwIoControlCode,
 	return last_error == ERROR_SUCCESS;
 }
 
+BOOL WINAPI lnlRestartModule(IN NET_LUID miniport_net_luid)
+{
+	DWORD data_size = 0;
+
+	return lnlDeviceIoControl(IOCTL_SET_ROLE, &miniport_net_luid, sizeof(miniport_net_luid), NULL, 0, &data_size);
+}
+
 BOOL WINAPI lnlSetLcxlRole(IN NET_LUID miniport_net_luid, IN INT lcxl_role)
 {
 	DWORD data_size = 0;
@@ -137,16 +144,3 @@ BOOL WINAPI lnlSetRoutingAlgorithm(IN NET_LUID miniport_net_luid, IN INT routing
 	set_routing_algorithm.routing_algorithm = routing_algorithm;
 	return lnlDeviceIoControl(IOCTL_ROUTER_SET_ROUTING_ALGORITHM, &set_routing_algorithm, sizeof(set_routing_algorithm), NULL, 0, &data_size);
 }
-
-/*
-BOOL WINAPI lnlSetRouterMacAddr(IN NET_LUID miniport_net_luid, PIF_PHYSICAL_ADDRESS mac_addr)
-{
-	DWORD data_size = 0;
-	APP_SET_ROUTER_MAC_ADDR router_mac_addr;
-
-	router_mac_addr.miniport_net_luid = miniport_net_luid;
-	router_mac_addr.mac_addr = *mac_addr;
-
-	return lnlDeviceIoControl(IOCTL_SERVER_SET_ROUTER_MAC_ADDR, &router_mac_addr, sizeof(router_mac_addr), NULL, 0, &data_size);
-}
-*/

@@ -16,10 +16,10 @@ typedef struct _LCXL_TO_BE_LIST {
 	PLIST_ENTRY to_be_list_entry;
 } LCXL_TO_BE_LIST, *PLCXL_TO_BE_LIST;
 
-typedef struct _LCXL_LOCK_LIST {
-	//列表，只有当锁定的时候才能访问，通过GetListofLCXLLockList获得
+typedef struct _LCXL_LIST {
+	//列表，只有当锁定的时候才能访问，通过GetLcxlListHead获得
 	LIST_ENTRY				list;
-	//列表项数量，只有当锁定的时候才能访问，通过GetListCountofLCXLLockList获得
+	//列表项数量，只有当锁定的时候才能访问，通过GetLcxlListCount获得
 	INT						list_count;
 	//待添加列表，LCXL_TO_BE_LIST
 	LIST_ENTRY				to_be_add_list;
@@ -34,12 +34,12 @@ typedef struct _LCXL_LOCK_LIST {
 	//删除列表项回调函数。
 	//注意：此函数运行在DISPATCH_LEVEL 下
 	DEL_LIST_ENTRY_FUNC		del_func;
-} LCXL_LOCK_LIST, *PLCXL_LOCK_LIST;//LCXL锁列表
+} LCXL_LIST, *PLCXL_LIST;//LCXL锁列表
 
 //初始化LCXL锁列表
 //lock_list:锁列表结构指针
 //del_func:删除对调函数，当从LCXL锁列表删除列表项时会调用del_func函数来释放列表项指针
-__inline VOID InitLCXLLockList(IN OUT PLCXL_LOCK_LIST lock_list, IN DEL_LIST_ENTRY_FUNC del_func)
+__inline VOID InitLcxlList(IN OUT PLCXL_LIST lock_list, IN DEL_LIST_ENTRY_FUNC del_func)
 {
 	ASSERT(lock_list != NULL && del_func != NULL);
 	lock_list->lock_count = 0;
@@ -53,7 +53,7 @@ __inline VOID InitLCXLLockList(IN OUT PLCXL_LOCK_LIST lock_list, IN DEL_LIST_ENT
 }
 
 //锁定LCXL列表项，锁定之后列表项的数量不会更改，并且不会更改当前的中断请求级别（IRQL）
-__inline VOID LockLCXLLockList(IN PLCXL_LOCK_LIST lock_list)
+__inline VOID LockLcxlList(IN PLCXL_LIST lock_list)
 {
 	//保存之前的IRQL
 	KLOCK_QUEUE_HANDLE		queue_handle;
@@ -63,21 +63,21 @@ __inline VOID LockLCXLLockList(IN PLCXL_LOCK_LIST lock_list)
 }
 
 //获取列表，必须在锁定的时候获取
-__inline PLIST_ENTRY GetListofLCXLLockList(IN PLCXL_LOCK_LIST lock_list)
+__inline PLIST_ENTRY GetLcxlListHead(IN PLCXL_LIST lock_list)
 {
 	ASSERT(lock_list->lock_count > 0);
 	return &lock_list->list;
 }
 
 //获取列表数量，必须在锁定的时候获取
-__inline INT GetListCountofLCXLLockList(IN PLCXL_LOCK_LIST lock_list)
+__inline INT GetLcxlListCount(IN PLCXL_LIST lock_list)
 {
 	ASSERT(lock_list->lock_count > 0);
 	return lock_list->list_count;
 }
 
 //添加列表项到LCXL锁定列表中，如果被锁定，则会在UnlockLCXLLockList函数执行时进行添加
-__inline VOID AddtoLCXLLockList(IN PLCXL_LOCK_LIST lock_list, IN PLIST_ENTRY list_entry)
+__inline VOID AddEntrytoLcxlList(IN PLCXL_LIST lock_list, IN PLIST_ENTRY list_entry)
 {
 	//保存之前的IRQL
 	KLOCK_QUEUE_HANDLE		queue_handle;
@@ -97,7 +97,7 @@ __inline VOID AddtoLCXLLockList(IN PLCXL_LOCK_LIST lock_list, IN PLIST_ENTRY lis
 	KeReleaseInStackQueuedSpinLock(&queue_handle);
 }
 //从LCXL锁定列表删除指定的列表项，如果被锁定，则会在UnlockLCXLLockList函数执行时进行删除
-__inline VOID DelFromLCXLLockList(IN PLCXL_LOCK_LIST lock_list, IN PLIST_ENTRY list_entry)
+__inline VOID RemoveEntryfromLcxlList(IN PLCXL_LIST lock_list, IN PLIST_ENTRY list_entry)
 {
 	//保存之前的IRQL
 	KLOCK_QUEUE_HANDLE		queue_handle;
@@ -120,7 +120,7 @@ __inline VOID DelFromLCXLLockList(IN PLCXL_LOCK_LIST lock_list, IN PLIST_ENTRY l
 }
 
 //解锁列表项，如果有待添加的列表项或待删除的列表项，则会在这里进行添加/删除
-__inline VOID UnlockLCXLLockList(IN PLCXL_LOCK_LIST lock_list)
+__inline VOID UnlockLcxlList(IN PLCXL_LIST lock_list)
 {
 	//保存之前的IRQL
 	KLOCK_QUEUE_HANDLE		queue_handle;
@@ -166,7 +166,7 @@ __inline VOID UnlockLCXLLockList(IN PLCXL_LOCK_LIST lock_list)
 	KeReleaseInStackQueuedSpinLock(&queue_handle);
 }
 //删除LCXL锁定列表
-__inline VOID DelLCXLLockList(IN PLCXL_LOCK_LIST lock_list)
+__inline VOID DelLcxlList(IN PLCXL_LIST lock_list)
 {
 #ifdef DBG
 	KLOCK_QUEUE_HANDLE		queue_handle;
@@ -175,8 +175,6 @@ __inline VOID DelLCXLLockList(IN PLCXL_LOCK_LIST lock_list)
 	ASSERT(lock_list->list_count == 0);
 	KeReleaseInStackQueuedSpinLock(&queue_handle);
 #endif // DBG
-
-	
 
 	ASSERT(lock_list != NULL);
 	ExDeleteNPagedLookasideList(&lock_list->to_be_mem_mgr);

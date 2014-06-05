@@ -598,7 +598,7 @@ bool CNetLoaderService::CheckAndSetVip(NET_LUID miniport_net_luid, IF_INDEX ifin
 		if (!is_found) {
 			return false;
 		}
-		
+		//发送ping请求，查看处于活动状态的负载均衡器是否在线
 		switch (Address->si_family)
 		{
 		case AF_INET:

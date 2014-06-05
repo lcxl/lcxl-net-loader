@@ -5,6 +5,7 @@
 #define MyAppVersion "1.5"
 #define MyAppPublisher "LCXBox"
 #define MyAppURL "http://www.lcxbox.com/"
+#define MyConfigExeName "LCXLNetLoaderService.exe"
 
 [Setup]
 ; 注意: AppId 的值是唯一识别这个程序的标志。
@@ -28,6 +29,9 @@ OutputBaseFilename=lcxl_netloader_setup_32bit
 SetupIconFile=SetupIcon.ico
 Compression=lzma
 SolidCompression=yes
+
+[Messages]
+BeveledLabel=版权所有 (C) 2013-2014 罗澄曦
 
 [Languages]
 Name: "default"; MessagesFile: "compiler:Default.isl"
@@ -67,3 +71,26 @@ Source: "..\bin\Win32\windows标准库\msvcp120.dll"; DestDir: "{app}"; Flags: igno
 Source: "..\bin\Win32\windows标准库\msvcr120.dll"; DestDir: "{app}"; Flags: ignoreversion
 ; 注意: 不要在任何共享的系统文件使用 "Flags: ignoreversion"
 
+[Run]
+Filename: "{app}\{#MyConfigExeName}"; Parameters: "install";StatusMsg: "正在安装驱动和相关服务..."
+Filename: "{app}\{#MyConfigExeName}"; Parameters: "startservice";StatusMsg: "正在启动相关服务..."
+[UninstallRun]
+Filename: "{app}\{#MyConfigExeName}"; Parameters: "uninstall";StatusMsg: "正在卸载驱动和相关服务..."
+
+[Code]
+const
+  MF_BYPOSITION=$400;
+  function DeleteMenu(HMENU: HWND; uPosition: UINT; uFlags: UINT): BOOL; external 'DeleteMenu@user32.dll stdcall';
+  function GetSystemMenu(HWND: hWnd; bRevert: BOOL): HWND; external 'GetSystemMenu@user32.dll stdcall';
+
+procedure InitializeWizard();
+begin
+ //删除构建信息
+  DeleteMenu(GetSystemMenu(wizardform.handle,false),8,MF_BYPOSITION);
+  DeleteMenu(GetSystemMenu(wizardform.handle,false),7,MF_BYPOSITION);
+end;
+
+function UninstallNeedRestart(): Boolean;
+begin
+  Result := True;
+end;

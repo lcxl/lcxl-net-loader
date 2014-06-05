@@ -1,49 +1,49 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<ClassDiagram MajorVersion="1" MinorVersion="1" MembersFormat="NameAndType">
+<ClassDiagram MajorVersion="1" MinorVersion="1">
   <Struct Name="_FILTER_DRIVER_ALL_STAT">
-    <Position X="19.25" Y="2.25" Width="3" />
+    <Position X="19.25" Y="2.25" Width="2.5" />
     <TypeIdentifier>
       <HashCode>AAgAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAACAQCAAAAA=</HashCode>
       <FileName>filter.h</FileName>
     </TypeIdentifier>
   </Struct>
   <Struct Name="_FILTER_SET_OID">
-    <Position X="18" Y="17.25" Width="4.75" />
+    <Position X="18" Y="17.25" Width="2" />
     <TypeIdentifier>
       <HashCode>AAAAAAAEAAAAAAAAQAAAAAAAAQAQABAAAAAAAAAAAAA=</HashCode>
       <FileName>filter.h</FileName>
     </TypeIdentifier>
   </Struct>
   <Struct Name="_FILTER_QUERY_OID">
-    <Position X="18" Y="11.25" Width="4.75" />
+    <Position X="18" Y="11.25" Width="2" />
     <TypeIdentifier>
       <HashCode>AAAAAAAEAAAAAAAAQAAAAAAAAQAQABAAAAAAAAAAAAA=</HashCode>
       <FileName>filter.h</FileName>
     </TypeIdentifier>
   </Struct>
   <Struct Name="_FILTER_READ_CONFIG">
-    <Position X="9" Y="14.5" Width="4.75" />
+    <Position X="9" Y="14.5" Width="2" />
     <TypeIdentifier>
       <HashCode>AAAAAAAEAABAAAIAAAAAAAAAAQAQARAAAAAAAAAAAAA=</HashCode>
       <FileName>filter.h</FileName>
     </TypeIdentifier>
   </Struct>
   <Struct Name="_FILTER_WRITE_CONFIG">
-    <Position X="13" Y="13.5" Width="4.75" />
+    <Position X="13" Y="13.5" Width="2" />
     <TypeIdentifier>
       <HashCode>AAAAAAAEAABAAAIAAAAAAAAAAQAQARAAAAAAAAAAAAA=</HashCode>
       <FileName>filter.h</FileName>
     </TypeIdentifier>
   </Struct>
   <Struct Name="_FILTER_REQUEST">
-    <Position X="13" Y="7.25" Width="2.5" />
+    <Position X="13" Y="7.25" Width="1.75" />
     <TypeIdentifier>
       <HashCode>AAAAAAAEAAAAAAAAAAAAAEAAAAAAgAAAAAAAAAAAAAA=</HashCode>
       <FileName>filter.h</FileName>
     </TypeIdentifier>
   </Struct>
   <Struct Name="_LCXL_FILTER">
-    <Position X="0.75" Y="14" Width="4" />
+    <Position X="2.5" Y="14.5" Width="2.25" />
     <TypeIdentifier>
       <HashCode>CAQACAAAkAAAAACCQMAAAAgAgAABAAIEECABAEASAAg=</HashCode>
       <FileName>filter.h</FileName>
@@ -60,7 +60,7 @@
     </TypeIdentifier>
   </Struct>
   <Struct Name="_FL_NDIS_FILTER_LIST">
-    <Position X="8" Y="8.25" Width="2.75" />
+    <Position X="8" Y="8.25" Width="2" />
     <TypeIdentifier>
       <HashCode>AAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAUAAAAAA=</HashCode>
       <FileName>filter.h</FileName>
@@ -74,7 +74,7 @@
     </TypeIdentifier>
   </Struct>
   <Struct Name="_PROCESS_NBL_RESULT">
-    <Position X="4" Y="2.5" Width="2.75" />
+    <Position X="5" Y="2.5" Width="2" />
     <TypeIdentifier>
       <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAQAAAAAAA=</HashCode>
       <FileName>filter.h</FileName>
@@ -84,9 +84,9 @@
     </ShowAsAssociation>
   </Struct>
   <Struct Name="_LCXL_MODULE_SETTING_INFO">
-    <Position X="5" Y="14.75" Width="3" />
+    <Position X="5" Y="14.5" Width="2.5" />
     <TypeIdentifier>
-      <HashCode>CCAIAAAAAAAAAAAAAAAIEAAAgAAAAAAGAAAICAQACAA=</HashCode>
+      <HashCode>CCAIAAAAAAAAAAAAAAAIEAAAgAAAAAAGAAAYCAQACAA=</HashCode>
       <FileName>lcxl_setting.h</FileName>
     </TypeIdentifier>
   </Struct>
@@ -182,14 +182,14 @@
     </TypeIdentifier>
   </Typedef>
   <Typedef Name="LCXL_FILTER" Collapsed="true">
-    <Position X="1.5" Y="19.5" Width="2.25" />
+    <Position X="5.25" Y="18.5" Width="2.25" />
     <TypeIdentifier>
       <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
       <FileName>filter.h</FileName>
     </TypeIdentifier>
   </Typedef>
   <Typedef Name="PLCXL_FILTER" Collapsed="true">
-    <Position X="1.5" Y="12.5" Width="2.5" />
+    <Position X="0.5" Y="12.75" Width="2.5" />
     <TypeIdentifier>
       <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
       <FileName>filter.h</FileName>
@@ -252,35 +252,35 @@
     </TypeIdentifier>
   </Typedef>
   <Typedef Name="PROCESS_NBL_RESULT_CODE" Collapsed="true">
-    <Position X="5.5" Y="4" Width="4.5" />
+    <Position X="5.5" Y="4.25" Width="4.5" />
     <TypeIdentifier>
       <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
       <FileName>filter.h</FileName>
     </TypeIdentifier>
   </Typedef>
   <Typedef Name="PPROCESS_NBL_RESULT_CODE" Collapsed="true">
-    <Position X="5.25" Y="1" Width="4.75" />
+    <Position X="10.25" Y="1.5" Width="4.75" />
     <TypeIdentifier>
       <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
       <FileName>filter.h</FileName>
     </TypeIdentifier>
   </Typedef>
   <Typedef Name="PROCESS_NBL_RESULT" Collapsed="true">
-    <Position X="1.75" Y="4" Width="3.5" />
+    <Position X="6.5" Y="1.25" Width="3.5" />
     <TypeIdentifier>
       <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
       <FileName>filter.h</FileName>
     </TypeIdentifier>
   </Typedef>
   <Typedef Name="PPROCESS_NBL_RESULT" Collapsed="true">
-    <Position X="3.5" Y="1.75" Width="3.75" />
+    <Position X="0.75" Y="1.5" Width="3.75" />
     <TypeIdentifier>
       <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
       <FileName>filter.h</FileName>
     </TypeIdentifier>
   </Typedef>
   <Typedef Name="LCXL_MODULE_SETTING_INFO" Collapsed="true">
-    <Position X="5.75" Y="14" Width="1.5" />
+    <Position X="3" Y="13.5" Width="4.5" />
     <TypeIdentifier>
       <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
       <FileName>lcxl_setting.h</FileName>
@@ -294,7 +294,7 @@
     </TypeIdentifier>
   </Enum>
   <Enum Name="_PROCESS_NBL_RESULT_CODE">
-    <Position X="7.5" Y="1.75" Width="2.5" />
+    <Position X="7.5" Y="2" Width="2.5" />
     <TypeIdentifier>
       <HashCode>AAAAAAAIEAAAIAAMAAAAAAAAAAAAAAAAgAAAAAAAAAI=</HashCode>
       <FileName>filter.h</FileName>

@@ -19,7 +19,7 @@
             accessors-accepted="false" constructors-accepted="false"/>
     </Class>
     <Class name="com.lcxbox.netloader.host.service.HostServiceImpl"
-        x="1081" y="703">
+        x="1051" y="700">
         <AttributesDisplayFilter public-accepted="true"
             private-accepted="true" protected-accepted="true"
             default-accepted="true" static-accepted="false"/>
@@ -46,7 +46,7 @@
             destinationClassName="com.lcxbox.netloader.host.model.Module"
             endpointName="moduleList" kind="Simple"/>
     </Class>
-    <Class name="com.lcxbox.common.model.HostInfo" x="967" y="580">
+    <Class name="com.lcxbox.common.model.HostInfo" x="1485" y="695">
         <AttributesDisplayFilter public-accepted="true"
             private-accepted="true" protected-accepted="true"
             default-accepted="true" static-accepted="false"/>
@@ -64,7 +64,7 @@
             default-accepted="false" static-accepted="false"
             accessors-accepted="false" constructors-accepted="false"/>
     </Class>
-    <Class name="com.lcxbox.socket.json.JsonSocket" x="1500" y="588">
+    <Class name="com.lcxbox.socket.json.JsonSocket" x="1448" y="557">
         <AttributesDisplayFilter public-accepted="true"
             private-accepted="true" protected-accepted="true"
             default-accepted="true" static-accepted="false"/>
@@ -140,7 +140,7 @@
             accessors-accepted="false" constructors-accepted="false"/>
     </Class>
     <Class name="com.lcxbox.netloader.host.service.IHostService"
-        x="1079" y="581">
+        x="1049" y="577">
         <AttributesDisplayFilter public-accepted="true"
             private-accepted="true" protected-accepted="true"
             default-accepted="true" static-accepted="false"/>
@@ -164,7 +164,7 @@
         <Communication destinationClassName="com.lcxbox.common.model.CommonResponse"/>
     </Class>
     <Class name="com.lcxbox.netloader.host.controller.HostController"
-        x="880" y="489">
+        x="1049" y="474">
         <AttributesDisplayFilter public-accepted="true"
             private-accepted="true" protected-accepted="true"
             default-accepted="true" static-accepted="false"/>
@@ -193,6 +193,16 @@
             destinationClassName="com.lcxbox.netloader.host.model.LcxlAddrInfo"
             endpointName="virtualAddr" kind="Simple"/>
     </Class>
+    <Class name="com.lcxbox.netloader.user.model.LogonRespnse" x="478" y="279">
+        <AttributesDisplayFilter public-accepted="true"
+            private-accepted="true" protected-accepted="true"
+            default-accepted="true" static-accepted="false"/>
+        <MethodDisplayFilter public-accepted="true"
+            private-accepted="false" protected-accepted="false"
+            default-accepted="false" static-accepted="false"
+            accessors-accepted="true" constructors-accepted="false"/>
+        <Extension destinationClassName="com.lcxbox.common.model.CommonResponse"/>
+    </Class>
     <Class name="com.lcxbox.netloader.host.model.SetVirtualAddrRequest"
         x="300" y="206">
         <AttributesDisplayFilter public-accepted="true"
@@ -206,16 +216,6 @@
         <Association
             destinationClassName="com.lcxbox.netloader.host.model.LcxlAddrInfo"
             endpointName="virtualAddr" kind="Simple"/>
-    </Class>
-    <Class name="com.lcxbox.netloader.user.model.LogonRespnse" x="478" y="279">
-        <AttributesDisplayFilter public-accepted="true"
-            private-accepted="true" protected-accepted="true"
-            default-accepted="true" static-accepted="false"/>
-        <MethodDisplayFilter public-accepted="true"
-            private-accepted="false" protected-accepted="false"
-            default-accepted="false" static-accepted="false"
-            accessors-accepted="true" constructors-accepted="false"/>
-        <Extension destinationClassName="com.lcxbox.common.model.CommonResponse"/>
     </Class>
     <Class name="com.lcxbox.netloader.host.model.ServerListRequest"
         x="457" y="126">

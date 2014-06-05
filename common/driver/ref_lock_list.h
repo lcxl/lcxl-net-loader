@@ -23,7 +23,7 @@ __inline PREF_LIST_ENTRY GetRefListEntry(IN PLIST_ENTRY	list_entry)
 //参数：
 //list:LCXL锁列表
 //list_entry:列表项，需要注意的是list_entry必须在list中
-__inline LONG IncRefListEntry(IN PLCXL_LOCK_LIST list, IN PREF_LIST_ENTRY list_entry)
+__inline LONG IncRefListEntry(IN PLCXL_LIST list, IN PREF_LIST_ENTRY list_entry)
 {
 	ASSERT(list != NULL);
 	ASSERT(list_entry != NULL);
@@ -35,7 +35,7 @@ __inline LONG IncRefListEntry(IN PLCXL_LOCK_LIST list, IN PREF_LIST_ENTRY list_e
 //list:LCXL锁列表
 //list_entry:列表项，需要注意的是list_entry必须在list中
 //提示：当list_entry引用为0时，此列表项将被删除
-__inline LONG DecRefListEntry(IN PLCXL_LOCK_LIST list, IN PREF_LIST_ENTRY list_entry)
+__inline LONG DecRefListEntry(IN PLCXL_LIST list, IN PREF_LIST_ENTRY list_entry)
 {
 	LONG ref_count;
 
@@ -44,7 +44,7 @@ __inline LONG DecRefListEntry(IN PLCXL_LOCK_LIST list, IN PREF_LIST_ENTRY list_e
 	ref_count = InterlockedDecrement(&list_entry->ref_count);
 	if (ref_count <= 0) {
 		ASSERT(ref_count == 0);
-		DelFromLCXLLockList(list, &list_entry->list_entry);
+		RemoveEntryfromLcxlList(list, &list_entry->list_entry);
 	}
 	return ref_count;
 }

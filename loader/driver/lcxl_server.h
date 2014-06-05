@@ -107,7 +107,7 @@ __inline PSERVER_INFO_LIST_ENTRY GetServerbyListEntry(PLIST_ENTRY server_list_en
 // 参数: IN PLCXL_LOCK_LIST server_list
 // 参数: IN PIF_PHYSICAL_ADDRESS mac_addr
 //************************************
-PSERVER_INFO_LIST_ENTRY FindServer(IN PLCXL_LOCK_LIST server_list, IN PIF_PHYSICAL_ADDRESS mac_addr);
+PSERVER_INFO_LIST_ENTRY FindServer(IN PLCXL_LIST server_list, IN PIF_PHYSICAL_ADDRESS mac_addr);
 
 //************************************
 // 简介: 服务是否可用
@@ -134,7 +134,7 @@ __inline BOOLEAN ServerIsAvaliable(IN PSERVER_INFO_LIST_ENTRY server_info, IN IN
 // 参数: IN INT ip_mode
 // 参数: IN BOOLEAN checking_last 如果此值为TRUE，则优先选择状态不为checking的服务器，否则checking服务器和正常的服务器具有一样的优先权
 //************************************
-PSERVER_INFO_LIST_ENTRY FindAvaliableServerFormCurrentServer(IN PLCXL_LOCK_LIST server_list, IN PSERVER_INFO_LIST_ENTRY server, IN INT ip_mode, IN BOOLEAN checking_last);
+PSERVER_INFO_LIST_ENTRY FindAvaliableServerFormCurrentServer(IN PLCXL_LIST server_list, IN PSERVER_INFO_LIST_ENTRY server, IN INT ip_mode, IN BOOLEAN checking_last);
 
 //************************************
 // 简介: 选择一台最适合的服务器
@@ -144,6 +144,6 @@ PSERVER_INFO_LIST_ENTRY FindAvaliableServerFormCurrentServer(IN PLCXL_LOCK_LIST 
 // 参数: IN PVOID ip_header
 // 参数: IN PTCP_HDR tcp_header
 //************************************
-PSERVER_INFO_LIST_ENTRY SelectBestServer(IN PLCXL_LOCK_LIST server_list, IN INT ip_mode, IN PVOID ip_header, IN PTCP_HDR tcp_header, IN INT	routing_algorithm, IN PROUTING_ALGORITHM_DATA ra_data);
+PSERVER_INFO_LIST_ENTRY SelectBestServer(IN PLCXL_LIST server_list, IN INT ip_mode, IN PVOID ip_header, IN PTCP_HDR tcp_header, IN INT	routing_algorithm, IN PROUTING_ALGORITHM_DATA ra_data);
 
 #endif

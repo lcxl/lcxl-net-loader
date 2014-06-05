@@ -330,7 +330,7 @@ extern NDIS_HANDLE         g_filter_driver_object;
 extern NDIS_HANDLE         g_ndis_filter_device_handle;
 extern PDEVICE_OBJECT      g_device_object;
 
-extern LCXL_LOCK_LIST		g_filter_list;
+extern LCXL_LIST		g_filter_list;
 //配置信息
 extern LCXL_SETTING			g_setting;
 
@@ -395,10 +395,10 @@ DRIVER_DISPATCH FilterDeviceIoControl;
 
 _IRQL_requires_max_(DISPATCH_LEVEL)
 PLCXL_FILTER
-filterFindFilterModule(
-    _In_reads_bytes_(BufferLength)
-         PUCHAR                   Buffer,
-    _In_ ULONG                    BufferLength
+FindModuleByName(
+_In_reads_bytes_(buffer_length)
+_In_ PUCHAR                   buffer,
+_In_ ULONG                    buffer_length
     );
 
 _IRQL_requires_max_(DISPATCH_LEVEL)

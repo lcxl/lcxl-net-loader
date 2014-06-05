@@ -12,14 +12,14 @@ VOID DelServerCallBack(PLIST_ENTRY server)
 
 //根据MAC地址寻找服务器
 //注意：使用FindServer之前需要锁定列表
-PSERVER_INFO_LIST_ENTRY FindServer(IN PLCXL_LOCK_LIST server_list, IN PIF_PHYSICAL_ADDRESS mac_addr)
+PSERVER_INFO_LIST_ENTRY FindServer(IN PLCXL_LIST server_list, IN PIF_PHYSICAL_ADDRESS mac_addr)
 {
 	PLIST_ENTRY Link;
 
 	ASSERT(server_list != NULL && server_list->lock_count > 0);
-	Link = GetListofLCXLLockList(server_list)->Flink;
+	Link = GetLcxlListHead(server_list)->Flink;
 	//遍历列表
-	while (Link != GetListofLCXLLockList(server_list)) {
+	while (Link != GetLcxlListHead(server_list)) {
 		PSERVER_INFO_LIST_ENTRY server_info;
 
 		server_info = GetServerbyListEntry(Link);
@@ -31,13 +31,13 @@ PSERVER_INFO_LIST_ENTRY FindServer(IN PLCXL_LOCK_LIST server_list, IN PIF_PHYSIC
 	return NULL;
 }
 
-PSERVER_INFO_LIST_ENTRY FindAvaliableServerFormCurrentServer(IN PLCXL_LOCK_LIST server_list, IN PSERVER_INFO_LIST_ENTRY server, IN INT ip_mode, IN BOOLEAN checking_last)
+PSERVER_INFO_LIST_ENTRY FindAvaliableServerFormCurrentServer(IN PLCXL_LIST server_list, IN PSERVER_INFO_LIST_ENTRY server, IN INT ip_mode, IN BOOLEAN checking_last)
 {
 	PSERVER_INFO_LIST_ENTRY current_server = server;
 	PSERVER_INFO_LIST_ENTRY online_server = NULL;
 	PSERVER_INFO_LIST_ENTRY checking_server = NULL;
 
-	LockLCXLLockList(server_list);
+	LockLcxlList(server_list);
 	do {
 		KLOCK_QUEUE_HANDLE lock_handle;
 
@@ -75,12 +75,12 @@ PSERVER_INFO_LIST_ENTRY FindAvaliableServerFormCurrentServer(IN PLCXL_LOCK_LIST 
 		IncRefListEntry(server_list, &online_server->list_entry);
 	}
 	//解锁列表
-	UnlockLCXLLockList(server_list);
+	UnlockLcxlList(server_list);
 	
 	return online_server;
 }
 
-PSERVER_INFO_LIST_ENTRY SelectBestServer(IN PLCXL_LOCK_LIST server_list, IN INT ip_mode, IN PVOID ip_header, IN PTCP_HDR tcp_header, IN INT	routing_algorithm, IN PROUTING_ALGORITHM_DATA ra_data)
+PSERVER_INFO_LIST_ENTRY SelectBestServer(IN PLCXL_LIST server_list, IN INT ip_mode, IN PVOID ip_header, IN PTCP_HDR tcp_header, IN INT	routing_algorithm, IN PROUTING_ALGORITHM_DATA ra_data)
 {
 	PLIST_ENTRY Link;
 	PSERVER_INFO_LIST_ENTRY best_server = NULL;
@@ -89,14 +89,14 @@ PSERVER_INFO_LIST_ENTRY SelectBestServer(IN PLCXL_LOCK_LIST server_list, IN INT 
 	UNREFERENCED_PARAMETER(ip_header);
 	UNREFERENCED_PARAMETER(tcp_header);
 
-	LockLCXLLockList(server_list);
+	LockLcxlList(server_list);
 	//查看是否有后端服务器
-	if (GetListCountofLCXLLockList(server_list) > 0) {
-		Link = GetListofLCXLLockList(server_list)->Flink;
+	if (GetLcxlListCount(server_list) > 0) {
+		Link = GetLcxlListHead(server_list)->Flink;
 		switch (routing_algorithm) {
 		case RA_LEAST_CONNECTION://最小连接数
 			//遍历列表
-			while (Link != GetListofLCXLLockList(server_list))
+			while (Link != GetLcxlListHead(server_list))
 			{
 				PSERVER_INFO_LIST_ENTRY server_info;
 				KLOCK_QUEUE_HANDLE lock_handle;
@@ -126,12 +126,12 @@ PSERVER_INFO_LIST_ENTRY SelectBestServer(IN PLCXL_LOCK_LIST server_list, IN INT 
 			PLIST_ENTRY head_link;
 			PLIST_ENTRY entry;
 
-			if (ra_data->ra_poll.current_server_index >= GetListCountofLCXLLockList(server_list)) {
+			if (ra_data->ra_poll.current_server_index >= GetLcxlListCount(server_list)) {
 				ra_data->ra_poll.current_server_index = 0;
 			}
 			
-			head_link = GetListofLCXLLockList(server_list);
-			entry = GetListEntryByIndex(head_link, ra_data->ra_poll.current_server_index%GetListCountofLCXLLockList(server_list));
+			head_link = GetLcxlListHead(server_list);
+			entry = GetListEntryByIndex(head_link, ra_data->ra_poll.current_server_index%GetLcxlListCount(server_list));
 			best_server = FindAvaliableServerFormCurrentServer(server_list, GetServerbyListEntry(entry), ip_mode, TRUE);
 			if (best_server != NULL) {
 				ra_data->ra_poll.current_server_index = GetListEntryIndex(head_link, &best_server->list_entry.list_entry) + 1;
@@ -150,7 +150,7 @@ PSERVER_INFO_LIST_ENTRY SelectBestServer(IN PLCXL_LOCK_LIST server_list, IN INT 
 
 				ipv4_header = (PIPV4_HEADER)ip_header;
 				//获得IP地址的hash值
-				ip_hash = ipv4_header->DestinationAddress.S_un.S_addr % GetListCountofLCXLLockList(server_list);
+				ip_hash = ipv4_header->DestinationAddress.S_un.S_addr % GetLcxlListCount(server_list);
 			}
 				break;
 			case IM_IPV6:
@@ -159,7 +159,7 @@ PSERVER_INFO_LIST_ENTRY SelectBestServer(IN PLCXL_LOCK_LIST server_list, IN INT 
 
 				ipv6_header = (PIPV6_HEADER)ip_header;
 				//获得IP地址的hash值
-				ip_hash = ((ULONG)ipv6_header->DestinationAddress.u.Word[7]) | ((ULONG)ipv6_header->DestinationAddress.u.Word[6] << 2) % GetListCountofLCXLLockList(server_list);
+				ip_hash = ((ULONG)ipv6_header->DestinationAddress.u.Word[7]) | ((ULONG)ipv6_header->DestinationAddress.u.Word[6] << 2) % GetLcxlListCount(server_list);
 			}
 				break;
 			default:
@@ -170,9 +170,9 @@ PSERVER_INFO_LIST_ENTRY SelectBestServer(IN PLCXL_LOCK_LIST server_list, IN INT 
 				PLIST_ENTRY head_link;
 				PLIST_ENTRY entry;
 
-				head_link = GetListofLCXLLockList(server_list);
+				head_link = GetLcxlListHead(server_list);
 
-				entry = GetListEntryByIndex(head_link, ra_data->ra_poll.current_server_index%GetListCountofLCXLLockList(server_list));
+				entry = GetListEntryByIndex(head_link, ra_data->ra_poll.current_server_index%GetLcxlListCount(server_list));
 				best_server = FindAvaliableServerFormCurrentServer(server_list, GetServerbyListEntry(entry), ip_mode, TRUE);
 			}
 		}
@@ -186,6 +186,6 @@ PSERVER_INFO_LIST_ENTRY SelectBestServer(IN PLCXL_LOCK_LIST server_list, IN INT 
 		}
 	}
 	//解锁列表
-	UnlockLCXLLockList(server_list);
+	UnlockLcxlList(server_list);
 	return best_server;
 }

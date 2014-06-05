@@ -33,7 +33,7 @@ typedef struct _LCXL_MODULE_SETTING_INFO {
 	LCXL_SERVER_PERFORMANCE	performance;
 	//------------------------LCXL_ROUTER角色------------------------
 	//服务器列表，SERVER_INFO_LIST_ENTRY
-	LCXL_LOCK_LIST			server_list;
+	LCXL_LIST			server_list;
 	//路由表超时时间，以秒为单位
 	INT						route_timeout;
 	//服务器检测信息
@@ -55,7 +55,7 @@ typedef struct _LCXL_SETTING{
 //删除路由信息
 //route_info:路由信息
 //server_list:路由信息所在的服务器
-__inline VOID DeleteRouteListEntry(IN OUT PLCXL_ROUTE_LIST_ENTRY route_info, IN PLCXL_LOCK_LIST server_list)
+__inline VOID DeleteRouteListEntry(IN OUT PLCXL_ROUTE_LIST_ENTRY route_info, IN PLCXL_LIST server_list)
 {
 	PSERVER_INFO_LIST_ENTRY server;
 

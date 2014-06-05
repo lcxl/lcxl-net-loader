@@ -46,7 +46,7 @@ VOID InitRouteListEntry(IN OUT PLCXL_ROUTE_LIST_ENTRY route_info, IN INT ipMode,
 	}
 }
 
-PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry(IN PLIST_ENTRY route_list, IN INT route_timeout, IN PLCXL_LOCK_LIST server_list, IN INT ip_mode, IN PVOID ip_header, IN PTCP_HDR tcp_header)
+PLCXL_ROUTE_LIST_ENTRY GetRouteListEntry(IN PLIST_ENTRY route_list, IN INT route_timeout, IN PLCXL_LIST server_list, IN INT ip_mode, IN PVOID ip_header, IN PTCP_HDR tcp_header)
 {
 	union {
 		PIPV4_HEADER ipv4_header;

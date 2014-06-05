@@ -31,7 +31,7 @@ NDIS_HANDLE         g_filter_driver_object;
 NDIS_HANDLE         g_ndis_filter_device_handle = NULL;
 PDEVICE_OBJECT      g_device_object = NULL;
 //过滤模块列表
-LCXL_LOCK_LIST		g_filter_list;
+LCXL_LIST		g_filter_list;
 
 //转发的NBL的内存TAG
 #define TAG_SEND_NBL 'SEND'
@@ -148,7 +148,7 @@ Return Value:
         //
         // Initialize spin locks
         //
-		InitLCXLLockList(&g_filter_list, DelLCXLFilterCallBack);
+		InitLcxlList(&g_filter_list, DelLCXLFilterCallBack);
 
 		
         Status = NdisFRegisterFilterDriver(DriverObject,
@@ -159,7 +159,7 @@ Return Value:
         {
             DEBUGP(DL_WARN, "Register filter driver failed.\n");
 
-			DelLCXLLockList(&g_filter_list);
+			DelLcxlList(&g_filter_list);
             break;
         }
 
@@ -169,7 +169,7 @@ Return Value:
         {
             NdisFDeregisterFilterDriver(g_filter_driver_handle);
             
-			DelLCXLLockList(&g_filter_list);
+			DelLcxlList(&g_filter_list);
             DEBUGP(DL_WARN, "Register device for the filter driver failed.\n");
             break;
         }
@@ -379,9 +379,9 @@ N.B.:  FILTER can use NdisRegisterDeviceEx to create a device, so the upper
             break;
         }
 
-		InitLCXLLockList(&filter->module.server_list, DelServerCallBack);
+		InitLcxlList(&filter->module.server_list, DelServerCallBack);
         filter->state = FilterPaused;
-		AddtoLCXLLockList(&g_filter_list, &filter->filter_module_link);
+		AddEntrytoLcxlList(&g_filter_list, &filter->filter_module_link);
     }
     while (bFalse);
 
@@ -690,9 +690,9 @@ NOTE: Called at PASSIVE_LEVEL and the filter is in paused state
 	
 	
 	//服务器列表每个服务器项引用-1
-	LockLCXLLockList(&pFilter->module.server_list);
-	list_entry = GetListofLCXLLockList(&pFilter->module.server_list)->Flink;
-	if (list_entry != GetListofLCXLLockList(&pFilter->module.server_list)) {
+	LockLcxlList(&pFilter->module.server_list);
+	list_entry = GetLcxlListHead(&pFilter->module.server_list)->Flink;
+	if (list_entry != GetLcxlListHead(&pFilter->module.server_list)) {
 		PSERVER_INFO_LIST_ENTRY server_info;
 		
 		server_info = GetServerbyListEntry(list_entry);
@@ -701,12 +701,12 @@ NOTE: Called at PASSIVE_LEVEL and the filter is in paused state
 		ASSERT(server_info->list_entry.ref_count == 0);
 		list_entry = list_entry->Flink;
 	}
-	UnlockLCXLLockList(&pFilter->module.server_list);
+	UnlockLcxlList(&pFilter->module.server_list);
 	
-	DelLCXLLockList(&pFilter->module.server_list);
+	DelLcxlList(&pFilter->module.server_list);
     //!添加代码!
 	//删除
-	DelFromLCXLLockList(&g_filter_list, &pFilter->filter_module_link);
+	RemoveEntryfromLcxlList(&g_filter_list, &pFilter->filter_module_link);
 
     DEBUGP(DL_TRACE, "<===FilterDetach Successfully\n");
     return;
@@ -759,15 +759,15 @@ Return Value:
     NdisFDeregisterFilterDriver(g_filter_driver_handle);
 
 #if DBG
-	LockLCXLLockList(&g_filter_list);
+	LockLcxlList(&g_filter_list);
     
-    ASSERT(IsListEmpty(GetListofLCXLLockList(&g_filter_list)));
+    ASSERT(IsListEmpty(GetLcxlListHead(&g_filter_list)));
 
-	UnlockLCXLLockList(&g_filter_list);
+	UnlockLcxlList(&g_filter_list);
 
 #endif
 	//删除列表
-	DelLCXLLockList(&g_filter_list);
+	DelLcxlList(&g_filter_list);
 
     DEBUGP(DL_TRACE, "<===FilterUnload\n");
     //添加代码
@@ -2378,8 +2378,8 @@ VOID CheckServerStatus(IN PLCXL_FILTER filter)
 	PNET_BUFFER_LIST	send_nbl_tail = NULL;
 	PNET_BUFFER_LIST    send_nbl;
 	//锁定
-	LockLCXLLockList(&filter->module.server_list);
-	head = GetListofLCXLLockList(&filter->module.server_list);
+	LockLcxlList(&filter->module.server_list);
+	head = GetLcxlListHead(&filter->module.server_list);
 	Link = head->Flink;
 	timestamp = KeQueryPerformanceCounter(NULL);
 	while (Link != head) {
@@ -2458,7 +2458,7 @@ VOID CheckServerStatus(IN PLCXL_FILTER filter)
 		Link = Link->Flink;
 	}
 	//解锁列表
-	UnlockLCXLLockList(&filter->module.server_list);
+	UnlockLcxlList(&filter->module.server_list);
 	//转发数据包给真实的服务器
 	if (NULL != send_nbl_head) {
 		NET_BUFFER_LIST_NEXT_NBL(send_nbl_tail) = NULL;
@@ -2522,9 +2522,9 @@ VOID FilterWorkThread(IN PVOID StartContext)
 			PLIST_ENTRY list_entry;
 			
 			//锁定网卡模块数量
-			LockLCXLLockList(&g_filter_list);
+			LockLcxlList(&g_filter_list);
 			//开始循环遍历网卡模块
-			list_head = GetListofLCXLLockList(&g_filter_list);
+			list_head = GetLcxlListHead(&g_filter_list);
 			list_entry = list_head->Flink;
 			while (list_entry != list_head) {
 				//KLOCK_QUEUE_HANDLE lock_handle;
@@ -2541,7 +2541,7 @@ VOID FilterWorkThread(IN PVOID StartContext)
 				//UnlockFilter(&lock_handle);
 				list_entry = list_entry->Flink;
 			}
-			UnlockLCXLLockList(&g_filter_list);
+			UnlockLcxlList(&g_filter_list);
 		}
 		
 	}
@@ -2669,7 +2669,7 @@ VOID ProcessCheckingNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN PETHERNET
 			mac_addr.Length = sizeof(DL_EUI48);
 			NdisMoveMemory(mac_addr.Address, &eth_header->eth_header.Source, sizeof(eth_header->eth_header.Source));
 			//锁定
-			LockLCXLLockList(&filter->module.server_list);
+			LockLcxlList(&filter->module.server_list);
 			server_info = FindServer(&filter->module.server_list, &mac_addr);
 			if (server_info != NULL) {
 				KLOCK_QUEUE_HANDLE lock_handle;
@@ -2686,7 +2686,7 @@ VOID ProcessCheckingNBL(IN PLCXL_FILTER filter, IN BOOLEAN is_recv, IN PETHERNET
 				UnLockServer(&lock_handle);
 			}
 			//解锁列表
-			UnlockLCXLLockList(&filter->module.server_list);
+			UnlockLcxlList(&filter->module.server_list);
 		}
 			break;
 		default:
@@ -3148,8 +3148,8 @@ PLCXL_FILTER FindFilter(IN NET_LUID miniport_net_luid)
 	BOOLEAN bFound = FALSE;
 	
 	ASSERT(g_filter_list.lock_count > 0);
-	filter = CONTAINING_RECORD(GetListofLCXLLockList(&g_filter_list)->Flink, LCXL_FILTER, filter_module_link);
-	while (&filter->filter_module_link != GetListofLCXLLockList(&g_filter_list)) {
+	filter = CONTAINING_RECORD(GetLcxlListHead(&g_filter_list)->Flink, LCXL_FILTER, filter_module_link);
+	while (&filter->filter_module_link != GetLcxlListHead(&g_filter_list)) {
 		if (miniport_net_luid.Value == filter->module.miniport_net_luid.Value) {
 			
 			bFound = TRUE;
