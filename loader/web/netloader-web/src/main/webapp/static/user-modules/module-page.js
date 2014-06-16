@@ -6,12 +6,15 @@ define(function(require, exports, module) {
 	var $=jQuery;
 	require("history");
 	var BsDialog = require("bs-dialog");
-	
+	var Handlebars = require("handlebars");
 	var ModuleList = require("module-list");
 	var VirtualAddrSetting = require("virtual-addr-setting");
 	
+	var tpl = require("text!template/module-page.htpl");
+	var template = Handlebars.compile(tpl);
+	
 	function ModulePage(select, data) {
-		$(select).html('<div class="module-list"></div>');
+		$(select).html(template(data));
 		//获取网卡列表
 		$.getJSON("netloader/module_list.do").done(
 			function(data) {
@@ -30,16 +33,16 @@ define(function(require, exports, module) {
 						body:"",
 						buttons:[ {
 							dismiss:true,
-							text:"关闭",
+							text:"关闭"
 						},{
 							id:"virtual-addr-setting-ok",
 							text:"确定",
-							btncls:"btn-primary",
-						},],
+							btncls:"btn-primary"
+						} ]
 					});
 					var virtualAddrSetting = new VirtualAddrSetting(bsDialog.bodytag, {
 						miniport_net_luid:	moduleData.miniport_net_luid,
-						virtual_addr:moduleData.virtual_addr,
+						virtual_addr: moduleData.virtual_addr
 					});
 					//监听按钮点击事件
 					bsDialog.onButtonClick = function(html, data) {
@@ -61,7 +64,7 @@ define(function(require, exports, module) {
 					
 				};
 			}).fail(function( jqxhr, textStatus, error ) {
-				new ModuleList(".module-list", data);
+				new ModuleList(".module-list", null);
 				var err = textStatus + ", " + error;
 				console.log( "Request Failed: " + err );
 			});

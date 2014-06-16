@@ -540,6 +540,45 @@ std::string CLCXLConfig::RoleToStr(int role)
 }
 
 
+CONFIG_SERVER * CLCXLConfig::FindServer(std::vector<CONFIG_SERVER> &server_list, const IF_PHYSICAL_ADDRESS &mac_addr)
+{
+	std::vector<CONFIG_SERVER>::iterator it;
+	for (it = server_list.begin(); it != server_list.end(); it++) {
+		if ((*it).server.mac_addr.Length == mac_addr.Length &&
+			memcmp((*it).server.mac_addr.Address, mac_addr.Address, mac_addr.Length) == 0) {
+			
+			return &(*it);
+		}
+	}
+	return NULL;
+}
+
+
+void CLCXLConfig::UpdateServer(std::vector<CONFIG_SERVER> &server_list, const CONFIG_SERVER &server)
+{
+	CONFIG_SERVER *exist_server = FindServer(server_list, server.server.mac_addr);
+	if (exist_server != NULL) {
+		*exist_server = server;
+	} else {
+		server_list.push_back(server);
+	}
+}
+
+bool CLCXLConfig::RemoveServer(std::vector<CONFIG_SERVER> &server_list, const IF_PHYSICAL_ADDRESS &mac_addr)
+{
+	std::vector<CONFIG_SERVER>::iterator it;
+	for (it = server_list.begin(); it != server_list.end(); it++) {
+		if ((*it).server.mac_addr.Length == mac_addr.Length &&
+			memcmp((*it).server.mac_addr.Address, mac_addr.Address, mac_addr.Length) == 0) {
+			it = server_list.erase(it);
+
+			return true;
+		}
+	}
+	return false;
+}
+
+
 
 
 

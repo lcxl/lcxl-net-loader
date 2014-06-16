@@ -286,40 +286,6 @@ bool CNetLoaderService::ProcessJsonData(const Json::Value &root, Json::Value &re
 	}
 		
 		break;
-	case JC_SERVER_LIST:
-	{
-		NET_LUID luid;
-		Json::Value server_list;
-
-		luid.Value = root[JSON_MINIPORT_NET_LUID].asInt64();
-		status = JS_JSON_DATA_NOT_FOUND;
-		if (luid.Value != 0) {
-			PCONFIG_MODULE module = m_Config.FindModuleByLuid(luid);
-			if (module) {
-				std::vector<CONFIG_SERVER>::iterator sit;
-					
-				status = JS_SUCCESS;
-				for (sit = module->server_list.begin(); sit != module->server_list.end(); sit++) {
-					Json::Value server;
-
-					server["status"] = (*sit).server.status;
-					server["ip_status"] = (*sit).server.ip_status;
-					server["mac_addr"] = string_format(
-						"%02x-%02x-%02x-%02x-%02x-%02x",
-						(*sit).server.mac_addr.Address[0],
-						(*sit).server.mac_addr.Address[1],
-						(*sit).server.mac_addr.Address[2],
-						(*sit).server.mac_addr.Address[3],
-						(*sit).server.mac_addr.Address[4],
-						(*sit).server.mac_addr.Address[5]).c_str();
-					server["comment"] = wstring_to_utf8string(wstring((*sit).comment)).c_str();
-					server_list.append(server);
-				}
-				ret[JSON_SERVER_LIST] = server_list;
-			}
-		}
-	}
-		break;
 	case JC_SET_VIRTUAL_ADDR:
 	{
 		NET_LUID miniport_net_luid;
@@ -339,6 +305,79 @@ bool CNetLoaderService::ProcessJsonData(const Json::Value &root, Json::Value &re
 			PCONFIG_MODULE module = m_Config.FindModuleByLuid(miniport_net_luid);
 			if (module) {
 				module->module.virtual_addr = addr;
+			}
+		} else {
+			status = JS_FAIL;
+		}
+	}
+		break;
+	case JC_SERVER_LIST:
+	{
+		NET_LUID luid;
+		Json::Value server_list;
+
+		luid.Value = root[JSON_MINIPORT_NET_LUID].asInt64();
+		status = JS_JSON_DATA_NOT_FOUND;
+		if (luid.Value != 0) {
+			PCONFIG_MODULE module = m_Config.FindModuleByLuid(luid);
+			if (module) {
+				std::vector<CONFIG_SERVER>::iterator sit;
+
+				status = JS_SUCCESS;
+				for (sit = module->server_list.begin(); sit != module->server_list.end(); sit++) {
+					Json::Value server;
+
+					server[ELEMENT_STATUS] = (*sit).server.status;
+					server[ELEMENT_IP_STATUS] = (*sit).server.ip_status;
+					server[ELEMENT_MAC_ADDR] = string_format(
+						"%02x-%02x-%02x-%02x-%02x-%02x",
+						(*sit).server.mac_addr.Address[0],
+						(*sit).server.mac_addr.Address[1],
+						(*sit).server.mac_addr.Address[2],
+						(*sit).server.mac_addr.Address[3],
+						(*sit).server.mac_addr.Address[4],
+						(*sit).server.mac_addr.Address[5]).c_str();
+					server[ELEMENT_COMMENT] = wstring_to_string(wstring((*sit).comment)).c_str();
+					server_list.append(server);
+				}
+				ret[JSON_SERVER_LIST] = server_list;
+			}
+		}
+	}
+		break;
+	case JC_ADD_SERVER:
+	{
+		NET_LUID luid;
+		CONFIG_SERVER server;
+		luid.Value = root[JSON_MINIPORT_NET_LUID].asInt64();
+		const Json::Value &server_json = root[ELEMENT_SERVER];
+
+		server.server.ip_status = server_json[ELEMENT_IP_STATUS].asInt();
+		server.server.mac_addr.Length = string_to_mac(server_json[ELEMENT_MAC_ADDR].asString(), server.server.mac_addr.Address, sizeof(server.server.mac_addr.Address));
+		server.server.status = server_json[ELEMENT_STATUS].asInt();
+		//添加服务
+		if (lnlAddServer(luid, &server.server)) {
+			PCONFIG_MODULE module = m_Config.FindModuleByLuid(luid);
+			if (module) {
+				CLCXLConfig::UpdateServer(module->server_list, server);
+			}
+		} else {
+			status = JS_FAIL;
+		}
+	}
+		break;
+	case JC_DEL_SERVER:
+	{
+		NET_LUID luid;
+		IF_PHYSICAL_ADDRESS mac_addr;
+
+		luid.Value = root[JSON_MINIPORT_NET_LUID].asInt64();
+		mac_addr.Length = string_to_mac(root[ELEMENT_MAC_ADDR].asString(), mac_addr.Address, sizeof(mac_addr.Address));
+		if (lnlDelServer(luid, &mac_addr)) {
+			PCONFIG_MODULE module = m_Config.FindModuleByLuid(luid);
+			if (module) {
+				//CLCXLConfig::UpdateServer(module->server_list, server);
+				CLCXLConfig::RemoveServer(module->server_list, mac_addr);
 			}
 		} else {
 			status = JS_FAIL;

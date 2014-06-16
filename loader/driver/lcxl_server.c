@@ -94,6 +94,7 @@ PSERVER_INFO_LIST_ENTRY SelectBestServer(IN PLCXL_LIST server_list, IN INT ip_mo
 	if (GetLcxlListCount(server_list) > 0) {
 		Link = GetLcxlListHead(server_list)->Flink;
 		switch (routing_algorithm) {
+		case RA_FAST_RESPONSE://最快响应时间
 		case RA_LEAST_CONNECTION://最小连接数
 			//遍历列表
 			while (Link != GetLcxlListHead(server_list))
@@ -178,8 +179,10 @@ PSERVER_INFO_LIST_ENTRY SelectBestServer(IN PLCXL_LIST server_list, IN INT ip_mo
 		}
 
 			break;
+			/*
 		case RA_FAST_RESPONSE://最快响应时间
 			break;
+			*/
 		default:
 			ASSERT(FALSE);
 			break;

@@ -136,6 +136,16 @@ public:
 	void UpdateModuleList(const std::vector<APP_MODULE> &module_list);
 	std::vector<CONFIG_MODULE> &ModuleList() { return m_ModuleList; }
 	CONFIG_MODULE *FindModuleByLuid(NET_LUID miniport_net_luid);
+	
+	static CONFIG_SERVER *FindServer(std::vector<CONFIG_SERVER> &server_list, const IF_PHYSICAL_ADDRESS &mac_addr);
+	//************************************
+	// 简介: 更新后端服务器列表中的server所指的服务器，如果server存在，则更新信息，如果不存在，则创建server信息
+	// 返回: void
+	// 参数: std::vector<CONFIG_SERVER> & server_list
+	// 参数: const CONFIG_SERVER & server
+	//************************************
+	static void UpdateServer(std::vector<CONFIG_SERVER> &server_list, const CONFIG_SERVER &server);
+	static bool RemoveServer(std::vector<CONFIG_SERVER> &server_list, const IF_PHYSICAL_ADDRESS &mac_addr);
 };
 
 #endif

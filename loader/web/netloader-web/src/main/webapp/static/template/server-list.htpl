@@ -1,10 +1,32 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Insert title here</title>
-</head>
-<body>
-
-</body>
-</html>
+{{#if server_list}}
+<table class="table table-bordered table-hover table-condensed lcxl-table-vert-middle">				
+					<thead>
+						<tr>
+							<th>MAC地址</th>
+							<th>虚拟IP启用状态</th>
+							<th>服务器状态</th>
+							<th>备注</th>
+							<th>管理</th>
+						</tr>
+					</thead>
+					<tbody>
+					{{#each server_list}}
+						<tr>
+							<td>{{mac_addr}}</td>
+							<td><span
+								class="badge">IPv4:{{#ifEnableIpv4 ip_status}}已启用{{else}}已禁用{{/ifEnableIpv4}}</span>
+								<span
+								class="badge">IPv6:{{#ifEnableIpv6 ip_status}}已启用{{else}}已禁用{{/ifEnableIpv6}}</span>
+								</td>
+							<td><span class="badge">{{#ifServerOnline status}}已上线{{else}}已下线{{/ifServerOnline}}</span>{{#ifServerChecking status}}<span class="badge">正在检测可用性</span>{{/ifServerChecking}}{{#ifServerDeleted status}}<span class="badge">已删除</span>{{/ifServerDeleted}}</td>
+							<td>{{comment}}</td>
+							<td><a class="btn btn-default btn-xs" id="server-edit-{{mac_addr}}"><span class="glyphicon glyphicon-edit">编辑</span></a>
+							<a class="btn btn-warning btn-xs" id="server-del-{{mac_addr}}"><span class="glyphicon glyphicon-remove">删除</span></a>
+							</td>
+						</tr>
+						{{/each}}
+						</tbody>
+			</table>
+{{else}}
+<div class="alert alert-danger"><strong>注意：</strong>没有后端服务器列表或获取后端服务器列表失败！</div>
+{{/if}}

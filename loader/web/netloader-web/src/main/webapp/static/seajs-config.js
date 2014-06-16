@@ -13,7 +13,7 @@ seajs.config({
 	  "handlebars":"sea-modules/handlebars/handlebars-v1.3.0.js",
 	  
 	  //"catalog":"user-modules/catalog.js",
-	  
+	  "handlebars-helper":"user-modules/handlebars-helper.js",
 	  "navbar":"user-modules/navbar.js",
 	  "bs-dialog":"user-modules/bs-dialog.js",
 	  "bs-msgbox":"user-modules/bs-msgbox.js",
@@ -28,12 +28,10 @@ seajs.config({
 	  "server-list":"user-modules/server-list.js",
 	  
 	  "logon-page":"user-modules/logon-page.js",
-	  "logon":"user-modules/logon.js",
-	  //"mysql-cluster":"html/mysql-cluster.js",
-	  //"qingcloud":"html/qingcloud.js",
+	  "logon":"user-modules/logon.js"
 	  
     },
     preload:[
              "seajs-text",
-             ],
+             ]
   });
