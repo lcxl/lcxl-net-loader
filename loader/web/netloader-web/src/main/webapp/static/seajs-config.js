@@ -1,4 +1,5 @@
 ﻿//seajs配置文件
+//Author: LCXL(lcx87654321@163.com)
 seajs.config({
     //base: "",
     alias: {

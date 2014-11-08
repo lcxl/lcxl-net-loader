@@ -55,7 +55,8 @@
     <finalName>web</finalName>
   </build>
   <properties>
-  	<spring.version>4.0.2.RELEASE</spring.version>
+  	<spring.version>4.0.7.RELEASE</spring.version>
   	<jackson.version>1.9.13</jackson.version>
+  	<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 </project>

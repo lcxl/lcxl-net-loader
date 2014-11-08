@@ -1,0 +1,9 @@
+<div>
+	<button type="button" class="btn btn-danger" id="btn-back"><span class="glyphicon glyphicon-arrow-left">返回</span></button>
+	<span class="pull-right">
+		<button type="button" class="btn btn-primary" id="btn-add-server"><span class="glyphicon glyphicon-plus">添加服务器</span></button>
+		<button type="button" class="btn btn-info" id="btn-refresh"><span class="glyphicon glyphicon-refresh">刷新</span></button>
+	</span>
+</div>
+<div class="server-list">
+</div>
