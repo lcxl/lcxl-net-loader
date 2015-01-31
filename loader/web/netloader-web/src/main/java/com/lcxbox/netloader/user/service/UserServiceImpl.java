@@ -15,14 +15,16 @@ import com.lcxbox.socket.json.SocketRequest;
 @Service()
 public class UserServiceImpl implements IUserService {
 
-	public LogonRespnse logon(String host, Integer port, String username, String password) throws IOException {
+	public LogonRespnse logon(String host, Integer port, String username,
+			String password) throws IOException {
 		// TODO Auto-generated method stub
 		LogonRequest request = new LogonRequest();
 		request.setCode(LcxlNetCode.JC_LOGON);
 		request.setUsername(username);
 		request.setPassword(password);
 		try {
-		return SocketRequest.jsonRequest(host, port, request, LogonRespnse.class);
+			return SocketRequest.jsonRequest(host, port, request,
+					LogonRespnse.class);
 		} catch (UnknownHostException e) {
 			LogonRespnse response = new LogonRespnse();
 			response.setCode(LcxlNetCode.JC_LOGON);

@@ -20,11 +20,17 @@ import com.lcxbox.netloader.host.model.ModuleListResponse;
 import com.lcxbox.netloader.host.model.Server;
 import com.lcxbox.netloader.host.model.ServerListResponse;
 import com.lcxbox.netloader.host.service.IHostService;
-
+/**
+ * 主机控制类
+ * @author lcxl
+ *
+ */
 @Controller
 @RequestMapping(value = "/netloader")
 public class HostController {
-	
+	/**
+	 * 主机服务接口
+	 */
 	@Autowired
     private IHostService hostService; 
 	
@@ -39,6 +45,7 @@ public class HostController {
 	public ModuleListResponse getModuleList(HttpServletRequest request, HttpServletResponse response) throws UnknownHostException, IOException {
 		return hostService.getModuleList(CookieHelper.getHostInfo(request.getCookies()));
 	}
+	
 	/**
 	 * 设置虚拟IP地址
 	 * @param request
@@ -75,6 +82,7 @@ public class HostController {
 		
 		return hostService.setVirtualAddr(CookieHelper.getHostInfo(request.getCookies()), miniportNetLuid, virtualAddr);
 	}
+	
 	/**
 	 * 获取后端服务器列表
 	 * @param request
@@ -94,6 +102,19 @@ public class HostController {
 		
 	}
 	
+	/**
+	 * 
+	 * @param request
+	 * @param response
+	 * @param miniportNetLuid
+	 * @param status
+	 * @param ipStatus
+	 * @param macAddr
+	 * @param comment
+	 * @return
+	 * @throws UnknownHostException
+	 * @throws IOException
+	 */
 	@RequestMapping(value = "/add_server.do", method=RequestMethod.POST)
 	@ResponseBody
 	public CommonResponse addServer(
@@ -113,6 +134,16 @@ public class HostController {
 		return hostService.addServer(CookieHelper.getHostInfo(request.getCookies()), miniportNetLuid, server);
 	}
 	
+	/**
+	 * 
+	 * @param request
+	 * @param response
+	 * @param miniportNetLuid
+	 * @param macAddr
+	 * @return
+	 * @throws UnknownHostException
+	 * @throws IOException
+	 */
 	@RequestMapping(value = "/del_server.do", method=RequestMethod.POST)
 	@ResponseBody
 	public CommonResponse delServer(

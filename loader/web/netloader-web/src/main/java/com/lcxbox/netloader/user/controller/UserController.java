@@ -16,13 +16,28 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import com.lcxbox.common.model.LcxlNetCode;
 import com.lcxbox.netloader.user.model.LogonRespnse;
 import com.lcxbox.netloader.user.service.IUserService;
-
+/**
+ * 用户控制类
+ * @author lcxl
+ *
+ */
 @Controller
 @RequestMapping(value = "/user")
 public class UserController {
 	@Autowired
     private IUserService userService;
-	
+	/**
+	 * 登录
+	 * @param request
+	 * @param response
+	 * @param host
+	 * @param port
+	 * @param username
+	 * @param password
+	 * @param rememberMe
+	 * @return
+	 * @throws IOException
+	 */
 	@RequestMapping(value = "/logon.do", method=RequestMethod.POST)
 	@ResponseBody
 	public LogonRespnse logon(HttpServletRequest request, 

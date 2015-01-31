@@ -23,7 +23,7 @@ define(function(require, exports, module) {
 		}, ]
 	});
 	//his is the same as the onpopstate event except it does not fire for traditional anchors
-	$(window).on('statechange',function(){
+	$(window).on('statechange', function(){
 		// Do something, inspect History.getState() to decide what
 		var state = History.getState();
 		var modulestate = History.normalizeState({url:"?nav=index"});
@@ -50,7 +50,7 @@ define(function(require, exports, module) {
 				History.replaceState(null, "网卡列表", "?nav=index");
 			}
 		} else {
-			//需要登录
+			//没登陆信息，需要登录
 			if (state.url == logonstate.url) {
 				var LogonPage = require("logon-page");
 				new LogonPage(".lcxlpage", state.data);
@@ -63,7 +63,7 @@ define(function(require, exports, module) {
 		console.log("statechange");
 	});
 	//this is the same as the onhashchange event except it does not fire for states
-	$(window).on('anchorchange',function(){
+	$(window).on('anchorchange', function(){
 		// Do something, inspect History.getState() to decide what
 		var state = History.getState();
 		console.log("anchorchange");

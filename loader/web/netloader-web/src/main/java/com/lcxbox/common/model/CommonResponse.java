@@ -1,5 +1,9 @@
 package com.lcxbox.common.model;
-
+/**
+ * 通用响应类
+ * @author lcxl
+ *
+ */
 public class CommonResponse {
 	private Integer code;
 	private Integer status;

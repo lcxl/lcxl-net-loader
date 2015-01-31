@@ -9,7 +9,12 @@ define(function(require, exports, module) {
 	
 	function LogonPage(select, data) {
 		$(select).html('<div class="logon"></div>');
-		var logon = new Logon(".logon");
+		var logonData={
+				host:$.cookie("host"),
+				port:$.cookie("port"),
+				username: $.cookie("username")
+		};
+		var logon = new Logon(".logon", logonData);
 		//按钮点击事件
 		logon.OnLogonBtnClick = function(formsel) {
 			$("#alert").hide();

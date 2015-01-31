@@ -88,6 +88,8 @@ private:
 	int								m_Port;
 	std::vector<CONFIG_MODULE>		m_ModuleList;
 	CRITICAL_SECTION				m_CriticalSection;
+private:
+	static tinyxml2::XMLElement *FindOrCreateChindElement(tinyxml2::XMLElement *owner_element, const char *value);
 public:
 	//************************************
 	// 简介: 将字符串转换为角色类型

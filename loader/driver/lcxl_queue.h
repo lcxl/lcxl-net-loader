@@ -1,6 +1,7 @@
 ﻿#ifndef _LCXL_QUEUE_H_
 #define _LCXL_QUEUE_H_
-
+//LCXL
+// 队列相关结构
 //
 // Types and macros to manipulate packet queue
 //

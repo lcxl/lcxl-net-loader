@@ -3,7 +3,11 @@ package com.lcxbox.common;
 import javax.servlet.http.Cookie;
 
 import com.lcxbox.common.model.HostInfo;
-
+/**
+ * Cookie操作帮助类
+ * @author lcxl
+ *
+ */
 public class CookieHelper {
 	public static HostInfo getHostInfo(Cookie[] cookies) {
 		HostInfo info = new HostInfo();

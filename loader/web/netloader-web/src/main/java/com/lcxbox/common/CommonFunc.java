@@ -1,5 +1,9 @@
 package com.lcxbox.common;
-
+/**
+ * 常用方法
+ * @author lcxl
+ *
+ */
 public class CommonFunc {
 	
 	public static long bytesToLong(byte[] data) {

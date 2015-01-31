@@ -24,4 +24,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1 Debug|x64'">
     <TestCertificate>CN="WDKTestCert lcxl,130446949275621617" | CC65848E6290EE254DA51691C01D303BC1449FB1</TestCertificate>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win7 Release|Win32'">
+    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
+  </PropertyGroup>
 </Project>

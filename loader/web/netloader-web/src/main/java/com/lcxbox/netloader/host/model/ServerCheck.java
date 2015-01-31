@@ -1,7 +1,11 @@
 package com.lcxbox.netloader.host.model;
 
 import org.codehaus.jackson.annotate.JsonProperty;
-
+/**
+ * 服务检查相关信息
+ * @author lcxl
+ *
+ */
 public class ServerCheck {
 	@JsonProperty("interval")
 	private Integer interval;

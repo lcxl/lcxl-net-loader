@@ -4,7 +4,11 @@ import org.codehaus.jackson.annotate.JsonProperty;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
 
 import com.lcxbox.common.model.CommonRequest;
-
+/**
+ * 设置虚拟IP请求类
+ * @author lcxl
+ *
+ */
 @JsonSerialize(include=JsonSerialize.Inclusion.NON_EMPTY)
 public class SetVirtualAddrRequest extends CommonRequest {
 	@JsonProperty("miniport_net_luid")

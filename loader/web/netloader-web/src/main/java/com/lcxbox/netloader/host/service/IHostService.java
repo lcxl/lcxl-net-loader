@@ -9,7 +9,11 @@ import com.lcxbox.netloader.host.model.LcxlAddrInfo;
 import com.lcxbox.netloader.host.model.ModuleListResponse;
 import com.lcxbox.netloader.host.model.Server;
 import com.lcxbox.netloader.host.model.ServerListResponse;
-
+/**
+ * 主机服务接口
+ * @author lcxl
+ *
+ */
 public interface IHostService {
 	public ModuleListResponse getModuleList(HostInfo hostInfo) throws UnknownHostException, IOException;
 	public ServerListResponse getServerList(HostInfo hostInfo, long miniportNetLuid) throws UnknownHostException, IOException;

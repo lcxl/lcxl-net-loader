@@ -18,7 +18,11 @@ import com.lcxbox.netloader.host.model.ServerListRequest;
 import com.lcxbox.netloader.host.model.ServerListResponse;
 import com.lcxbox.netloader.host.model.SetVirtualAddrRequest;
 import com.lcxbox.socket.json.SocketRequest;
-
+/**
+ * 主机服务实现类
+ * @author lcxl
+ *
+ */
 @Service()
 public class HostServiceImpl implements IHostService {
 

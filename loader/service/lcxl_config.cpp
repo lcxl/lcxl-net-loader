@@ -118,6 +118,17 @@ void CLCXLConfig::UpdateModuleList(const std::vector<APP_MODULE> &module_list)
 	}
 }
 
+tinyxml2::XMLElement *CLCXLConfig::FindOrCreateChindElement(tinyxml2::XMLElement *owner_element, const char *value)
+{
+	tinyxml2::XMLElement *element;
+	element = owner_element->FirstChildElement(value);
+	if (element == NULL) {
+		element = owner_element->GetDocument()->NewElement(value);
+		owner_element->InsertEndChild(element);
+	}
+	return element;
+}
+
 tinyxml2::XMLElement * CLCXLConfig::WriteModuleList(tinyxml2::XMLElement *owner_element, const std::vector<CONFIG_MODULE> &module_list)
 {
 	std::vector<CONFIG_MODULE>::const_iterator it;
@@ -134,17 +145,15 @@ tinyxml2::XMLElement * CLCXLConfig::WriteModule(tinyxml2::XMLElement *owner_elem
 	tinyxml2::XMLElement *element;
 
 	//插入角色
-	element = owner_element->GetDocument()->NewElement(ELEMENT_ROLENAME);
+	element = FindOrCreateChindElement(owner_element, ELEMENT_ROLENAME);
 	element->SetAttribute(ATTRIBUTE_VALUE, RoleToStr(module.module.lcxl_role).c_str());
-	owner_element->InsertEndChild(element);
 
 	//写入miniport_net_luid
-	element = owner_element->GetDocument()->NewElement(ELEMENT_MINIPORT_NET_LUID);
+	element = FindOrCreateChindElement(owner_element, ELEMENT_MINIPORT_NET_LUID);
 	element->SetAttribute(ATTRIBUTE_VALUE, std::to_string(module.module.miniport_net_luid.Value).c_str());
-	owner_element->InsertEndChild(element);
 
 	//写入mac_addr
-	element = owner_element->GetDocument()->NewElement(ELEMENT_MAC_ADDR);
+	element = FindOrCreateChindElement(owner_element, ELEMENT_MAC_ADDR);
 	element->SetAttribute(ATTRIBUTE_VALUE, string_format(
 		"%02x-%02x-%02x-%02x-%02x-%02x",
 		module.module.mac_addr.Address[0],
@@ -153,7 +162,6 @@ tinyxml2::XMLElement * CLCXLConfig::WriteModule(tinyxml2::XMLElement *owner_elem
 		module.module.mac_addr.Address[3],
 		module.module.mac_addr.Address[4],
 		module.module.mac_addr.Address[5]).c_str());
-	owner_element->InsertEndChild(element);
 
 	//插入virtual_addr
 	owner_element->InsertEndChild(
@@ -164,9 +172,8 @@ tinyxml2::XMLElement * CLCXLConfig::WriteModule(tinyxml2::XMLElement *owner_elem
 	owner_element->InsertEndChild(WriteServerList(owner_element->GetDocument()->NewElement(ELEMENT_SERVER_LIST), module.server_list));
 
 	//插入路由表超时时间，以秒为单位
-	element = owner_element->GetDocument()->NewElement(ELEMENT_ROUTE_TIMEOUT);
+	element = FindOrCreateChindElement(owner_element, ELEMENT_ROUTE_TIMEOUT);
 	element->SetAttribute(ATTRIBUTE_VALUE, module.module.route_timeout);
-	owner_element->InsertEndChild(element);
 
 	//插入服务器检测信息
 	owner_element->InsertEndChild(
@@ -175,14 +182,12 @@ tinyxml2::XMLElement * CLCXLConfig::WriteModule(tinyxml2::XMLElement *owner_elem
 		module.module.server_check));
 
 	//插入路由算法，有RA_....
-	element = owner_element->GetDocument()->NewElement(ELEMENT_ROUTING_ALGORITHM);
+	element = FindOrCreateChindElement(owner_element, ELEMENT_ROUTING_ALGORITHM);
 	element->SetAttribute(ATTRIBUTE_VALUE, module.module.routing_algorithm);
-	owner_element->InsertEndChild(element);
 
 	//写入额外的一些信息
-	element = owner_element->GetDocument()->NewElement(ELEMENT_MINIPORT_FRIENDLY_NAME);
+	element = FindOrCreateChindElement(owner_element, ELEMENT_MINIPORT_FRIENDLY_NAME);
 	element->SetAttribute(ATTRIBUTE_VALUE, wstring_to_utf8string(std::wstring(module.module.miniport_friendly_name)).c_str());
-	owner_element->InsertEndChild(element);
 
 	return owner_element;
 }
@@ -192,32 +197,27 @@ tinyxml2::XMLElement * CLCXLConfig::WriteAddrInfo(tinyxml2::XMLElement *owner_el
 	//CONFIG_MODULE_VIRTUAL_ADDR
 	tinyxml2::XMLElement *element;
 	//写入状态
-	element = owner_element->GetDocument()->NewElement(ELEMENT_STATUS);
+	element = FindOrCreateChindElement(owner_element, ELEMENT_STATUS);
 	element->SetAttribute(ATTRIBUTE_VALUE, addr.status);
-	owner_element->InsertEndChild(element);
 	//写入ipv4
-	element = owner_element->GetDocument()->NewElement(ELEMENT_IPV4);
+	element = FindOrCreateChindElement(owner_element, ELEMENT_IPV4);
 	char ipv4[16];
 	inet_ntop(AF_INET, const_cast<IN_ADDR*>(&addr.ipv4), ipv4, sizeof(ipv4) / sizeof(ipv4[0]));
 	element->SetAttribute(ATTRIBUTE_VALUE, ipv4);
-	owner_element->InsertEndChild(element);
 
 	//写入IPv4前缀
-	element = owner_element->GetDocument()->NewElement(ELEMENT_IPV4_ONLINK_PREFIX_LENGTH);
+	element = FindOrCreateChindElement(owner_element, ELEMENT_IPV4_ONLINK_PREFIX_LENGTH);
 	element->SetAttribute(ATTRIBUTE_VALUE, addr.ipv4_onlink_prefix_length);
-	owner_element->InsertEndChild(element);
 
 	//写入ipv6
-	element = owner_element->GetDocument()->NewElement(ELEMENT_IPV6);
+	element = FindOrCreateChindElement(owner_element, ELEMENT_IPV6);
 	char ipv6[100];
 	inet_ntop(AF_INET6, const_cast<IN6_ADDR*>(&addr.ipv6), ipv6, sizeof(ipv6) / sizeof(ipv6[0]));
 	element->SetAttribute(ATTRIBUTE_VALUE, ipv6);
-	owner_element->InsertEndChild(element);
 
 	//写入IPv6前缀
-	element = owner_element->GetDocument()->NewElement(ELEMENT_IPV6_ONLINK_PREFIX_LENGTH);
+	element = FindOrCreateChindElement(owner_element, ELEMENT_IPV6_ONLINK_PREFIX_LENGTH);
 	element->SetAttribute(ATTRIBUTE_VALUE, addr.ipv6_onlink_prefix_length);
-	owner_element->InsertEndChild(element);
 
 	return owner_element;
 }
@@ -227,19 +227,16 @@ tinyxml2::XMLElement * CLCXLConfig::WriteServerCheck(tinyxml2::XMLElement *owner
 	tinyxml2::XMLElement *element;
 
 	//插入服务器检测间隔，以秒为单位
-	element = owner_element->GetDocument()->NewElement(ELEMENT_INTERVAL);
+	element = FindOrCreateChindElement(owner_element, ELEMENT_INTERVAL);
 	element->SetAttribute(ATTRIBUTE_VALUE, server_check.interval);
-	owner_element->InsertEndChild(element);
 
 	//插入服务器检测超时时间，以秒为单位
-	element = owner_element->GetDocument()->NewElement(ELEMENT_TIMEOUT);
+	element = FindOrCreateChindElement(owner_element, ELEMENT_TIMEOUT);
 	element->SetAttribute(ATTRIBUTE_VALUE, server_check.timeout);
-	owner_element->InsertEndChild(element);
 
 	//插入服务器检测失败时的重试次数
-	element = owner_element->GetDocument()->NewElement(ELEMENT_RETRY_NUMBER);
+	element = FindOrCreateChindElement(owner_element, ELEMENT_RETRY_NUMBER);
 	element->SetAttribute(ATTRIBUTE_VALUE, server_check.retry_number);
-	owner_element->InsertEndChild(element);
 	return owner_element;
 }
 
@@ -256,21 +253,18 @@ tinyxml2::XMLElement * CLCXLConfig::WriteServerList(tinyxml2::XMLElement *owner_
 tinyxml2::XMLElement * CLCXLConfig::WriteServer(tinyxml2::XMLElement *owner_element, const CONFIG_SERVER &server)
 {
 	tinyxml2::XMLElement *element;
-
-	element = owner_element->GetDocument()->NewElement(ELEMENT_STATUS);
+	element = FindOrCreateChindElement(owner_element, ELEMENT_STATUS);
 	element->SetAttribute(ATTRIBUTE_VALUE, server.server.status);
-	owner_element->InsertEndChild(element);
+	
 
-	element = owner_element->GetDocument()->NewElement(ELEMENT_IP_STATUS);
+	element = FindOrCreateChindElement(owner_element, ELEMENT_IP_STATUS);
 	element->SetAttribute(ATTRIBUTE_VALUE, server.server.ip_status);
-	owner_element->InsertEndChild(element);
 
-	element = owner_element->GetDocument()->NewElement(ELEMENT_COMMENT);
+	element = FindOrCreateChindElement(owner_element, ELEMENT_COMMENT);
 	std::wstring comment = server.comment;
 	element->SetAttribute(ATTRIBUTE_VALUE, wstring_to_utf8string(comment).c_str());
-	owner_element->InsertEndChild(element);
 
-	element = owner_element->GetDocument()->NewElement(ELEMENT_MAC_ADDR);
+	element = FindOrCreateChindElement(owner_element, ELEMENT_MAC_ADDR);
 	element->SetAttribute(ATTRIBUTE_VALUE, string_format(
 		"%02x-%02x-%02x-%02x-%02x-%02x",
 		server.server.mac_addr.Address[0],
@@ -279,7 +273,6 @@ tinyxml2::XMLElement * CLCXLConfig::WriteServer(tinyxml2::XMLElement *owner_elem
 		server.server.mac_addr.Address[3],
 		server.server.mac_addr.Address[4],
 		server.server.mac_addr.Address[5]).c_str());
-	owner_element->InsertEndChild(element);
 
 	return owner_element;
 }

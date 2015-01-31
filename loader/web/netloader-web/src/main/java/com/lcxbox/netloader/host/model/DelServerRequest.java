@@ -3,7 +3,11 @@ package com.lcxbox.netloader.host.model;
 import org.codehaus.jackson.annotate.JsonProperty;
 
 import com.lcxbox.common.model.CommonRequest;
-
+/**
+ * 移除服务器请求
+ * @author lcxl
+ *
+ */
 public class DelServerRequest extends CommonRequest {
 	@JsonProperty("miniport_net_luid")
 	private long miniportNetLuid; 

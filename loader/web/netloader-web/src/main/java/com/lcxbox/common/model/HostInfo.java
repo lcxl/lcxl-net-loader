@@ -1,5 +1,9 @@
 package com.lcxbox.common.model;
-
+/**
+ * LCXL Netloader服务所在主机的相关信息
+ * @author lcxl
+ *
+ */
 public class HostInfo {
 	private String host;
 	private Integer port;

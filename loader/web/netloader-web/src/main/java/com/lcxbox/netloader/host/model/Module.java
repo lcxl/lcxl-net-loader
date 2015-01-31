@@ -1,7 +1,11 @@
 package com.lcxbox.netloader.host.model;
 
 import org.codehaus.jackson.annotate.JsonProperty;
-
+/**
+ * 模块信息
+ * @author lcxl
+ *
+ */
 public class Module {
 	private Boolean isexist;
 	
