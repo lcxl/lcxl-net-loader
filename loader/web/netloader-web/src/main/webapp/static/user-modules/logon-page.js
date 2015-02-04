@@ -43,6 +43,7 @@ define(function(require, exports, module) {
 					$.cookie("port", $("#port").val(), info);
 					$.cookie("username", $("#username").val(), info);
 					$.cookie("password", $("#password").val(), info);
+					$.cookie("islogon", true);
 					//后退
 					History.back();
 				}

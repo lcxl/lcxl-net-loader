@@ -2,7 +2,6 @@ package com.lcxbox.netloader.user.controller;
 
 import java.io.IOException;
 
-import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -13,7 +12,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import com.lcxbox.common.model.LcxlNetCode;
 import com.lcxbox.netloader.user.model.LogonRespnse;
 import com.lcxbox.netloader.user.service.IUserService;
 /**

@@ -26,6 +26,15 @@ typedef struct _LCXL_ARP_ETHERNET {
 	IN_ADDR				TargetProtocolAddress;
 } LCXL_ARP_ETHERNET, *PLCXL_ARP_ETHERNET;
 
+//************************************
+// Method:    LCXLReadARPEthernet
+// FullName:  LCXLReadARPEthernet
+// Access:    public 
+// Returns:   VOID
+// Qualifier:
+// Parameter: IN PARP_HEADER arp_header
+// Parameter: IN OUT PLCXL_ARP_ETHERNET lcxl_arp_ethernet
+//************************************
 __inline VOID LCXLReadARPEthernet(IN PARP_HEADER arp_header, IN OUT PLCXL_ARP_ETHERNET lcxl_arp_ethernet)
 {
 	ASSERT(arp_header != NULL && lcxl_arp_ethernet != NULL);

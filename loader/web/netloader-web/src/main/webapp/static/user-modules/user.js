@@ -23,7 +23,8 @@ define(function(require, exports, module) {
 	User.prototype.islogon = function() {
 		var host = $.cookie("host");
 		var port = $.cookie("port");
-		return (host != null && port  != null);
+		var islogon = $.cookie("logon");
+		return (host != null && port  != null && islogon);
 	};
 	
 	module.exports=User;

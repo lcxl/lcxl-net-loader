@@ -32,7 +32,8 @@ define(function(require, exports, module) {
 		//
 		var host = $.cookie("host");
 		var port = $.cookie("port");
-		if (host != null && port  != null) {
+		var islogon = $.cookie("logon");
+		if (host != null && port  != null && islogon) {
 			if (state.url == modulestate.url) {
 				var ModulePage = require("module-page");
 				new ModulePage(".lcxlpage");
