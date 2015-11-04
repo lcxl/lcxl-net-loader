@@ -1,8 +1,12 @@
-﻿#ifndef _DRV_INTERFACE_H_
+﻿/************************************************************************/
+/* 驱动接口定义文件                                                     */
+/* Author: LCXL                                                         */
+/************************************************************************/
+#ifndef _DRV_INTERFACE_H_
 #define _DRV_INTERFACE_H_
 
 #include "drv_interface_type.h"
-
+//定义NDIS控制码
 #define _NDIS_CONTROL_CODE(request,method) \
 	CTL_CODE(FILE_DEVICE_PHYSICAL_NETCARD, request, method, FILE_ANY_ACCESS)
 //重启模块

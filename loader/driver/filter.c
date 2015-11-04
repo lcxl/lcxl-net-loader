@@ -1880,7 +1880,7 @@ N.B.: It is important to check the ReceiveFlags in NDIS_TEST_RECEIVE_CANNOT_PEND
 
 			if (return_data.code == PNRC_CHECKING_NBL) {
 				PNET_BUFFER_LIST    send_nbl;
-				KLOCK_QUEUE_HANDLE lock_handle;
+				//KLOCK_QUEUE_HANDLE lock_handle;
 				LCXL_CHECKING_HEADER checking_header;
 
 				checking_header.code = CHECKING_CODE_RESPONSE;

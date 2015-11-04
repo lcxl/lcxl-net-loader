@@ -18,7 +18,7 @@ typedef struct _LCXL_ROUTE_LIST_ENTRY {
 #define RS_NORMAL   0x01				//正常
 #define RS_LAST_ACK 0x02				//正在等待最后一个ACK包
 #define RS_CLOSED   0x03				//连接已关闭
-	int                     status;		//路由状态
+	int                     status;		//路由状态，RS_XXX
 	LCXL_IP					src_ip;		//源IP地址
 	unsigned short	        src_port;	//源端口号
 	unsigned short	        dst_port;	//目的端口号

@@ -1,11 +1,13 @@
-#ifndef _KALMAN_H_
-#define _KALMAN_H_
+
 /*
 author:
 LCX
 abstract:
 kalmanÂË²¨Í·ÎÄ¼þ
 */
+#ifndef _KALMAN_H_
+#define _KALMAN_H_
+
 
 typedef struct _KALMAN_STATE {
 	double prevData;

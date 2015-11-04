@@ -473,6 +473,7 @@ void CALLBACK CNetLoaderService::IpAddressChangeEvent(PVOID callerContext, PMIB_
 {
 	CNetLoaderService * service;
 	ADDRESS_FAMILY addressFamily;
+	char ip_addr[100];
 
 	service = static_cast<CNetLoaderService *>(callerContext);
 	// Ensure that this is the correct notification before setting gCallbackComplete
@@ -492,9 +493,12 @@ void CALLBACK CNetLoaderService::IpAddressChangeEvent(PVOID callerContext, PMIB_
 			OutputDebugStr(_T("\tAddressFamily: %d\n"), addressFamily);
 			break;
 		}
-		if (addressFamily == AF_INET) {
-			OutputDebugStr(_T("IPv4 address:  %s\n"), string_to_tstring(std::string(inet_ntoa(row->Address.Ipv4.sin_addr))).c_str());
-		}
+		
+		//获取IP地址
+		inet_ntop(AF_INET, &row->Address, ip_addr, sizeof(ip_addr) / sizeof(ip_addr[0]));
+			
+		OutputDebugStr(_T("Current IP is %s\n"), string_to_tstring(std::string(ip_addr)).c_str());
+		
 		//如果IP地址状态不是正常
 		if (row->DadState != IpDadStatePreferred) {
 

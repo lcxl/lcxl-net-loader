@@ -1,28 +1,34 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Test|Win32'">
-    <TestCertificate>CN="WDKTestCert lcxl,130446949275621617" | CC65848E6290EE254DA51691C01D303BC1449FB1</TestCertificate>
+    <TestCertificate>CN="WDKTestCert lcxbo,130911089471089385" | 8BEAE201C4DFE872C361386BAADD7C4FDE362A34</TestCertificate>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win8 Debug|Win32'">
-    <TestCertificate>CN="WDKTestCert lcxl,130446949275621617" | CC65848E6290EE254DA51691C01D303BC1449FB1</TestCertificate>
+    <TestCertificate>CN="WDKTestCert lcxbo,130911089471089385" | 8BEAE201C4DFE872C361386BAADD7C4FDE362A34</TestCertificate>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win7 Debug|Win32'">
-    <TestCertificate>CN="WDKTestCert lcxl,130446949275621617" | CC65848E6290EE254DA51691C01D303BC1449FB1</TestCertificate>
+    <TestCertificate>CN="WDKTestCert lcxbo,130911089471089385" | 8BEAE201C4DFE872C361386BAADD7C4FDE362A34</TestCertificate>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1 Debug|Win32'">
-    <TestCertificate>CN="WDKTestCert lcxl,130446949275621617" | CC65848E6290EE254DA51691C01D303BC1449FB1</TestCertificate>
+    <TestCertificate>CN="WDKTestCert lcxbo,130911089471089385" | 8BEAE201C4DFE872C361386BAADD7C4FDE362A34</TestCertificate>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win10 Debug|Win32'">
+    <TestCertificate>CN="WDKTestCert lcxbo,130911089471089385" | 8BEAE201C4DFE872C361386BAADD7C4FDE362A34</TestCertificate>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Test|x64'">
-    <TestCertificate>CN="WDKTestCert lcxl,130446949275621617" | CC65848E6290EE254DA51691C01D303BC1449FB1</TestCertificate>
+    <TestCertificate>CN="WDKTestCert lcxbo,130911089471089385" | 8BEAE201C4DFE872C361386BAADD7C4FDE362A34</TestCertificate>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win8 Debug|x64'">
-    <TestCertificate>CN="WDKTestCert lcxl,130446949275621617" | CC65848E6290EE254DA51691C01D303BC1449FB1</TestCertificate>
+    <TestCertificate>CN="WDKTestCert lcxbo,130911089471089385" | 8BEAE201C4DFE872C361386BAADD7C4FDE362A34</TestCertificate>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win7 Debug|x64'">
-    <TestCertificate>CN="WDKTestCert lcxl,130446949275621617" | CC65848E6290EE254DA51691C01D303BC1449FB1</TestCertificate>
+    <TestCertificate>CN="WDKTestCert lcxbo,130911089471089385" | 8BEAE201C4DFE872C361386BAADD7C4FDE362A34</TestCertificate>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1 Debug|x64'">
-    <TestCertificate>CN="WDKTestCert lcxl,130446949275621617" | CC65848E6290EE254DA51691C01D303BC1449FB1</TestCertificate>
+    <TestCertificate>CN="WDKTestCert lcxbo,130911089471089385" | 8BEAE201C4DFE872C361386BAADD7C4FDE362A34</TestCertificate>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win10 Debug|x64'">
+    <TestCertificate>CN="WDKTestCert lcxbo,130911089471089385" | 8BEAE201C4DFE872C361386BAADD7C4FDE362A34</TestCertificate>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win7 Release|Win32'">
     <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
